@@ -1,0 +1,40 @@
+// app/_layout.tsx
+import { useFonts } from "expo-font";
+import { SplashScreen, Stack } from "expo-router";
+import { useEffect } from "react";
+import GlobalProvider from '../context/GlobalProvider.js';
+import "../global.css";
+
+// Set the notification handler to show alerts even when the app is foregrounded
+
+const RootLayout = () => {
+    const [fontsLoaded, error] = useFonts({
+        Poppins: require('../assets/fonts/Poppins-Regular.ttf'),
+        "Poppins-Bold": require('../assets/fonts/Poppins-Bold.ttf'),
+        "Poppins-SemiBold": require('../assets/fonts/Poppins-SemiBold.ttf'),
+        "Poppins-Medium": require('../assets/fonts/Poppins-Medium.ttf'),
+        Quicksand: require('../assets/fonts/Quicksand-static/Quicksand-Regular.ttf'),
+        Raleway: require('../assets/fonts/Raleway-Regular.ttf'),
+        Sintony: require('../assets/fonts/Sintony-Regular.ttf'),
+        "Sintony-Bold": require('../assets/fonts/Sintony-Bold.ttf'),
+    });
+
+    useEffect(() => {
+        if (fontsLoaded || error) {
+            SplashScreen.hideAsync();
+        }
+    }, [fontsLoaded, error]);
+
+    if (!fontsLoaded && !error) {
+        console.log(error);
+        return null;
+    }
+
+    return (
+        <GlobalProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+        </GlobalProvider>
+    );
+};
+
+export default RootLayout;
