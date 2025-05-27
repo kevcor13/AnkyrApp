@@ -12,7 +12,6 @@ import {
 import React, {useState} from 'react'
 import {SafeAreaView} from "react-native-safe-area-context";
 import images from "@/constants/images"
-import FormField from "@/components/FormField";
 import CustomButton from "@/components/CustomButton";
 import {Link, router} from "expo-router";
 import axios from 'axios';
