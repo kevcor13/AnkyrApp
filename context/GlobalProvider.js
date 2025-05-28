@@ -112,20 +112,8 @@ const GlobalProvider = ({ children }) => {
         try {
             // Get token for potential server-side logout
             const token = await AsyncStorage.getItem("token");
-
-            // Clear all auth-related items from AsyncStorage
-            const keysToRemove = [
-                "token",
-                "isLoggedIn",
-                "userData",
-                "userPosts",
-                "userGameData"
-                // Add any other auth-related keys stored in AsyncStorage
-            ];
-
-            // Remove all items in parallel
-            await Promise.all(keysToRemove.map(key => AsyncStorage.removeItem(key)));
-
+           // await AsyncStorage.setItem("isLoggedIn", "false");
+                  setIsLoggedIn(false);
             // Reset all state variables
             setIsLoggedIn(false);
             setUser(null);

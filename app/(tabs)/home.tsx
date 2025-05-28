@@ -1,4 +1,4 @@
-import {View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator} from 'react-native'
+import {View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, StyleSheet} from 'react-native'
 import React, {useEffect, useState} from 'react'
 import {SafeAreaView} from "react-native-safe-area-context";
 import images from "@/constants/images"
@@ -16,7 +16,7 @@ const Home = () => {
     const [followersUsers, setFollowersUsers] = useState([]);
     const [posts, setPosts] = useState<any[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
-
+/*
     useEffect(() => {
         // Set a short timeout to ensure userData is loaded
         const timer = setTimeout(() => {
@@ -30,7 +30,18 @@ const Home = () => {
 
         return () => clearTimeout(timer);
     }, [userData]);
+ */
+useEffect(() => {
+        // Set a short timeout to ensure userData is loaded
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+            if(userData){
+            loadFollowingAndPosts();
+            }
+        }, 500);
 
+        return () => clearTimeout(timer);
+    }, [userData]);
     const loadFollowingAndPosts = async () => {
         try {
             setLoadingPosts(true);
@@ -96,23 +107,21 @@ const Home = () => {
 
     const renderHeader = () => (
         <>
-            <View className="my-6 px-4 space-y-6">
+            <View style={{paddingHorizontal: 5}}>
                 <View className="justify-between items-start flex-row mb-6">
-                    <View>
-                        <Text className="font-poppins-medium text-gray-100">Welcome Back</Text>
-                        <Text className="font-poppins-semibold text-2xl text-cyan-100">
-                            {userData?.username || "User"}
-                        </Text>
+                    <View style={styles.headerContainer}>
+                        <Text style={styles.welcomeText}>Welcome Back</Text>
+                        <Text style={styles.usernameText}>{userData?.username || "User"}</Text>
                     </View>
-                    <View className="mt-[-20]">
+                    <View style={styles.imageContainer}>
                         <Image
                             source={images.ankyr}
-                            className="w-20 h-20"
+                            className="w-[65] h-[65]"
                             resizeMode="contain"/>
                     </View>
                 </View>
             </View>
-            <View className="mt-[-20] flex-row px-10">
+            <View style={styles.iconsContainer}>
                 <View className="items-center">
                     <TouchableOpacity className="p-6 rounded-full bg-white">
                         <Image source={icons.headphonesIcon} className="w-8 h-8"/>
@@ -181,5 +190,34 @@ const Home = () => {
         </SafeAreaView>
     )
 }
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    marginVertical: 20,
+  },
+  imageContainer: {
+    marginVertical:15,
+    paddingLeft: 20,
+  },
+  welcomeText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: '#CDCDE0',
+    paddingLeft: 20,
+  },
+  usernameText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 24,
+    color: '#DAEEED',
+    paddingLeft: 20,
+  },
+  // icons view 
+  iconsContainer:{
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 40,
+  }
+  // ...add other styles as needed...
+});
 
 export default Home

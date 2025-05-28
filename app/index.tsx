@@ -14,6 +14,7 @@ const index = () => {
         console.log(isLoggedIn)
         return <Redirect href="/home"/>
     }
+        
     return (
         <ImageBackground source={images.onboard} className="h-full w-full ">
             <SafeAreaView className="flex-1">

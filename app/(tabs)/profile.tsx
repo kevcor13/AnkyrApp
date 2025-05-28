@@ -149,7 +149,7 @@ const Profile: React.FC = () => {
                     <Image source={icons.settings} className="w-6 h-6" />
                 </TouchableOpacity>
                 {badgeImage
-                    ? <Image source={badgeImage} className="w-28 h-28" resizeMode="contain" />
+                    ? <Image source={typeof badgeImage === 'string' ? { uri: badgeImage } : badgeImage} className="w-28 h-28" resizeMode="contain" />
                     : <Text className="text-gray-500">Loading badge...</Text>
                 }
             </View>
@@ -187,7 +187,7 @@ const Profile: React.FC = () => {
             <Text className="text-gray-500 italic">
                 {userData.username} has not posted yet
             </Text>
-            <TouchableOpacity onPress={() => router.push("/(components)/CreatePost")}>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/camera")} className="mt-4">
                 <View className="bg-gray-800 rounded-2xl p-2 mt-2">
                     <Text className="text-white">Create a post</Text>
                 </View>

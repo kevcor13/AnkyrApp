@@ -50,7 +50,7 @@ const SignIn = () => {
                         <Text className="text-gray-500 text-lg font-poppins">
                             dont have an account?
                         </Text>
-                        <Link href="/(root)/sign-up" className="text-lg font-poppins text-blue-400">Sign up</Link>
+                        <Link href="/home" className="text-lg font-poppins text-blue-400">Sign up</Link>
                     </View>
                 </View>
             </ScrollView>
