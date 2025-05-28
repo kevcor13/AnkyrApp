@@ -3,7 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image } from "react-native";
+import icons from "@/constants/icons";
 
 const ChallengesPage: React.FC = () => {
     const [dailyChallengesOpen, setDailyChallengesOpen] = useState(false);
@@ -15,7 +16,7 @@ const ChallengesPage: React.FC = () => {
     const [todayWorkout, setTodayWorkout] = useState(null); // State for today's workout
     const [randomData, setRandomData] = useState('');
 
-
+/*
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -45,7 +46,7 @@ const ChallengesPage: React.FC = () => {
 
         fetchData();
     }, [userData]);
-
+*/
 
     const press= (name: any) =>{
 
@@ -79,22 +80,6 @@ const ChallengesPage: React.FC = () => {
             </TouchableOpacity>
         ));
 
-    const AI = async () => {
-        try {
-            const message = `"Generate a full week workout plan with warmups, exercises, and sets/reps for each day."`;
-            const UserID = userData._id;
-            console.log("Requesting workout plan with message:", message);
-
-            // Send the request to the new endpoint
-            const response = await axios.post("http://localhost:5001/aI", {message, UserID});
-
-            // Log the response from the server
-            console.log("Workout saved successfully! Response:", response.data);
-        } catch (error) {
-            console.error("Error generating and saving workout:");
-        }
-    };
-
     return(
         <LinearGradient
         colors={['#FF3C3C', '#A12287', '#1F059D']} // Gradient colors
@@ -103,12 +88,38 @@ const ChallengesPage: React.FC = () => {
         className="flex-1"
     >
         <ScrollView className="h-full">
-            <View className=" mt-16">
-                <Text className="text-white text-[55px] font-poppins-semibold leading-none tracking-tight">YOUR MONDAY WORKOUT</Text>
+            <View style={styles.headerContainer}>
+                <Text style={styles.headerText}>YOUR MONDAY WORKOUT</Text>
+                <Image source={icons.whiteZap} style={styles.zapImage}/>
             </View>
+
         </ScrollView>
     </LinearGradient>
     );
 };
+const styles = StyleSheet.create({
+    headerContainer: {
+        marginTop: 60,
+        //padding: 10,
+        marginRight:80,
+        flexDirection: 'row',
+        backgroundColor: '#1F059D',
+        borderRadius: 10,
+        //margin: 40,
+    },
+    headerText: {
+        fontSize: 50,
+        fontFamily: 'Poppins-semiBold',
+        color: '#FFFFFF',
+        lineHeight: 55 
+       },
+    zapImage: {
+        width: 60,
+        height: 60,
+        marginTop: 10,
+        marginRight: 60,
+    }
+})
+
 
 export default ChallengesPage;
