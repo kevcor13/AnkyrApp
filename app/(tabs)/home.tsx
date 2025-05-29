@@ -37,6 +37,8 @@ useEffect(() => {
             setIsLoading(false);
             if(userData){
             loadFollowingAndPosts();
+            } else {
+                router.push('/(root)/sign-in');
             }
         }, 500);
 

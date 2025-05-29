@@ -237,7 +237,7 @@ const Profile: React.FC = () => {
                         {loadingLeague
                             ? <ActivityIndicator size="large" color="#FFF" style={{ marginTop: 20 }} />
                             : points !== null
-                                ? <LeagueScreen userXP={points} League={league} />
+                                ? <LeagueScreen userXP={points} League={league ?? ""} />
                                 : <Text className="text-gray-500 text-center">No league data available</Text>
                         }
                     </View>

@@ -77,7 +77,8 @@ const Questionnaire = () => {
             const points = {
                 UserID: userData._id,
                 streak: 0,
-                points: 10
+                points: 10,
+                league: "NOVICE"
             }
             const selectedDayNames = getSelectedDayNames();
             const daysList = selectedDayNames.join(", ");

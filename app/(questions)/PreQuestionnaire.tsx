@@ -21,6 +21,11 @@ const PreQuestionnaire = () => {
                 <CustomButton
                     title="Next"
                     handlePress={()=> router.push("/questionnaire")}
+                    buttonStyle={{backgroundColor: "white", borderRadius: 20, paddingVertical: 16, paddingHorizontal: 32, marginTop: 28, justifyContent: "center"}}
+                                textStyle={{
+                                color: '#000000', 
+                                fontSize: 16, 
+                                fontFamily: 'poppins-semiBold'}}
                 />
             </View>
             <View className="mt-20 px-20 items-center flex justify-center">

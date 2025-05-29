@@ -16,9 +16,11 @@ import searchIcon from "@/assets/icons/Search.png"
 import settingArrow from "@/assets/icons/Untitled drawing (1) 5.png"
 import x from "@/assets/icons/X.png"
 import zap from "@/assets/icons/Zap.png"
+import infoIcon from "@/assets/icons/informationIcon.png"
 
 export default {
     headphonesIcon,
+    infoIcon,
     x,
     deniedIcon,
     privateIcon,

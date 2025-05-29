@@ -15,6 +15,7 @@ const RootLayout = () => {
         "Poppins-Medium": require('../assets/fonts/Poppins-Medium.ttf'),
         Quicksand: require('../assets/fonts/Quicksand-static/Quicksand-Regular.ttf'),
         Raleway: require('../assets/fonts/Raleway-Regular.ttf'),
+        "Raleway-Semibold": require('../assets/fonts/Raleway-static/Raleway-SemiBold.ttf'),
         Sintony: require('../assets/fonts/Sintony-Regular.ttf'),
         "Sintony-Bold": require('../assets/fonts/Sintony-Bold.ttf'),
     });

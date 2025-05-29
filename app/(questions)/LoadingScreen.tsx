@@ -19,6 +19,11 @@ const LoadingScreen = () => {
                     <CustomButton
                         title="Go to my new personal app"
                         handlePress={()=> router.replace("/VideoFile")}
+                        buttonStyle={{backgroundColor: "white", borderRadius: 20, paddingVertical: 16, paddingHorizontal: 32, marginTop: 28, justifyContent: "center"}}
+                                textStyle={{
+                                color: '#000000', 
+                                fontSize: 16, 
+                                fontFamily: 'poppins-semiBold'}}
                     />
                 </View>
             </View>

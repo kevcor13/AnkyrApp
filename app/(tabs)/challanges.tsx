@@ -1,15 +1,17 @@
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CalendarSelector from "@/components/CalendarView";
 import CustomButton from "@/components/CustomButton";
 import axios from "axios";
+import LeagueHeader from "@/components/LeagueHeader";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image } from "react-native";
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 
 const ChallengesPage: React.FC = () => {
-    const [dailyChallengesOpen, setDailyChallengesOpen] = useState(false);
+    const [leagueOpen, setLeagueOpen] = useState(false);
     const { userData, fetchWorkout, userGameData } = useGlobal()
     const [mondayWorkoutOpen, setMondayWorkoutOpen] = useState(false);
     const [random, setRandom] = useState('legs')
@@ -54,6 +56,10 @@ const ChallengesPage: React.FC = () => {
 
     }
 
+    const showInfo = () => {
+        console.log(userGameData);        
+    }
+
     const renderExercises = (exercises: any[]) =>
         exercises.map((exercise, index) => (
             <TouchableOpacity onPress={() => press(exercise.exercise)}>
@@ -87,9 +93,9 @@ const ChallengesPage: React.FC = () => {
         colors={['#FF3C3C', '#A12287', '#1F059D']} // Gradient colors
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
-        className="flex-1"
+        style ={{ flex: 1}}
     >
-        <ScrollView className="h-full">
+        <ScrollView contentContainerStyle={{ paddingBottom: 70 }}>
             <View style={styles.headerContainer}>
                 <View style={{flexDirection: 'row'}}>
                     <Text style={styles.title}>YOUR{'\n'}WEDNESDAY{'\n'}WORKOUT</Text>
@@ -118,6 +124,49 @@ const ChallengesPage: React.FC = () => {
 
                         />
             </View>
+            <CalendarSelector onSelect={(date) => {
+                console.log("Selected date:", date);
+                
+            }} />
+            <View style={styles.container}>
+                {/* STREAK */}
+                <View style={styles.block}>
+                    <Text style={styles.header}>My streak:</Text>
+                    <View style={styles.valueRow}>
+                        <Image source={icons.whiteZap} style={styles.icon} />
+                        <Text style={{color:'#78F5D8', fontFamily:'raleway-semibold', fontWeight:'600', fontSize:32}}>0</Text>
+                        <Text style={{color:'#78F5D8', fontFamily:'raleway-semibold', fontWeight:'600', fontSize:18, marginLeft:5}}>days</Text>
+                    </View>
+                    <Text style={styles.caption}>
+                        Woah. How long are you gonna keep this going?
+                    </Text>
+                </View>
+                {/* XP */}
+                <View style={styles.block}>
+                    <View style={{flexDirection:'row'}}>
+                        <Text style={styles.header}>My xp:</Text>
+                        <TouchableOpacity onPress={() => showInfo()} style={{marginLeft: 80, height: 20, width: 20}}>
+                            <Image source={icons.infoIcon}/>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={[styles.valueRow, { marginBottom: 4 }]}>
+                        <Text style={{color:'#78F5D8', fontFamily:'raleway-semibold', fontWeight:'600', fontSize:32}}>27,836</Text>
+                        <Text style={{color:'#78F5D8', fontFamily:'raleway-semibold', fontWeight:'600', fontSize:18, marginLeft:5}}> XP</Text>
+                    </View>
+                    <Text style={styles.caption}>Hm. That’s kind of a lot of xp.</Text>
+                </View>
+            </View>
+                <View style={styles.container2}>  
+                <TouchableOpacity style={{flexDirection: 'row'}}
+                    onPress={() => setLeagueOpen(!leagueOpen)}
+                >
+                    <Text style={{fontFamily:'poppins-semibold', color:'#FFFFFF', fontSize:24, marginLeft: 20}}>MY LEAGUE</Text>
+                    <Text style={{color:'#FFFFFF', fontSize:24, marginLeft: 180}}>{leagueOpen? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+                {leagueOpen && (
+                    <LeagueHeader league={userGameData.league} />
+                )}
+            </View> 
         </ScrollView>
     </LinearGradient>
     );
@@ -152,7 +201,7 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         marginTop: 10,
-        marginLeft: 10,
+        marginLeft: 5,
     },
     timeIndicator: {
         textAlign: 'right',
@@ -160,7 +209,80 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: '#38FFF5',
         marginLeft: 10,
-    }
+    },
+    userNumbers: {
+        color:'#38FFF5', 
+        fontFamily:'poppins-semibold', 
+        fontSize:40, 
+        marginLeft: 10
+    }, 
+    container: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        backgroundColor: "black",
+        height: 200,
+        paddingHorizontal: 20,
+        marginTop: 30,
+    },
+    container2: {
+        justifyContent: "space-between",
+        backgroundColor: "black",
+        height: "100%",
+        //paddingHorizontal: 20,
+    },
+    block: {
+        flex: 1,
+        paddingHorizontal: 8,
+        marginTop: 30,
+    },
+    header: {
+        fontFamily: "Poppins-SemiBold",
+        fontSize: 18,
+        color: "#FFF",
+        marginBottom: 8,
+    },
+    valueRow: {
+        flexDirection: "row",
+        alignItems: "flex-end",
+    },
+    icon: {
+        width: 24,
+        height: 24,
+        marginRight: 6,
+    },
+    valueText: {
+        fontFamily: "Poppins-ExtraBold",
+        fontSize: 48,
+        lineHeight: 52,
+    },
+    streakGradientMask: {
+    // transparent color so only gradient shows
+    color: "transparent",
+  },
+  invisibleText: {
+    // needed inside the gradient to occupy space
+    opacity: 0,
+    fontFamily: "Poppins-ExtraBold",
+    fontSize: 48,
+    lineHeight: 52,
+  },
+  xpText: {
+    color: "#78F5D8",
+  },
+  unitText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 24,
+    lineHeight: 28,
+    color: "#A12F8B",
+    marginLeft: 4,
+    marginBottom: 6,
+  },
+  caption: {
+    fontFamily: "Poppins-Italic",
+    fontSize: 14,
+    color: "#666",
+    marginTop: 6,
+  },
 })
 
 

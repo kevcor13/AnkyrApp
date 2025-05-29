@@ -16,10 +16,21 @@ const Onboard = () => {
                             <CustomButton
                                 title="Resgister"
                                 handlePress={()=> router.push("/CodeEntry")}
+                                 buttonStyle={{backgroundColor: "white", borderRadius: 20, paddingVertical: 16, paddingHorizontal: 32, marginTop: 28, justifyContent: "center"}}
+                                  textStyle={{
+                                color: '#000000', 
+                                fontSize: 16, 
+                                fontFamily: 'poppins-semiBold'
+                            }}
                             />
                             <CustomButton
                                 title="Log in"
                                 handlePress={()=> router.push("/sign-in")}
+                                buttonStyle={{backgroundColor: "white", borderRadius: 20, paddingVertical: 16, paddingHorizontal: 32, marginTop: 28, justifyContent: "center"}}
+                                textStyle={{
+                                color: '#000000', 
+                                fontSize: 16, 
+                                fontFamily: 'poppins-semiBold'}}
                             />
                         </View>
                     </View>
