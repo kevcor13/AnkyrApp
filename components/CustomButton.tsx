@@ -3,14 +3,14 @@ import { Text, TouchableOpacity, View } from 'react-native'
 
 
 // @ts-ignore
-const CustomButton = ({handlePress, title} ) => {
+const CustomButton = ({handlePress, title, buttonStyle, textStyle} ) => {
     return (
-        <TouchableOpacity className="bg-white rounded-2xl py-4 mt-7 justify-center"
+        <TouchableOpacity style={buttonStyle}
             onPress={handlePress}
             activeOpacity={0.7}
         >
             <View className="flex flex-row items-center justify-center">
-                <Text className="font-poppins-semibold text-center text-lg">{title}</Text>
+                <Text style={textStyle}>{title}</Text>
             </View>
         </TouchableOpacity>
     )

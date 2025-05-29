@@ -1,10 +1,12 @@
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomButton from "@/components/CustomButton";
 import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image } from "react-native";
 import icons from "@/constants/icons";
+import { router } from "expo-router";
 
 const ChallengesPage: React.FC = () => {
     const [dailyChallengesOpen, setDailyChallengesOpen] = useState(false);
@@ -89,10 +91,33 @@ const ChallengesPage: React.FC = () => {
     >
         <ScrollView className="h-full">
             <View style={styles.headerContainer}>
-                <Text style={styles.headerText}>YOUR MONDAY WORKOUT</Text>
-                <Image source={icons.whiteZap} style={styles.zapImage}/>
-            </View>
+                <View style={{flexDirection: 'row'}}>
+                    <Text style={styles.title}>YOUR{'\n'}WEDNESDAY{'\n'}WORKOUT</Text>
+                    <Image
+                        source={icons.whiteZap}
+                        style={styles.zapImage}/>
+                </View>
+                <Text style={styles.subtitle}>CHEST & TRIS</Text> 
+                <Text style={styles.timeIndicator}>50 mins</Text>
+                <CustomButton
+                            title="My workout"
+                            handlePress={()=> router.navigate("/Onboard")}
+                            buttonStyle={{
+                                backgroundColor: 'rgba(217, 217, 217, 0.5)', 
+                                borderRadius: 20, 
+                                paddingVertical: 16, 
+                                paddingHorizontal: 32, 
+                                marginTop: 10, 
+                                justifyContent: "center"
+                            }}
+                            textStyle={{
+                                color: '#FFFFFF', 
+                                fontSize: 16, 
+                                fontFamily: 'poppins-semiBold'
+                            }}
 
+                        />
+            </View>
         </ScrollView>
     </LinearGradient>
     );
@@ -100,24 +125,41 @@ const ChallengesPage: React.FC = () => {
 const styles = StyleSheet.create({
     headerContainer: {
         marginTop: 60,
-        //padding: 10,
-        marginRight:80,
-        flexDirection: 'row',
-        backgroundColor: '#1F059D',
+        padding: 10,
+        marginRight: 20,
+       // backgroundColor: '#1F059D',
         borderRadius: 10,
-        //margin: 40,
+        margin: 10,
     },
-    headerText: {
+    subtitle: {
+        fontFamily:'poppins-semiBold',
+        color: '#8B8BEA',
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        fontSize: 28,
+    },
+    title: {
         fontSize: 50,
         fontFamily: 'Poppins-semiBold',
         color: '#FFFFFF',
-        lineHeight: 55 
-       },
+        lineHeight: 57, 
+        letterSpacing: -2,
+        textTransform: 'uppercase',
+        margin:0,
+        padding:0
+    },
     zapImage: {
         width: 60,
         height: 60,
         marginTop: 10,
-        marginRight: 60,
+        marginLeft: 10,
+    },
+    timeIndicator: {
+        textAlign: 'right',
+        fontFamily: 'poppins-semiBold',
+        fontSize: 24,
+        color: '#38FFF5',
+        marginLeft: 10,
     }
 })
 

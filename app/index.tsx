@@ -2,6 +2,7 @@ import CustomButton from "@/components/CustomButton";
 // Make sure the file exists at app/components/CustomButton.tsx or app/components/CustomButton/index.tsx
 import images from "@/constants/images";
 import { useGlobal } from "@/context/GlobalProvider";
+import { Background } from "@react-navigation/elements";
 import { Redirect, router } from "expo-router";
 import React from 'react';
 import { Image, ImageBackground, ScrollView, Text, View } from 'react-native';
@@ -27,6 +28,7 @@ const index = () => {
                         <CustomButton
                             title="Log In or Sign Up"
                             handlePress={()=> router.navigate("/Onboard")}
+                            buttonStyle={{backgroundColor: "white", borderRadius: 20, paddingVertical: 16, paddingHorizontal: 32, marginTop: 28, justifyContent: "center"}}
                         />
                         <Text className="text-white text-center mt-7">Everything you need to help you reach your goals; whether its new workouts, meal plans, or a bomb</Text>
                         <Text className="text-white text-center ">gym playlist.</Text>
