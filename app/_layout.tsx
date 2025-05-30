@@ -36,7 +36,6 @@ const RootLayout = () => {
             <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(root)/sign-in" options={{gestureEnabled: false}}/>
                 <Stack.Screen name="(tabs)/home" options={{gestureEnabled: false}}/>
-                <Stack.Screen name="(components)/createPost" options={{gestureEnabled: false}}/>
             </Stack>
         </GlobalProvider>
     );

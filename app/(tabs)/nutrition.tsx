@@ -63,7 +63,15 @@ const Nutrition = () => {
         </View>
     );
 
-    const renderCategoryCard = ({ item, darkBackground = false }) => (
+    type CategoryItem = { id: string; title: string };
+
+    const renderCategoryCard = ({
+        item,
+        darkBackground = false,
+    }: {
+        item: CategoryItem;
+        darkBackground?: boolean;
+    }) => (
         <TouchableOpacity
             className={`mr-4 rounded-lg overflow-hidden w-36 h-24 justify-center items-center ${darkBackground ? 'bg-black' : 'bg-white'}`}
         >

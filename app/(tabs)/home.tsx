@@ -16,7 +16,7 @@ const Home = () => {
     const [followersUsers, setFollowersUsers] = useState([]);
     const [posts, setPosts] = useState<any[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
-/*
+    
     useEffect(() => {
         // Set a short timeout to ensure userData is loaded
         const timer = setTimeout(() => {
@@ -30,20 +30,7 @@ const Home = () => {
 
         return () => clearTimeout(timer);
     }, [userData]);
- */
-useEffect(() => {
-        // Set a short timeout to ensure userData is loaded
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-            if(userData){
-            loadFollowingAndPosts();
-            } else {
-                router.push('/(root)/sign-in');
-            }
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [userData]);
+ 
     const loadFollowingAndPosts = async () => {
         try {
             setLoadingPosts(true);

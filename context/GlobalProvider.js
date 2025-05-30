@@ -56,6 +56,7 @@ const GlobalProvider = ({ children }) => {
 
                 // Fetch user data immediately after login
                 await fetchUserData(data.data);
+                //await fetchGameData(data.data, data.user._id);
 
                 return { success: true };
             } else {
