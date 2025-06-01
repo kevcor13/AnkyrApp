@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, fetchWorkout, userGameData, fetchGameData } = useGlobal()
+    const { userData, fetchWorkout, userGameData, fetchGameData, ngrokAPI } = useGlobal()
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [mondayWorkoutOpen, setMondayWorkoutOpen] = useState(false);
     const [random, setRandom] = useState('legs')
@@ -65,8 +65,9 @@ const ChallengesPage: React.FC = () => {
 
     const showInfo = () => {
         console.log(userGameData);
+        const message = "make me a grocery list for cooking a steak frites"
+        axios.post(`${ngrokAPI}/geminiTest`, {message})
     }
-
     const renderExercises = (exercises: any[]) =>
         exercises.map((exercise, index) => (
             <TouchableOpacity onPress={() => press(exercise.exercise)}>
@@ -152,7 +153,12 @@ const ChallengesPage: React.FC = () => {
                     <View style={styles.block}>
                         <View style={{ flexDirection: 'row' }}>
                             <Text style={styles.header}>My xp:</Text>
+                             {/* XP 
                             <TouchableOpacity onPress={() => setShowInfoModal(true)} style={{ marginLeft: 80, height: 20, width: 20 }}>
+                                <Image source={icons.infoIcon} />
+                            </TouchableOpacity>
+                            */}
+                            <TouchableOpacity onPress={() => showInfo()}>
                                 <Image source={icons.infoIcon} />
                             </TouchableOpacity>
                         </View>
