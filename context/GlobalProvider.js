@@ -14,6 +14,7 @@ const GlobalProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [questionStatus, setQuestionStatus] = useState(false);
     const [userGameData, setUserGameData] = useState('');
+    const [userWorkoutData, setUserWorkoutData] = useState('')
     const [workoutPlan, setWorkoutPlan] = useState('');
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
@@ -188,6 +189,7 @@ const GlobalProvider = ({ children }) => {
         try{
             const response = await axios.post(`${ngrokAPI}/workout`, {token, UserID});
             if (response.data.status === "success") {
+                setUserWorkoutData(response.data.data)
                 return response.data.data;
             } else {
                 console.error("Failed to fetch workout data:", response.data.data);
@@ -357,6 +359,7 @@ const GlobalProvider = ({ children }) => {
                 questionStatus,
                 userGameData,
                 ngrokAPI,
+                userWorkoutData,
                 fetchUserPosts,
                 signUpUser,
                 loginUser,

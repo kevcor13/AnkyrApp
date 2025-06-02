@@ -1,11 +1,55 @@
 import { View, Text, ScrollView, StyleSheet, Touchable, TouchableOpacity, Image} from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
 import icons from "@/constants/icons";
 import { router } from 'expo-router';
 import CustomButton from '@/components/CustomButton';
+import { useGlobal } from '@/context/GlobalProvider';
+import WorkoutCard from '@/components/WorkoutCard';
+
 
 const WorkoutOverview = () => {
+
+    const {userWorkoutData, userData} = useGlobal();
+    const [currentDay, setCurrentDay] = useState('');
+    const [todayWorkout, setTodayWorkout] = useState(null);
+    const [workoutRoutine, setworkoutRoutine] = useState([])
+    const [focus, setFocus] = useState('');
+    const [timeEstimate, setTimeEstimate] = useState('');
+
+    console.log(userWorkoutData);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Ensure the workout data exists and has the correct structure
+                const routineArray = userWorkoutData?.routine || [];
+                //setWorkoutRoutine(routineArray);
+
+                // Get the current day
+                const today = new Date().toLocaleString("en-US", { weekday: "long" });
+                console.log(currentDay);
+                
+                // Find today's workout in the routine array
+                const workoutOfTheDay = routineArray.find((dayRoutine: { day: string; }) => dayRoutine.day === today);
+
+                // Extract today's workoutRoutine if available, otherwise set to null
+                setTodayWorkout(workoutOfTheDay.workoutRoutine);
+                setTimeEstimate(workoutOfTheDay.timeEstimate);
+                setFocus(workoutOfTheDay.focus)
+                setworkoutRoutine(routineArray.find((dayRoutine:{day: string;}) => dayRoutine.day === 'Monday')?.workoutRoutine)
+                
+                
+            } catch (error) {
+                console.error("Error fetching workout data:", error);
+            }
+        };
+
+        fetchData();
+    }, [userData]);
+
+    
+
     return (
         <LinearGradient
             colors={['#FF3C3C', '#A12287', '#1F059D']} // Gradient colors
@@ -23,11 +67,11 @@ const WorkoutOverview = () => {
                     </View>
                 </View>
                 <View style={styles.header}>
-                    <Text style={styles.textHeader}>CHEST + TRIS</Text>
+                    <Text style={styles.textHeader}>{focus}</Text>
                 </View>
                     {/* the workout time and xp details */}
                 <View style={{flexDirection:'row', flex:1, marginLeft:38, marginRight:38, marginTop:20}}>
-                    <Text style={{fontFamily:'poppins-semibold', fontSize:64, color:'#8AFFF9'}}>50</Text>
+                    <Text style={{fontFamily:'poppins-semibold', fontSize:64, color:'#8AFFF9'}}>{timeEstimate}</Text>
                     <Text style={{fontFamily:'poppins-semibold', fontSize:24, color:'#8AFFF9', marginTop:40, marginLeft:5}}>mins</Text>
                     <View style={{alignItems:'flex-end', flex:1}}>
                         <Text style={{fontFamily:'raleway-semibold', color:'white', fontSize:16}}>TOTAL XP:</Text>
@@ -39,7 +83,7 @@ const WorkoutOverview = () => {
                 </View>
                 <CustomButton
                         title="Okay let's go!"
-                        handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
+                        handlePress={() => router.navigate({pathname: "/(workout)/WorkoutRoutine", params:{workoutData: JSON.stringify(workoutRoutine)}})}
                         buttonStyle={{
                             backgroundColor: 'rgba(217, 217, 217, 0.5)',
                             borderRadius: 20,
@@ -61,6 +105,7 @@ const WorkoutOverview = () => {
                             <Text>Hello</Text>
                         </TouchableOpacity>
                 </View>
+                <WorkoutCard workoutRoutine={workoutRoutine}/>
             </ScrollView>
         </LinearGradient>
     )
@@ -81,6 +126,7 @@ const styles = StyleSheet.create({
     textHeader: {
         fontSize: 43,
         fontWeight: 'bold',
+        textTransform: 'uppercase',
         color: '#FFFFFF',
         fontFamily: 'Poppins',
     },

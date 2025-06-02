@@ -7,7 +7,7 @@ import { Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Questionnaire = () => {
-    const {userData, logoutUser, markQuestionnaireCompleted, ngrokAPI} = useGlobal()
+    const { userData, logoutUser, markQuestionnaireCompleted, ngrokAPI } = useGlobal()
     const [loading, setLoading] = useState(false);
     const [gender, setGender] = useState('');
     const [questionIndex, setQuestionIndex] = useState(0);
@@ -139,19 +139,19 @@ FORMAT:
 
 Return the full structured data in pure JSON format, no extra commentary.
 `;
-            
+
             const UserID = userData._id // Pass the userID here
 
             axios.post(`${ngrokAPI}/fitnessInfo`, fitnessData)
                 .then(res => {
                     console.log("hello 1 ", res.data)
-                    axios.post(`${ngrokAPI}/userSettings`, {UserID})
+                    axios.post(`${ngrokAPI}/userSettings`, { UserID })
                         .then(res => {
                             console.log("user Settings created", res.data)
                             axios.post(`${ngrokAPI}/gameSystem`, points)
                                 .then((res) => {
                                     console.log("game system created", res.data)
-                                    axios.post(`${ngrokAPI}/aI`, {Gmessage, UserID})
+                                    axios.post(`${ngrokAPI}/aI`, { Gmessage, UserID })
                                         .then(res => {
                                             console.log("Workout saved successfully! Response:", res.data)
                                             router.replace('/LoadingScreen');
@@ -440,7 +440,7 @@ Return the full structured data in pure JSON format, no extra commentary.
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Monday? 'bg-blue-200' : 'bg-gray-700'}`}
+                            className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Monday ? 'bg-blue-200' : 'bg-gray-700'}`}
                             onPress={() => toggleDaySelection('Monday')}
                         >
                             <Text className="text-white text-xl font-bold">M</Text>

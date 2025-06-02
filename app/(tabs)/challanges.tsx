@@ -20,6 +20,8 @@ const ChallengesPage: React.FC = () => {
     const [mondayWorkoutOpen, setMondayWorkoutOpen] = useState(false);
     const [random, setRandom] = useState('legs')
     const [currentDay, setCurrentDay] = useState('')
+    const [focus, setFocus] = useState('');
+    const [timeEstimate, setTimeEstimate] = useState('');
     const [workoutRoutine, setWorkoutRoutine] = useState([])
     const [todayWorkout, setTodayWorkout] = useState(null); // State for today's workout
     const [randomData, setRandomData] = useState('');
@@ -41,7 +43,8 @@ const ChallengesPage: React.FC = () => {
                 // Get the current day
                 const today = new Date().toLocaleString("en-US", { weekday: "long" });
                 setCurrentDay(today);
-
+                console.log(currentDay);
+                
                 // Find today's workout in the routine array
                 const workoutOfTheDay = routineArray.find((dayRoutine: { day: string; }) => dayRoutine.day === today);
 
@@ -49,6 +52,13 @@ const ChallengesPage: React.FC = () => {
                 setTodayWorkout(workoutOfTheDay?.workoutRoutine || null);
 
                 console.log("Workout for today:", workoutOfTheDay);
+                //console.log("focus:", workoutOfTheDay.focus);
+                //console.log(workoutOfTheDay.timeEstimate);
+                setTimeEstimate(workoutOfTheDay.timeEstimate);
+                setFocus(workoutOfTheDay.focus)
+                console.log(focus);
+                
+                
                 console.log("routine", routineArray.find((dayRoutine:{day: string;}) => dayRoutine.day === 'Monday')?.workoutRoutine);
                 
             } catch (error) {
@@ -111,8 +121,8 @@ const ChallengesPage: React.FC = () => {
                             source={icons.whiteZap}
                             style={styles.zapImage} />
                     </View>
-                    <Text style={styles.subtitle}>CHEST & TRIS</Text>
-                    <Text style={styles.timeIndicator}>50 mins</Text>
+                    <Text style={styles.subtitle}>{focus}</Text>
+                    <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
                     <CustomButton
                         title="My workout"
                         handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
