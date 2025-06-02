@@ -115,6 +115,30 @@ const Questionnaire = () => {
             
             Return the full structured data in pure JSON format, no extra commentary.
             `;
+
+            const Gmessage = `
+Generate a detailed weekly workout plan for a ${gender}, ${age} years old, weighing ${weight} lbs, with a fitness level of ${fitness}, whose primary goal is to ${goal}.
+
+SPECIFIC WORKOUT DAYS:
+- Create structured workouts for these days: ${daysList}
+- Total of ${workoutDays} workout days per week
+
+EQUIPMENT:
+- Available equipment: ${equipmentAvailable}
+
+HEALTH FACTORS:
+- ${medicalCondition ? `Has injury/condition: ${injuryType}` : `No known medical conditions`}
+- Sleep quality: ${sleepQuality}
+- Stress level: ${stressLevel}
+
+FORMAT:
+// The FORMAT section here can be less detailed since the server-side code now explicitly includes the JSON schema
+// You can keep it as is, or simplify it to something like:
+// "Provide the workout plan in a structured JSON format as agreed."
+// The key is that the backend prompt will enforce the full schema.
+
+Return the full structured data in pure JSON format, no extra commentary.
+`;
             
             const UserID = userData._id // Pass the userID here
 
@@ -127,7 +151,7 @@ const Questionnaire = () => {
                             axios.post(`${ngrokAPI}/gameSystem`, points)
                                 .then((res) => {
                                     console.log("game system created", res.data)
-                                    axios.post(`${ngrokAPI}/aI`, {message, UserID})
+                                    axios.post(`${ngrokAPI}/aI`, {Gmessage, UserID})
                                         .then(res => {
                                             console.log("Workout saved successfully! Response:", res.data)
                                             router.replace('/LoadingScreen');
