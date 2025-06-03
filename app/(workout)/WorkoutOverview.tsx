@@ -12,7 +12,8 @@ const WorkoutOverview = () => {
 
     const {userWorkoutData, userData} = useGlobal();
     const [currentDay, setCurrentDay] = useState('');
-    const [todayWorkout, setTodayWorkout] = useState(null);
+    const [todayWorkout, setTodayWorkout] = useState([]);
+    const [warmup, setWarmup] = useState([])
     const [workoutRoutine, setworkoutRoutine] = useState([])
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
@@ -35,6 +36,7 @@ const WorkoutOverview = () => {
 
                 // Extract today's workoutRoutine if available, otherwise set to null
                 setTodayWorkout(workoutOfTheDay.workoutRoutine);
+                setWarmup(workoutOfTheDay.warmup);
                 setTimeEstimate(workoutOfTheDay.timeEstimate);
                 setFocus(workoutOfTheDay.focus)
                 setworkoutRoutine(routineArray.find((dayRoutine:{day: string;}) => dayRoutine.day === 'Monday')?.workoutRoutine)
@@ -83,7 +85,7 @@ const WorkoutOverview = () => {
                 </View>
                 <CustomButton
                         title="Okay let's go!"
-                        handlePress={() => router.navigate({pathname: "/(workout)/WorkoutRoutine", params:{workoutData: JSON.stringify(workoutRoutine)}})}
+                        handlePress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
                         buttonStyle={{
                             backgroundColor: 'rgba(217, 217, 217, 0.5)',
                             borderRadius: 20,
@@ -105,7 +107,8 @@ const WorkoutOverview = () => {
                             <Text>Hello</Text>
                         </TouchableOpacity>
                 </View>
-                <WorkoutCard workoutRoutine={workoutRoutine}/>
+                <WorkoutCard workoutRoutine={warmup}/>
+                <WorkoutCard workoutRoutine={todayWorkout}/>
             </ScrollView>
         </LinearGradient>
     )
