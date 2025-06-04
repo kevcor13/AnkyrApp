@@ -37,6 +37,8 @@ const ChallengesPage: React.FC = () => {
                 await fetchGameData(token, userData._id);
 
                 // Ensure the workout data exists and has the correct structure
+                console.log(workout);
+                
                 const routineArray = workout?.routine || [];
                 setWorkoutRoutine(routineArray);
 
@@ -74,9 +76,25 @@ const ChallengesPage: React.FC = () => {
     }
 
     const showInfo = () => {
-        console.log(userGameData);
-        const message = "make me a grocery list for cooking a steak frites"
-        axios.post(`${ngrokAPI}/geminiTest`, {message})
+        //console.log(userGameData);
+        const entry = {
+            name: "Barbell Deadlift", 
+            description:"Lift a loaded barbell from the floor to a standing position, keeping your back straight.",
+            videoUrl: "https://example.com/videos/deadlift.mp4", 
+            category: "Back", 
+            equipment: ["Barbell", "Weight Plates"],
+            difficulty: "Advanced", 
+            recommendedSets: "3-5", 
+            recommendedReps: "3-6", 
+            isWarmupExercise: false, 
+            isCooldownExercise: false, 
+            tags: ["compound", "strength"]
+        }
+        
+        axios.post(`${ngrokAPI}/test/add-exercise`, entry)
+        console.log("test ran");
+        
+
     }
     const renderExercises = (exercises: any[]) =>
         exercises.map((exercise, index) => (
