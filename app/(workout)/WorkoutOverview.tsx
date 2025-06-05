@@ -10,10 +10,8 @@ import WorkoutCard from '@/components/WorkoutCard';
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData} = useGlobal();
+    const {userWorkoutData, userData, warmup, workout} = useGlobal();
     const [currentDay, setCurrentDay] = useState('');
-    const [todayWorkout, setTodayWorkout] = useState([]);
-    const [warmup, setWarmup] = useState([])
     const [workoutRoutine, setworkoutRoutine] = useState([])
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
@@ -33,10 +31,6 @@ const WorkoutOverview = () => {
                 
                 // Find today's workout in the routine array
                 const workoutOfTheDay = routineArray.find((dayRoutine: { day: string; }) => dayRoutine.day === today);
-
-                // Extract today's workoutRoutine if available, otherwise set to null
-                setTodayWorkout(workoutOfTheDay.workoutRoutine);
-                setWarmup(workoutOfTheDay.warmup);
                 setTimeEstimate(workoutOfTheDay.timeEstimate);
                 setFocus(workoutOfTheDay.focus)
                 setworkoutRoutine(routineArray.find((dayRoutine:{day: string;}) => dayRoutine.day === 'Monday')?.workoutRoutine)
@@ -108,7 +102,7 @@ const WorkoutOverview = () => {
                         </TouchableOpacity>
                 </View>
                 <WorkoutCard workoutRoutine={warmup}/>
-                <WorkoutCard workoutRoutine={todayWorkout}/>
+                <WorkoutCard workoutRoutine={workout}/>
             </ScrollView>
         </LinearGradient>
     )

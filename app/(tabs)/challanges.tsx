@@ -17,8 +17,6 @@ const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
     const { userData, fetchWorkout, userGameData, fetchGameData, ngrokAPI } = useGlobal()
     const [showInfoModal, setShowInfoModal] = useState(false);
-    const [mondayWorkoutOpen, setMondayWorkoutOpen] = useState(false);
-    const [random, setRandom] = useState('legs')
     const [currentDay, setCurrentDay] = useState('')
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
@@ -32,8 +30,6 @@ const ChallengesPage: React.FC = () => {
             try {
                 const token = await AsyncStorage.getItem("token");
                 const workout = await fetchWorkout(token, userData._id);
-
-
                 await fetchGameData(token, userData._id);
 
                 // Ensure the workout data exists and has the correct structure
@@ -54,6 +50,7 @@ const ChallengesPage: React.FC = () => {
                 setTodayWorkout(workoutOfTheDay?.workoutRoutine || null);
 
                 console.log("Workout for today:", workoutOfTheDay);
+
                 //console.log("focus:", workoutOfTheDay.focus);
                 //console.log(workoutOfTheDay.timeEstimate);
                 setTimeEstimate(workoutOfTheDay.timeEstimate);

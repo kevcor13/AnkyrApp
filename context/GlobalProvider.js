@@ -2,12 +2,17 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { router } from "expo-router";
 import { createContext, useContext, useEffect, useState } from "react";
+import { WarmUp } from "@/constants/workout";
+
 
 export const GlobalContext = createContext();
 export const useGlobal = () => useContext(GlobalContext);
 
 const GlobalProvider = ({ children }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [warmup, setWarmup] = useState([])
+    const [workout, setworkout] = useState([])
+    const [today, settoday] = useState('')
     const [user, setUser] = useState(null);
     const [userPosts, setUserPosts] = useState('');
     const [userData, setUserData] = useState('');
@@ -190,6 +195,7 @@ const GlobalProvider = ({ children }) => {
             const response = await axios.post(`${ngrokAPI}/workout`, {token, UserID});
             if (response.data.status === "success") {
                 setUserWorkoutData(response.data.data)
+                await seperateWorkouts(response.data.data)
                 return response.data.data;
             } else {
                 console.error("Failed to fetch workout data:", response.data.data);
@@ -198,7 +204,13 @@ const GlobalProvider = ({ children }) => {
             console.error("Login Error:", error);
         }
     }
-
+    const seperateWorkouts = async (rawWorkoutData) => {
+        const routineArray = rawWorkoutData?.routine || [];
+        const today = new Date().toLocaleString("en-US", { weekday: "long" });
+        const workoutOfTheDay = routineArray.find((dayRoutine) => dayRoutine.day === today);      
+        setWarmup(workoutOfTheDay.warmup)
+        setworkout(workoutOfTheDay.workoutRoutine)
+    }
     // get the followers from user.
     // inside GlobalProvider, replace your old fetchFollowingUsers with this:
     const fetchFollowingUsers = async () => {
@@ -355,6 +367,8 @@ const GlobalProvider = ({ children }) => {
                 user,
                 userData, // Expose userData to the rest of the app
                 setUserData,
+                warmup,
+                workout,
                 loading,
                 questionStatus,
                 userGameData,
