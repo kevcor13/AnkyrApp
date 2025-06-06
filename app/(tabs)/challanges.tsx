@@ -123,7 +123,7 @@ const ChallengesPage: React.FC = () => {
 
     return (
         <LinearGradient
-            colors={['#FF3C3C', '#A12287', '#1F059D']} // Gradient colors
+            colors={['#FF0509', '#271293']} // Gradient colors
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{ flex: 1 }}
