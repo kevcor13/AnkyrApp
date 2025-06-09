@@ -16,18 +16,14 @@ const WorkoutOverview = () => {
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
 
-    console.log(userWorkoutData);
-
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // Ensure the workout data exists and has the correct structure
                 const routineArray = userWorkoutData?.routine || [];
-                //setWorkoutRoutine(routineArray);
 
                 // Get the current day
-                const today = new Date().toLocaleString("en-US", { weekday: "long" });
-                console.log(currentDay);
+                const today = new Date().toLocaleString("en-US", { weekday: "long" })
                 
                 // Find today's workout in the routine array
                 const workoutOfTheDay = routineArray.find((dayRoutine: { day: string; }) => dayRoutine.day === today);

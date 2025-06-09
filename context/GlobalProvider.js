@@ -20,10 +20,11 @@ const GlobalProvider = ({ children }) => {
     const [questionStatus, setQuestionStatus] = useState(false);
     const [userGameData, setUserGameData] = useState('');
     const [userWorkoutData, setUserWorkoutData] = useState('')
+    const [TodayWorkout, setTodayWorkout] = useState('')
     const [workoutPlan, setWorkoutPlan] = useState('');
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
-    const ngrokAPI = 'https://6225-173-8-115-9.ngrok-free.app'
+    const ngrokAPI = 'https://d076-173-8-115-9.ngrok-free.app'
 
 
     // function to sign up the user
@@ -207,7 +208,8 @@ const GlobalProvider = ({ children }) => {
     const seperateWorkouts = async (rawWorkoutData) => {
         const routineArray = rawWorkoutData?.routine || [];
         const today = new Date().toLocaleString("en-US", { weekday: "long" });
-        const workoutOfTheDay = routineArray.find((dayRoutine) => dayRoutine.day === today);      
+        const workoutOfTheDay = routineArray.find((dayRoutine) => dayRoutine.day === today);
+        setTodayWorkout(workoutOfTheDay)      
         setWarmup(workoutOfTheDay.warmup)
         setworkout(workoutOfTheDay.workoutRoutine)
     }
@@ -367,6 +369,7 @@ const GlobalProvider = ({ children }) => {
                 user,
                 userData, // Expose userData to the rest of the app
                 setUserData,
+                TodayWorkout,
                 warmup,
                 workout,
                 loading,

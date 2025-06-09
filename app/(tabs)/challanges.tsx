@@ -15,51 +15,26 @@ import { Ionicons } from "@expo/vector-icons";
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, fetchWorkout, userGameData, fetchGameData, ngrokAPI } = useGlobal()
+    const { userData, userGameData, ngrokAPI,TodayWorkout} = useGlobal()
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [currentDay, setCurrentDay] = useState('')
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
     const [workoutRoutine, setWorkoutRoutine] = useState([])
     const [todayWorkout, setTodayWorkout] = useState(null); // State for today's workout
-    const [randomData, setRandomData] = useState('');
 
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = await AsyncStorage.getItem("token");
-                const workout = await fetchWorkout(token, userData._id);
-                await fetchGameData(token, userData._id);
-
-                // Ensure the workout data exists and has the correct structure
-                console.log(workout);
                 
-                const routineArray = workout?.routine || [];
-                setWorkoutRoutine(routineArray);
-
-                // Get the current day
+                setWorkoutRoutine(TodayWorkout);
                 const today = new Date().toLocaleString("en-US", { weekday: "long" });
                 setCurrentDay(today);
-                console.log(currentDay);
-                
-                // Find today's workout in the routine array
-                const workoutOfTheDay = routineArray.find((dayRoutine: { day: string; }) => dayRoutine.day === today);
+                setTodayWorkout(TodayWorkout?.workoutRoutine || null);
+                setTimeEstimate(TodayWorkout.timeEstimate);
+                setFocus(TodayWorkout.focus)
 
-                // Extract today's workoutRoutine if available, otherwise set to null
-                setTodayWorkout(workoutOfTheDay?.workoutRoutine || null);
-
-                console.log("Workout for today:", workoutOfTheDay);
-
-                //console.log("focus:", workoutOfTheDay.focus);
-                //console.log(workoutOfTheDay.timeEstimate);
-                setTimeEstimate(workoutOfTheDay.timeEstimate);
-                setFocus(workoutOfTheDay.focus)
-                console.log(focus);
-                
-                
-                console.log("routine", routineArray.find((dayRoutine:{day: string;}) => dayRoutine.day === 'Monday')?.workoutRoutine);
-                
             } catch (error) {
                 console.error("Error fetching workout data:", error);
             }
@@ -93,33 +68,6 @@ const ChallengesPage: React.FC = () => {
         
 
     }
-    const renderExercises = (exercises: any[]) =>
-        exercises.map((exercise, index) => (
-            <TouchableOpacity onPress={() => press(exercise.exercise)}>
-                <View
-                    key={index}
-                    className="flex-row items-center bg-gray-800 rounded-lg p-4 mb-4"
-                >
-                    {/* Exercise Image
-                <View className="w-16 h-16 bg-gray-900 rounded-full overflow-hidden mr-4">
-                    <Image
-                        source={{ uri: exercise.image || 'https://via.placeholder.com/150' }} // Replace with actual image URL if available
-                        className="w-full h-full object-cover"
-                    />
-                </View>
-                */}
-                    {/* Exercise Details */}
-                    <View>
-                        <Text className="text-white font-bold text-lg">{exercise.exercise}</Text>
-                        <Text className="text-gray-400">
-                            {exercise.sets
-                                ? `${exercise.sets} sets x ${exercise.reps} reps`
-                                : exercise.duration}
-                        </Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        ));
 
     return (
         <LinearGradient

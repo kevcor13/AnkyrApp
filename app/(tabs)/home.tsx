@@ -10,7 +10,7 @@ import axios from "axios";
 import PostCard from '@/components/PostCard';
 
 const Home = () => {
-    const { userData, fetchFollowerUsers, fetchFollowingUsers, ngrokAPI} = useGlobal();
+    const { userData, fetchFollowerUsers, fetchFollowingUsers, ngrokAPI,fetchWorkout,fetchGameData} = useGlobal();
     const [isLoading, setIsLoading] = useState(true);
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
@@ -44,6 +44,8 @@ const Home = () => {
 
             // 1. Fetch followers list (users who follow the current user)
             const followers = await fetchFollowerUsers();
+            fetchWorkout(token, userData._id);
+            await fetchGameData(token, userData._id);
             setFollowersUsers(followers);
 
             // 2. Filter to get only followers with requestStatus = true
