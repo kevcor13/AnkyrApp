@@ -6,25 +6,47 @@ import icons from "@/constants/icons";
 
 interface Exercise {
     exercise: string;
-    reps: number;
+    reps: String;
     // Add other properties if needed
 }
 
 interface ExerciseOverviewProps {
     exercise: Exercise;
     onStart: () => void;
+    onEnd: () => void;
+    currentExerciseIndex: number; // The index of the current exercise (e.g., 0, 1, 2...)
+    totalExercises: number;       // The total number of exercises in the workout
 }
 
-const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({ exercise, onStart }) => {
+const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
+    exercise,
+    onStart,
+    onEnd,
+    currentExerciseIndex,
+    totalExercises
+}) => {
     const screenWidth = Dimensions.get('window').width;
 
     // Animation values
     const slideAnim1 = useRef(new Animated.Value(-screenWidth)).current;
     const slideAnim2 = useRef(new Animated.Value(-screenWidth)).current;
     const slideAnim3 = useRef(new Animated.Value(-screenWidth)).current;
+    const slideAnim4 = useRef(new Animated.Value(-screenWidth)).current;
+    const progressAnim = useRef(new Animated.Value(0)).current; // Animation for the progress bar
 
-    // Trigger animation when the component mounts
+    // Calculate progress
+    const progress = totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
+
+    // Trigger animation when the component mounts or exercise changes
     useEffect(() => {
+        // Animate the progress bar
+        Animated.timing(progressAnim, {
+            toValue: progress,
+            duration: 700,
+            useNativeDriver: false, // width animation not supported by native driver
+        }).start();
+
+        // Stagger animation for the text and buttons
         Animated.stagger(400, [
             Animated.timing(slideAnim1, {
                 toValue: 0,
@@ -41,11 +63,26 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({ exercise, onStart }
                 duration: 700,
                 useNativeDriver: true,
             }),
+            Animated.timing(slideAnim4, {
+                toValue: 0,
+                duration: 700,
+                useNativeDriver: true,
+            }),
         ]).start();
-    }, [exercise]); // Re-run animation when the exercise changes
+    }, [exercise, currentExerciseIndex]); // Re-run animation when the exercise changes
+
+    const progressWidth = progressAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0%', '100%']
+    });
 
     return (
         <LinearGradient colors={['#FF0509', '#271293']} style={styles.overviewContainer}>
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+                <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
+            </View>
+
             <Animated.View style={{ transform: [{ translateX: slideAnim1 }] }}>
                 <Text style={styles.overviewTitle}>{exercise.exercise}</Text>
             </Animated.View>
@@ -56,10 +93,15 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({ exercise, onStart }
 
             <Animated.View style={{ transform: [{ translateX: slideAnim3 }] }}>
                 <TouchableOpacity style={styles.nextButtonOverview} onPress={() => {
-                    // Call the onStart function passed from the parent
                     setTimeout(() => onStart(), 600);
                 }}>
                     <Text style={styles.nextButtonText}>Start</Text>
+                </TouchableOpacity>
+            </Animated.View>
+
+            <Animated.View style={{ transform: [{ translateX: slideAnim4 }] }}>
+                <TouchableOpacity style={styles.endButton} onPress={onEnd}>
+                    <Text style={styles.endButtonText}>End</Text>
                 </TouchableOpacity>
             </Animated.View>
 

@@ -2,30 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useGlobal } from '@/context/GlobalProvider';
-import ExerciseOverview from '@/app/(components)/workout/ExerciseOverview'; // Import the new screen
-import ExerciseScreen from '@/app/(components)/workout/ExerciseScreen'; // Import the new screen
-import { styles } from './styles'; // Import styles
+import WorkoutOverviewScreen from '@/app/(components)/workout/ExerciseOverview';
+import WorkoutExerciseScreen from '@/app/(components)/workout/ExerciseScreen';
+import RestScreen from '@/app/(components)/workout/RestScreen'; // Import the new RestScreen
+import { styles } from './styles';
+import axios from 'axios';
 import { router } from 'expo-router';
 
-// You can keep the Exercise interface here or move it to a types file
 export interface Exercise {
     difficulty: string;
     exercise: string;
-    reps: number;
+    reps: string;
     sets: number;
     videoUrl: string;
     phase: 'warmup' | 'workout';
+    restBetweenSeconds: number; // Ensure this is here
 }
 
+// Define the possible states for our workout flow
+type FlowState = 'OVERVIEW' | 'EXERCISE' | 'REST';
+
 const ActiveWorkoutScreen = () => {
-    const { warmup, workout } = useGlobal();
+    const { warmup, workout, userGameData, userData, ngrokAPI, TodayWorkout } = useGlobal();
     const [exercisePlaylist, setExercisePlaylist] = useState<Exercise[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isWorkoutActive, setIsWorkoutActive] = useState(false); // New state to control which screen to show
+    // New state to manage the flow, starting with the overview
+    const [flowState, setFlowState] = useState<FlowState>('OVERVIEW');
 
     useEffect(() => {
-        const taggedWarmup = (warmup || []).map((ex: any) => ({ ...ex, phase: 'warmup' as const }));
-        const taggedWorkout = (workout || []).map((ex: any) => ({ ...ex, phase: 'workout' as const }));
+        const taggedWarmup = (warmup || []).map((ex: any) => ({ ...ex, phase: 'warmup' as const, restBetweenSeconds: ex.restBetweenSeconds || 30 }));
+        const taggedWorkout = (workout || []).map((ex: any) => ({ ...ex, phase: 'workout' as const, restBetweenSeconds: ex.restBetweenSeconds || 60 }));
         const combinedPlaylist = [...taggedWarmup, ...taggedWorkout];
 
         if (combinedPlaylist.length > 0) {
@@ -34,16 +40,46 @@ const ActiveWorkoutScreen = () => {
         }
     }, [warmup, workout]);
 
+    // Called from WorkoutExerciseScreen
     const handleCompleteExercise = () => {
-        if (currentIndex < exercisePlaylist.length - 1) {
-            setCurrentIndex(prev => prev + 1);
-            setIsWorkoutActive(false); // Go back to the overview screen for the next exercise
-        } else {
+        // Check if it's the last exercise
+        if (currentIndex >= exercisePlaylist.length - 1) {
+
+            const points = (TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5;
+            const streak = userGameData.streak + 1;
+            const UserID = userData?._id || '';
+
+            axios.post(`${ngrokAPI}/updatePointAndStreak`, { UserID, points, streak })
+                .then(response => { console.log("Points and streak updated successfully:", response.data); })
+                .catch(error => {
+                    console.error("Error updating points and streak:", error);
+                })
+
+
             Alert.alert("Workout Complete!", "Great job!");
-            router.navigate('/(tabs)/home'); // Navigate to home or any other screen
-            // Here you might want to navigate away from the workout flow
+            // Navigate away or reset the state
+            return;
         }
+
+        // Transition to the REST state
+        setFlowState('REST');
     };
+
+    // Called from RestScreen
+    const handleRestComplete = () => {
+        // Move to the next exercise and back to the OVERVIEW state
+        setCurrentIndex(prev => prev + 1);
+        setFlowState('OVERVIEW');
+    };
+
+    // Called from WorkoutOverviewScreen
+    const handleStartExercise = () => {
+        setFlowState('EXERCISE');
+    };
+
+    const handleEnd = () => {
+        router.push('/(tabs)/home');
+    }
 
     const currentExercise = exercisePlaylist[currentIndex];
 
@@ -55,21 +91,43 @@ const ActiveWorkoutScreen = () => {
         );
     }
 
+    // Use a function to render the correct screen based on the flowState
+    const renderContent = () => {
+        switch (flowState) {
+            case 'OVERVIEW':
+                return (
+                    <WorkoutOverviewScreen
+                        exercise={currentExercise}
+                        onStart={handleStartExercise}
+                        onEnd={handleEnd}
+                        currentExerciseIndex={currentIndex}
+                        totalExercises={exercisePlaylist.length}
+                    />
+                );
+            case 'EXERCISE':
+                return (
+                    <WorkoutExerciseScreen
+                        exercise={currentExercise}
+                        onCompleteExercise={handleCompleteExercise}
+                        exercisePlaylist={exercisePlaylist}
+                        currentIndex={currentIndex}
+                    />
+                );
+            case 'REST':
+                return (
+                    <RestScreen
+                        duration={currentExercise.restBetweenSeconds}
+                        onRestComplete={handleRestComplete}
+                    />
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <View style={{ flex: 1 }}>
-            {isWorkoutActive ? (
-                <ExerciseScreen
-                    exercise={currentExercise}
-                    onCompleteExercise={handleCompleteExercise}
-                    exercisePlaylist={exercisePlaylist}
-                    currentIndex={currentIndex}
-                />
-            ) : (
-                <ExerciseOverview
-                    exercise={currentExercise}
-                    onStart={() => setIsWorkoutActive(true)}
-                />
-            )}
+            {renderContent()}
         </View>
     );
 };

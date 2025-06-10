@@ -10,18 +10,23 @@ import WorkoutCard from '@/components/WorkoutCard';
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData, warmup, workout} = useGlobal();
+    const {userWorkoutData, userData, warmup, workout, TodayWorkout} = useGlobal();
     const [currentDay, setCurrentDay] = useState('');
     const [workoutRoutine, setworkoutRoutine] = useState([])
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
+    const [points, setPoints] = useState(Number)
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 // Ensure the workout data exists and has the correct structure
                 const routineArray = userWorkoutData?.routine || [];
+                setPoints((TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5);
+            
 
+                
+                
                 // Get the current day
                 const today = new Date().toLocaleString("en-US", { weekday: "long" })
                 
@@ -68,7 +73,7 @@ const WorkoutOverview = () => {
                     <View style={{alignItems:'flex-end', flex:1}}>
                         <Text style={{fontFamily:'raleway-semibold', color:'white', fontSize:16}}>TOTAL XP:</Text>
                         <View style={{flexDirection:'row',  marginTop: 10}}>
-                            <Text style={{fontFamily:'raleway-semibold', color:'#8AFFF9', fontSize:24}}>+ 27</Text>
+                            <Text style={{fontFamily:'raleway-semibold', color:'#8AFFF9', fontSize:24}}>+ {points}</Text>
                             <Text style={{fontFamily:'raleway-semibold', color:'#8AFFF9', fontSize:13, marginTop: 10}}>  xp</Text>
                         </View>
                     </View>
@@ -92,13 +97,13 @@ const WorkoutOverview = () => {
 
                     />
                 <View style={{flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 38, marginTop: 60}}>
-                        <Text style={{fontFamily:'poppins-semibold', fontSize:20, color:'white'}}>Overview</Text>
+                        <Text style={{fontFamily:'poppins-semibold', fontSize:20, color:'white'}}>Overview: </Text>
                         <TouchableOpacity style={{alignItems:'center', justifyContent: 'flex-end'}}>
                             <Text>Hello</Text>
                         </TouchableOpacity>
                 </View>
-                <WorkoutCard workoutRoutine={warmup}/>
-                <WorkoutCard workoutRoutine={workout}/>
+                <WorkoutCard workoutRoutine={warmup} title='Warm-Up'/>
+                <WorkoutCard workoutRoutine={workout} title='Main Workout'/>
             </ScrollView>
         </LinearGradient>
     )

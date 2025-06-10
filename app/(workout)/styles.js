@@ -43,4 +43,39 @@ export const styles = StyleSheet.create({
     nextButtonText: { color: '#271293', fontSize: 20, fontFamily: 'poppins-bold' },
     nextButtonTextWorkout: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
     streakContainer: { alignItems: 'center', marginTop: 40 },
+    endButton: {
+        backgroundColor: '#C0C0C0', // A neutral color to differentiate from 'Start'
+        paddingHorizontal: 40,
+        paddingVertical: 15,
+        borderRadius: 30,
+        marginTop: 20, // Add some space between the buttons
+        alignSelf: 'center',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    endButtonText: {
+        color: '#000000',
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
+    progressBarContainer: {
+        height: 10,
+        width: '90%', // Make it slightly less than full width
+        backgroundColor: 'rgba(255, 255, 255, 0.3)', // A semi-transparent white
+        borderRadius: 5,
+        marginTop: 20, // Space from the top of the screen
+        alignSelf: 'center', // Center it
+        overflow: 'hidden', // Ensures the inner bar respects the border radius
+    },
+    progressBar: {
+        height: '100%',
+        backgroundColor: '#FFFFFF', // A solid white for the filled portion
+        borderRadius: 5,
+    },
 });

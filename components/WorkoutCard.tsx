@@ -9,11 +9,13 @@ interface Exercise {
 
 interface WorkoutCategoryCardProps {
   workoutRoutine: Exercise[];
+  title: string;
 }
 
-const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutine }) => {
+const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutine, title } ) => {
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>{title}</Text>
       {workoutRoutine.map((exercise, index) => (
         <View key={index} style={styles.card}>
           <View>
@@ -22,6 +24,10 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
           </View>
           <View style={styles.rewardBox}>
             <Text style={styles.rewardLabel}>REWARD:</Text>
+            <View style={{flexDirection:'row', alignItems:'center'}}>
+             <Text style={{fontFamily:'raleway-semibold', color:'#8AFFF9', fontSize:20}}>5 </Text>
+             <Text style={{fontFamily:'raleway-semibold', color:'#8AFFF9', fontSize:16}}>xp</Text>
+            </View>
           </View>
         </View>
       ))}
@@ -30,6 +36,13 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
 };
 
 const styles = StyleSheet.create({
+  title: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 20,
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
   container: {
     marginTop: 20,
     paddingHorizontal: 20,
@@ -43,8 +56,8 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#3B3C8C',
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -54,6 +67,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontFamily: 'poppins-semibold',
+    paddingRight:80
   },
   exerciseDetails: {
     color: '#C3C3C3',
@@ -63,6 +77,8 @@ const styles = StyleSheet.create({
   },
   rewardBox: {
     alignItems: 'flex-end',
+    marginLeft: -80,
+    
   },
   rewardLabel: {
     fontSize: 12,

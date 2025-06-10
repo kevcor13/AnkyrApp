@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video, ResizeMode } from 'expo-av';
 import { styles } from '@/app/(workout)/styles'; // Import styles
@@ -10,7 +10,7 @@ interface Exercise {
     phase: string;
     videoUrl: string;
     sets: number;
-    reps: number;
+    reps: String;
     // Add other properties as needed
 }
 
@@ -39,7 +39,8 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({ exercise, onCompleteExe
                 />
             </View>
             <LinearGradient colors={isWarmup ? ['#FF0509', '#271293'] : ['#A12287', '#1F059D']} style={styles.gradientContainer}>
-                <View style={styles.workoutCard}>
+                
+                <ScrollView style={styles.workoutCard}>
                     <Text style={styles.exerciseNameMain}>{exercise.exercise}</Text>
                     <View style={styles.repsContainer}>
                         <Text style={styles.repsSetsMain}>{exercise.sets} x {exercise.reps}</Text>
@@ -57,7 +58,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({ exercise, onCompleteExe
                     <View style={styles.streakContainer}>
                         <Image source={icons.blueStreak} />
                     </View>
-                </View>
+                </ScrollView>
             </LinearGradient>
         </View>
     );
