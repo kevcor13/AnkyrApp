@@ -15,11 +15,13 @@ import { Ionicons } from "@expo/vector-icons";
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI,TodayWorkout} = useGlobal()
+    const { userData, userGameData, ngrokAPI, TodayWorkout } = useGlobal()
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [currentDay, setCurrentDay] = useState('')
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const [isWorkoutAllowed, setIsWorkoutAllowed] = useState(false);
     const [workoutRoutine, setWorkoutRoutine] = useState([])
     const [todayWorkout, setTodayWorkout] = useState(null); // State for today's workout
 
@@ -27,7 +29,8 @@ const ChallengesPage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                
+                console.log(userData.lastWorkoutCompletionDate);
+
                 setWorkoutRoutine(TodayWorkout);
                 const today = new Date().toLocaleString("en-US", { weekday: "long" });
                 setCurrentDay(today);
@@ -43,29 +46,52 @@ const ChallengesPage: React.FC = () => {
         fetchData();
     }, [userData]);
 
+    useEffect(() => {
+        // This effect checks permission to do the workout
+        if (userData) {
+            const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionData, new Date());
+            setIsWorkoutAllowed(!alreadyDoneToday);
+            setIsLoading(false);
+        } else {
+            // If userData is not loaded yet, wait. If it's missing, default to not allowed.
+            setIsLoading(true);
+        }
+    }, [userData]);
+
     const press = (name: any) => {
 
     }
+    const isSameDay = (date1: string | number | Date, date2: string | number | Date) => {
+        // If the first date is null, undefined, or doesn't exist, it's not the same day.
+        if (!date1 || !date2) return false;
+
+        const d1 = new Date(date1);
+        const d2 = new Date(date2);
+
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    };
 
     const showInfo = () => {
         //console.log(userGameData);
         const entry = {
-            name: "Barbell Deadlift", 
-            description:"Lift a loaded barbell from the floor to a standing position, keeping your back straight.",
-            videoUrl: "https://example.com/videos/deadlift.mp4", 
-            category: "Back", 
+            name: "Barbell Deadlift",
+            description: "Lift a loaded barbell from the floor to a standing position, keeping your back straight.",
+            videoUrl: "https://example.com/videos/deadlift.mp4",
+            category: "Back",
             equipment: ["Barbell", "Weight Plates"],
-            difficulty: "Advanced", 
-            recommendedSets: "3-5", 
-            recommendedReps: "3-6", 
-            isWarmupExercise: false, 
-            isCooldownExercise: false, 
+            difficulty: "Advanced",
+            recommendedSets: "3-5",
+            recommendedReps: "3-6",
+            isWarmupExercise: false,
+            isCooldownExercise: false,
             tags: ["compound", "strength"]
         }
-        
+
         axios.post(`${ngrokAPI}/test/add-exercise`, entry)
         console.log("test ran");
-        
+
 
     }
 
@@ -86,24 +112,30 @@ const ChallengesPage: React.FC = () => {
                     </View>
                     <Text style={styles.subtitle}>{focus}</Text>
                     <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
-                    <CustomButton
-                        title="My workout"
-                        handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
-                        buttonStyle={{
-                            backgroundColor: 'rgba(217, 217, 217, 0.5)',
-                            borderRadius: 20,
-                            paddingVertical: 16,
-                            paddingHorizontal: 32,
-                            marginTop: 10,
-                            justifyContent: "center"
-                        }}
-                        textStyle={{
-                            color: '#FFFFFF',
-                            fontSize: 16,
-                            fontFamily: 'poppins-semiBold'
-                        }}
+                    {!isWorkoutAllowed ? (
+                        <Text style={{ color: '#FF0000', fontFamily: 'poppins-semiBold', fontSize: 16, marginTop: 10 }}>
+                            You have already completed your workout for today.
+                        </Text>
+                    ) : (
+                        <CustomButton
+                            title="My workout"
+                            handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
+                            buttonStyle={{
+                                backgroundColor: 'rgba(217, 217, 217, 0.5)',
+                                borderRadius: 20,
+                                paddingVertical: 16,
+                                paddingHorizontal: 32,
+                                marginTop: 10,
+                                justifyContent: "center"
+                            }}
+                            textStyle={{
+                                color: '#FFFFFF',
+                                fontSize: 16,
+                                fontFamily: 'poppins-semiBold'
+                            }}
 
-                    />
+                        />
+                    )}
                 </View>
                 <CalendarSelector onSelect={(date) => {
                     console.log("Selected date:", date);
@@ -126,7 +158,7 @@ const ChallengesPage: React.FC = () => {
                     <View style={styles.block}>
                         <View style={{ flexDirection: 'row' }}>
                             <Text style={styles.header}>My xp:</Text>
-                             {/* XP 
+                            {/* XP 
                             <TouchableOpacity onPress={() => setShowInfoModal(true)} style={{ marginLeft: 80, height: 20, width: 20 }}>
                                 <Image source={icons.infoIcon} />
                             </TouchableOpacity>
@@ -178,7 +210,7 @@ const ChallengesPage: React.FC = () => {
                         shadowRadius: 10,
                     }}>
                         <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 }} onPress={() => setShowInfoModal(false)}>
-                            <Image source={icons.x} className="w-10 h-10"/>
+                            <Image source={icons.x} className="w-10 h-10" />
                         </TouchableOpacity>
                         <Text style={{
                             fontSize: 20,
@@ -194,7 +226,7 @@ const ChallengesPage: React.FC = () => {
                         </Text>
                         <Text style={{ color: 'black', fontFamily: 'poppins-medium', marginTop: 10 }}>
                             You can also earn xp by completing challenges and participating in events.</Text>
-                        <Text style={{ color: '#5D9A97', fontFamily: 'poppins', fontWeight: 'bold', marginTop: 10, paddingTop:20, textAlign:'center', fontSize:27, paddingHorizontal: 30, lineHeight: 16.2}}>GO GET MORE XP!</Text>
+                        <Text style={{ color: '#5D9A97', fontFamily: 'poppins', fontWeight: 'bold', marginTop: 10, paddingTop: 20, textAlign: 'center', fontSize: 27, paddingHorizontal: 30, lineHeight: 16.2 }}>GO GET MORE XP!</Text>
                     </View>
                 </View>
             </Modal>
@@ -216,7 +248,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontStyle: 'italic',
         fontSize: 28,
-        marginTop:0
+        marginTop: 0
     },
     title: {
         fontSize: 55,

@@ -25,9 +25,13 @@ import pilot from "@/assets/Leagues/Pilot.png"
 import Private from "@/assets/Leagues/Private.png"
 import skipper from "@/assets/Leagues/Skipper.png"
 import titan from "@/assets/Leagues/Titan.png"
+import spotify from "@/assets/images/spotifyLogo.png"
+import appleMusic from "@/assets/images/AppleMusicLogo.png"
 
 export default {
     aperture,
+    spotify,
+    appleMusic,
     followButton,
     ProfileImage,
     send,

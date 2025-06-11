@@ -5,7 +5,7 @@ import { useGlobal } from '@/context/GlobalProvider';
 import WorkoutOverviewScreen from '@/app/(components)/workout/ExerciseOverview';
 import WorkoutExerciseScreen from '@/app/(components)/workout/ExerciseScreen';
 import RestScreen from '@/app/(components)/workout/RestScreen'; // Import the new RestScreen
-import { styles } from './styles';
+import { styles } from '@/constants/styles';
 import axios from 'axios';
 import { router } from 'expo-router';
 
@@ -45,7 +45,7 @@ const ActiveWorkoutScreen = () => {
         // Check if it's the last exercise
         if (currentIndex >= exercisePlaylist.length - 1) {
 
-            const points = (TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5;
+            const points = userGameData.points + ((TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5);
             const streak = userGameData.streak + 1;
             const UserID = userData?._id || '';
 
@@ -54,82 +54,87 @@ const ActiveWorkoutScreen = () => {
                 .catch(error => {
                     console.error("Error updating points and streak:", error);
                 })
+            axios.post(`${ngrokAPI}/recordWorkoutCompletion`,  {UserID} )
+                .then(response => {
+                    console.log("Workout completion recorded successfully:", response.data)})
+                        .catch(error => {
+                            console.error("Error updating workoutcompletion", error);
+                        })
 
+                    Alert.alert("Workout Complete!", "Great job!");
+                    // Navigate away or reset the state
+                    return;
+                }
 
-            Alert.alert("Workout Complete!", "Great job!");
-            // Navigate away or reset the state
-            return;
+// Transition to the REST state
+setFlowState('REST');
+        };
+
+        // Called from RestScreen
+        const handleRestComplete = () => {
+            // Move to the next exercise and back to the OVERVIEW state
+            setCurrentIndex(prev => prev + 1);
+            setFlowState('OVERVIEW');
+        };
+
+        // Called from WorkoutOverviewScreen
+        const handleStartExercise = () => {
+            setFlowState('EXERCISE');
+        };
+
+        const handleEnd = () => {
+            router.push('/(tabs)/home');
         }
 
-        // Transition to the REST state
-        setFlowState('REST');
-    };
+        const currentExercise = exercisePlaylist[currentIndex];
 
-    // Called from RestScreen
-    const handleRestComplete = () => {
-        // Move to the next exercise and back to the OVERVIEW state
-        setCurrentIndex(prev => prev + 1);
-        setFlowState('OVERVIEW');
-    };
+        if (!currentExercise) {
+            return (
+                <LinearGradient colors={['#FF0509', '#271293']} style={styles.loadingContainer}>
+                    <Text style={styles.loadingText}>Loading Workout...</Text>
+                </LinearGradient>
+            );
+        }
 
-    // Called from WorkoutOverviewScreen
-    const handleStartExercise = () => {
-        setFlowState('EXERCISE');
-    };
+        // Use a function to render the correct screen based on the flowState
+        const renderContent = () => {
+            switch (flowState) {
+                case 'OVERVIEW':
+                    return (
+                        <WorkoutOverviewScreen
+                            exercise={currentExercise}
+                            onStart={handleStartExercise}
+                            onEnd={handleEnd}
+                            currentExerciseIndex={currentIndex}
+                            totalExercises={exercisePlaylist.length}
+                        />
+                    );
+                case 'EXERCISE':
+                    return (
+                        <WorkoutExerciseScreen
+                            exercise={currentExercise}
+                            onCompleteExercise={handleCompleteExercise}
+                            exercisePlaylist={exercisePlaylist}
+                            currentIndex={currentIndex}
+                        />
+                    );
+                case 'REST':
+                    return (
+                        <RestScreen
+                            duration={currentExercise.restBetweenSeconds}
+                            onRestComplete={handleRestComplete}
+                        />
+                    );
+                default:
+                    return null;
+            }
+        };
 
-    const handleEnd = () => {
-        router.push('/(tabs)/home');
-    }
-
-    const currentExercise = exercisePlaylist[currentIndex];
-
-    if (!currentExercise) {
         return (
-            <LinearGradient colors={['#FF0509', '#271293']} style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading Workout...</Text>
-            </LinearGradient>
+            <View style={{ flex: 1 }}>
+                {renderContent()}
+            </View>
         );
-    }
-
-    // Use a function to render the correct screen based on the flowState
-    const renderContent = () => {
-        switch (flowState) {
-            case 'OVERVIEW':
-                return (
-                    <WorkoutOverviewScreen
-                        exercise={currentExercise}
-                        onStart={handleStartExercise}
-                        onEnd={handleEnd}
-                        currentExerciseIndex={currentIndex}
-                        totalExercises={exercisePlaylist.length}
-                    />
-                );
-            case 'EXERCISE':
-                return (
-                    <WorkoutExerciseScreen
-                        exercise={currentExercise}
-                        onCompleteExercise={handleCompleteExercise}
-                        exercisePlaylist={exercisePlaylist}
-                        currentIndex={currentIndex}
-                    />
-                );
-            case 'REST':
-                return (
-                    <RestScreen
-                        duration={currentExercise.restBetweenSeconds}
-                        onRestComplete={handleRestComplete}
-                    />
-                );
-            default:
-                return null;
-        }
     };
 
-    return (
-        <View style={{ flex: 1 }}>
-            {renderContent()}
-        </View>
-    );
-};
-
-export default ActiveWorkoutScreen;
+    export default ActiveWorkoutScreen;

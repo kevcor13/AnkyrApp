@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video, ResizeMode } from 'expo-av';
-import { styles } from '@/app/(workout)/styles'; // Import styles
+import { styles } from '@/constants/styles'; // Import styles
 import icons from "@/constants/icons";
 
 interface Exercise {

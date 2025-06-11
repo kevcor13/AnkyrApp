@@ -114,7 +114,7 @@ const Home = () => {
             </View>
             <View style={styles.iconsContainer}>
                 <View className="items-center">
-                    <TouchableOpacity className="p-6 rounded-full bg-white">
+                    <TouchableOpacity className="p-6 rounded-full bg-white" onPress={() => router.navigate("/(components)/Playlist")}>
                         <Image source={icons.headphonesIcon} className="w-8 h-8"/>
                     </TouchableOpacity>
                     <Text className="text-white font-poppins-semibold mt-4 text-center text-lg">Playlist</Text>

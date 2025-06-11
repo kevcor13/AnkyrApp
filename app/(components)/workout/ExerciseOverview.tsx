@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, Animated, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { styles } from '@/app/(workout)/styles'; // Import styles
+import { styles } from '@/constants/styles'; // Import styles
 import icons from "@/constants/icons";
 
 interface Exercise {
