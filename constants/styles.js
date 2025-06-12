@@ -66,10 +66,12 @@ export const styles = StyleSheet.create({
     },
     progressBarContainer: {
         height: 10,
-        width: '90%', // Make it slightly less than full width
+        width: '60%', // Make it slightly less than full width
         backgroundColor: 'rgba(255, 255, 255, 0.3)', // A semi-transparent white
         borderRadius: 5,
-        marginTop: 80, // Space from the top of the screen
+        marginTop: 40, // Space from the top of the screen
+        marginLeft: 30,
+        marginRight: 30,
         alignSelf: 'center', // Center it
         overflow: 'hidden', // Ensures the inner bar respects the border radius
     },

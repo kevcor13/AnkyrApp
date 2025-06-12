@@ -18,10 +18,11 @@ import x from "@/assets/icons/X.png"
 import zap from "@/assets/icons/Zap.png"
 import infoIcon from "@/assets/icons/informationIcon.png"
 import blueStreak from "@/assets/icons/BlueStreakIcon.png"
-
+import halfArrow from "@/assets/icons/halfArrowLeft.png"
 export default {
     headphonesIcon,
     infoIcon,
+    halfArrow,
     blueStreak,
     x,
     deniedIcon,

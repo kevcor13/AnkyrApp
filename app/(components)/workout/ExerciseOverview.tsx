@@ -79,8 +79,17 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
     return (
         <LinearGradient colors={['#FF0509', '#271293']} style={styles.overviewContainer}>
             {/* Progress Bar */}
+
+            <View style={{flexDirection: 'row', marginTop: 40}}>
+            <TouchableOpacity style={{ marginLeft: 40, marginTop: 30, backgroundColor: 'rgba(217,217, 217, 0.27)', justifyContent: 'center', alignItems: 'center', borderRadius:'100%', height:45, width:45}}>
+                <Image source={icons.halfArrow} style={{height:24, width:24}}/>
+            </TouchableOpacity>
             <View style={styles.progressBarContainer}>
                 <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
+            </View>
+            <TouchableOpacity style={{marginTop:40, backgroundColor: 'rgba(217,217, 217, 0.27)', justifyContent: 'center', alignItems: 'center', borderRadius:'100%', height:45, width:45}}>
+                <Image source={icons.halfArrow} style={{height:24, width:24}}/>
+            </TouchableOpacity>
             </View>
             <View style={{justifyContent:'center', marginTop: 200}}>
             <Animated.View style={{ transform: [{ translateX: slideAnim1 }] }}>
