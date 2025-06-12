@@ -175,6 +175,7 @@ const ChallengesPage: React.FC = () => {
                     </View>
                 </View>
                 <View style={styles.container2}>
+                
                     <TouchableOpacity style={{ flexDirection: 'row' }}
                         onPress={() => setLeagueOpen(!leagueOpen)}
                     >

@@ -19,6 +19,7 @@
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
     "axios": "^1.9.0",
+    "d3-shape": "^3.2.0",
     "expo": "~53.0.9",
     "expo-av": "^15.1.4",
     "expo-blur": "~14.1.4",
@@ -47,13 +48,18 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-storage": "^1.0.1",
+    "react-native-svg": "^7.2.1",
+    "react-native-svg-charts": "^5.4.0",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.1.7",
     "@types/react": "~19.0.10",
+    "@types/react-native-svg-charts": "^5.0.16",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "typescript": "~5.8.3"
