@@ -82,7 +82,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
             <View style={styles.progressBarContainer}>
                 <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
             </View>
-
+            <View style={{justifyContent:'center', marginTop: 200}}>
             <Animated.View style={{ transform: [{ translateX: slideAnim1 }] }}>
                 <Text style={styles.overviewTitle}>{exercise.exercise}</Text>
             </Animated.View>
@@ -104,7 +104,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
                     <Text style={styles.endButtonText}>End</Text>
                 </TouchableOpacity>
             </Animated.View>
-
+            </View>
             <View style={styles.streakContainer}>
                 <Image style={{ margin: 20 }} source={icons.blueStreak} />
             </View>

@@ -49,7 +49,7 @@ const ChallengesPage: React.FC = () => {
     useEffect(() => {
         // This effect checks permission to do the workout
         if (userData) {
-            const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionData, new Date());
+            const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionDate, new Date());
             setIsWorkoutAllowed(!alreadyDoneToday);
             setIsLoading(false);
         } else {

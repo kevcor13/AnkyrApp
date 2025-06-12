@@ -7,8 +7,8 @@ export const styles = StyleSheet.create({
     gradientContainer: { flex: 1, borderRadius: 20, marginTop: -15, overflow: 'hidden' },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { color: 'white', fontSize: 22, fontFamily: 'poppins-semibold' },
-    overviewContainer: { flex: 1, justifyContent: 'center' },
-    overviewTitle: { color: 'white', fontSize: 40, fontFamily: 'poppins-bold', marginHorizontal: 20 },
+    overviewContainer: { flex:1 },
+    overviewTitle: { color: 'white', fontSize: 40, fontFamily: 'poppins-bold', marginHorizontal: 20, alignContent:'center'},
     repsText: { color: '#8AFFF9', fontSize: 40, fontFamily: 'poppins-semibold', marginHorizontal: 20, marginTop: 10, marginBottom: 20 },
     header: {
         width: '100%',
@@ -69,7 +69,7 @@ export const styles = StyleSheet.create({
         width: '90%', // Make it slightly less than full width
         backgroundColor: 'rgba(255, 255, 255, 0.3)', // A semi-transparent white
         borderRadius: 5,
-        marginTop: 20, // Space from the top of the screen
+        marginTop: 80, // Space from the top of the screen
         alignSelf: 'center', // Center it
         overflow: 'hidden', // Ensures the inner bar respects the border radius
     },
