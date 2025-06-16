@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
     },
     nextButtonText: { color: '#271293', fontSize: 20, fontFamily: 'poppins-bold' },
     nextButtonTextWorkout: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
-    streakContainer: { alignItems: 'center', marginTop: 40 },
+    streakContainer: { alignItems: 'center', marginTop: 200 },
     endButton: {
         backgroundColor: '#C0C0C0', // A neutral color to differentiate from 'Start'
         paddingHorizontal: 40,
@@ -69,9 +69,8 @@ export const styles = StyleSheet.create({
         width: '60%', // Make it slightly less than full width
         backgroundColor: 'rgba(255, 255, 255, 0.3)', // A semi-transparent white
         borderRadius: 5,
-        marginTop: 40, // Space from the top of the screen
-        marginLeft: 30,
-        marginRight: 30,
+        marginLeft: 20,
+        marginRight: 20,
         alignSelf: 'center', // Center it
         overflow: 'hidden', // Ensures the inner bar respects the border radius
     },

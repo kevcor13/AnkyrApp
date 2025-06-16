@@ -1,140 +1,199 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useGlobal } from '@/context/GlobalProvider';
-import WorkoutOverviewScreen from '@/app/(components)/workout/ExerciseOverview';
-import WorkoutExerciseScreen from '@/app/(components)/workout/ExerciseScreen';
-import RestScreen from '@/app/(components)/workout/RestScreen'; // Import the new RestScreen
-import { styles } from '@/constants/styles';
-import axios from 'axios';
-import { router } from 'expo-router';
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, Alert } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useGlobal } from "@/context/GlobalProvider";
+import WorkoutOverviewScreen from "@/app/(components)/workout/ExerciseOverview";
+import WorkoutExerciseScreen from "@/app/(components)/workout/ExerciseScreen";
+import RestScreen from "@/app/(components)/workout/RestScreen"; // Using your existing RestScreen
+import { styles as globalStyles } from "@/constants/styles";
+import axios from "axios";
+import { router } from "expo-router";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export interface Exercise {
-    difficulty: string;
-    exercise: string;
-    reps: string;
-    sets: number;
-    videoUrl: string;
-    phase: 'warmup' | 'workout';
-    restBetweenSeconds: number; // Ensure this is here
+export interface PerformedSet {
+  reps: number;
+  weight: number;
 }
 
-// Define the possible states for our workout flow
-type FlowState = 'OVERVIEW' | 'EXERCISE' | 'REST';
+export interface Exercise {
+  difficulty: string;
+  exercise: string;
+  reps: string;
+  sets: number;
+  videoUrl: string;
+  phase: "warmup" | "workout";
+  restBetweenSeconds: number;
+  recommendedWeight: number;
+  performedSets: PerformedSet[];
+}
+
+// Expanded flow state to handle inter-set rests
+type FlowState = "OVERVIEW" | "EXERCISE" | "INTER_SET_REST" | "POST_EXERCISE_REST";
 
 const ActiveWorkoutScreen = () => {
     const { warmup, workout, userGameData, userData, ngrokAPI, TodayWorkout } = useGlobal();
-    const [exercisePlaylist, setExercisePlaylist] = useState<Exercise[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    // New state to manage the flow, starting with the overview
-    const [flowState, setFlowState] = useState<FlowState>('OVERVIEW');
+    const [liveWorkout, setLiveWorkout] = useState<Exercise[] | null>(null);
+    const [exerciseIndex, setExerciseIndex] = useState(0); // Tracks which EXERCISE we're on
+    const [currentSetIndex, setCurrentSetIndex] = useState(0); // Tracks which SET we're on
+    const [flowState, setFlowState] = useState<FlowState>("OVERVIEW");
+    const [isFinishing, setIsFinishing] = useState(false);
 
+    // useEffect for initializing the workout state
     useEffect(() => {
-        const taggedWarmup = (warmup || []).map((ex: any) => ({ ...ex, phase: 'warmup' as const, restBetweenSeconds: ex.restBetweenSeconds || 30 }));
-        const taggedWorkout = (workout || []).map((ex: any) => ({ ...ex, phase: 'workout' as const, restBetweenSeconds: ex.restBetweenSeconds || 60 }));
+        const taggedWarmup = (warmup || []).map((ex: any) => ({ ...ex, phase: "warmup" as const }));
+        const taggedWorkout = (workout || []).map((ex: any) => ({ ...ex, phase: "workout" as const }));
         const combinedPlaylist = [...taggedWarmup, ...taggedWorkout];
-
         if (combinedPlaylist.length > 0) {
-            setExercisePlaylist(combinedPlaylist);
-            setCurrentIndex(0);
+            const workoutSession = combinedPlaylist.map(exercise => ({
+                ...exercise,
+                restBetweenSeconds: exercise.restBetweenSeconds || (exercise.phase === 'warmup' ? 30 : 60),
+                performedSets: Array(exercise.sets).fill(null).map(() => ({
+                    reps: parseInt(exercise.reps.split('-')[0], 10) || 8,
+                    weight: -1 // Use -1 as a sentinel for "not yet set"
+                }))
+            }));
+            setLiveWorkout(workoutSession);
+            setExerciseIndex(0);
+            setCurrentSetIndex(0);
         }
     }, [warmup, workout]);
 
-    // Called from WorkoutExerciseScreen
-    const handleCompleteExercise = () => {
-        // Check if it's the last exercise
-        if (currentIndex >= exercisePlaylist.length - 1) {
-
-            const points = userGameData.points + ((TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5);
-            const streak = userGameData.streak + 1;
-            const UserID = userData?._id || '';
-
-            axios.post(`${ngrokAPI}/updatePointAndStreak`, { UserID, points, streak })
-                .then(response => { console.log("Points and streak updated successfully:", response.data); })
-                .catch(error => {
-                    console.error("Error updating points and streak:", error);
-                })
-            axios.post(`${ngrokAPI}/recordWorkoutCompletion`,  {UserID} )
-                .then(response => {
-                    console.log("Workout completion recorded successfully:", response.data)})
-                        .catch(error => {
-                            console.error("Error updating workoutcompletion", error);
-                        })
-
-                    Alert.alert("Workout Complete!", "Great job!");
-                    // Navigate away or reset the state
-                    return;
-                }
-
-// Transition to the REST state
-setFlowState('REST');
-        };
-
-        // Called from RestScreen
-        const handleRestComplete = () => {
-            // Move to the next exercise and back to the OVERVIEW state
-            setCurrentIndex(prev => prev + 1);
-            setFlowState('OVERVIEW');
-        };
-
-        // Called from WorkoutOverviewScreen
-        const handleStartExercise = () => {
-            setFlowState('EXERCISE');
-        };
-
-        const handleEnd = () => {
-            router.push('/(tabs)/home');
-        }
-
-        const currentExercise = exercisePlaylist[currentIndex];
-
-        if (!currentExercise) {
-            return (
-                <LinearGradient colors={['#FF0509', '#271293']} style={styles.loadingContainer}>
-                    <Text style={styles.loadingText}>Loading Workout...</Text>
-                </LinearGradient>
-            );
-        }
-
-        // Use a function to render the correct screen based on the flowState
-        const renderContent = () => {
-            switch (flowState) {
-                case 'OVERVIEW':
-                    return (
-                        <WorkoutOverviewScreen
-                            exercise={currentExercise}
-                            onStart={handleStartExercise}
-                            onEnd={handleEnd}
-                            currentExerciseIndex={currentIndex}
-                            totalExercises={exercisePlaylist.length}
-                        />
-                    );
-                case 'EXERCISE':
-                    return (
-                        <WorkoutExerciseScreen
-                            exercise={currentExercise}
-                            onCompleteExercise={handleCompleteExercise}
-                            exercisePlaylist={exercisePlaylist}
-                            currentIndex={currentIndex}
-                        />
-                    );
-                case 'REST':
-                    return (
-                        <RestScreen
-                            duration={currentExercise.restBetweenSeconds}
-                            onRestComplete={handleRestComplete}
-                        />
-                    );
-                default:
-                    return null;
-            }
-        };
-
-        return (
-            <View style={{ flex: 1 }}>
-                {renderContent()}
-            </View>
-        );
+    // This handler updates the weight in our state
+    const handleSetUpdate = (exIndex: number, setIdx: number, weight: number) => {
+        setLiveWorkout(currentWorkout => {
+            if (!currentWorkout) return null;
+            const updatedWorkout = JSON.parse(JSON.stringify(currentWorkout));
+            updatedWorkout[exIndex].performedSets[setIdx].weight = weight;
+            return updatedWorkout;
+        });
     };
 
-    export default ActiveWorkoutScreen;
+    // This function is called every time a set is logged
+    const handleSetLogged = () => {
+        if (!liveWorkout) return;
+        const totalSetsForExercise = liveWorkout[exerciseIndex].sets;
+
+        if (currentSetIndex >= totalSetsForExercise - 1) {
+            if (exerciseIndex >= liveWorkout.length - 1) {
+                handleFinishWorkout();
+            } else {
+                setFlowState("POST_EXERCISE_REST");
+            }
+        } else {
+            setFlowState("INTER_SET_REST");
+        }
+    };
+
+    // Called when the rest BETWEEN SETS is done
+    const handleInterSetRestComplete = () => {
+        setCurrentSetIndex(prev => prev + 1);
+        setFlowState("EXERCISE");
+    };
+
+    // Called when the rest BETWEEN EXERCISES is done
+    const handlePostExerciseRestComplete = () => {
+        setExerciseIndex(prev => prev + 1);
+        setCurrentSetIndex(0);
+        setFlowState("OVERVIEW");
+    };
+
+    // This function now contains the full API logic
+    const handleFinishWorkout = async () => {
+        if (!liveWorkout || isFinishing) return;
+        setIsFinishing(true);
+
+        const UserID = userData._id;
+        if (!UserID) {
+            Alert.alert("Error", "Could not identify user. Please log in again.");
+            setIsFinishing(false);
+            return;
+        }
+
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+
+            const workoutLogPayload = {
+                userId: UserID,
+                workoutName: TodayWorkout?.focus || "Completed Workout",
+                durationSeconds: 3600, // Placeholder
+                exercises: liveWorkout.map(ex => ({
+                    name: ex.exercise,
+                    sets: ex.performedSets.filter(set => set.weight >= 0).map(s => ({
+                        reps: s.reps,
+                        weight: s.weight
+                    }))
+                })).filter(ex => ex.sets.length > 0)
+            };
+            
+            // --- API CALLS ---
+            await axios.post(`${ngrokAPI}/logWorkout`, workoutLogPayload);
+            console.log("Workout log saved successfully.");
+
+            const points = (userGameData?.points || 0) + (liveWorkout.length * 5);
+            const streak = (userGameData?.streak || 0) + 1;
+            await axios.post(`${ngrokAPI}/updatePointAndStreak`, { UserID, points, streak });
+            console.log("Points and streak updated.");
+
+            await axios.post(`${ngrokAPI}/recordWorkoutCompletion`, {UserID} );
+            console.log("Workout completion recorded.");
+            // --- END API CALLS ---
+
+            Alert.alert("Workout Complete!", "Great job! Your progress has been saved.");
+            router.replace("/(tabs)/home");
+
+        } catch (error) {
+            Alert.alert("Error", "There was a problem saving your workout.");
+        } finally {
+            setIsFinishing(false);
+        }
+    };
+
+    const handleStartExercise = () => setFlowState("EXERCISE");
+    const handleEnd = () => router.push("/(tabs)/home");
+
+    if (!liveWorkout) {
+        return <LinearGradient colors={["#FF0509", "#271293"]} style={globalStyles.loadingContainer}><Text style={{color: 'white', fontSize: 22}}>Loading...</Text></LinearGradient>;
+    }
+    
+    const currentExercise = liveWorkout[exerciseIndex];
+
+    const renderContent = () => {
+        switch (flowState) {
+            case "OVERVIEW":
+                return <WorkoutOverviewScreen exercise={currentExercise} onStart={handleStartExercise} onEnd={handleEnd} currentExerciseIndex={exerciseIndex} totalExercises={liveWorkout.length} />;
+            
+            case "EXERCISE":
+                return (
+                    <WorkoutExerciseScreen
+                        exercise={currentExercise}
+                        exerciseIndex={exerciseIndex}
+                        currentSetIndex={currentSetIndex}
+                        onSetUpdate={handleSetUpdate}
+                        onSetLogged={handleSetLogged}
+                    />
+                );
+            
+            case "INTER_SET_REST":
+                return (
+                    <RestScreen
+                        duration={currentExercise.restBetweenSeconds}
+                        onRestComplete={handleInterSetRestComplete}
+                    />
+                );
+            
+            case "POST_EXERCISE_REST":
+                return (
+                    <RestScreen
+                        duration={currentExercise.restBetweenSeconds + 30} // Example: longer rest between exercises
+                        onRestComplete={handlePostExerciseRestComplete}
+                    />
+                );
+
+            default: return null;
+        }
+    };
+
+    return <View style={{ flex: 1 }}>{renderContent()}</View>;
+};
+
+export default ActiveWorkoutScreen;

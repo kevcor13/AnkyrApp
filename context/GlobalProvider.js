@@ -120,7 +120,7 @@ const GlobalProvider = ({ children }) => {
         try {
             // Get token for potential server-side logout
             const token = await AsyncStorage.getItem("token");
-           // await AsyncStorage.setItem("isLoggedIn", "false");
+            await AsyncStorage.setItem("isLoggedIn", "false");
            console.log("signing out");
             // Reset all state variables
             setIsLoggedIn(false);
