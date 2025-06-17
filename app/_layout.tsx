@@ -14,9 +14,11 @@ const RootLayout = () => {
         "Poppins-SemiBold": require('../assets/fonts/Poppins-SemiBold.ttf'),
         "Poppins-Medium": require('../assets/fonts/Poppins-Medium.ttf'),
         "Poppins-Light": require('../assets/fonts/Poppins-Light.ttf'),
+        "Poppins-BoldItalic": require('../assets/fonts/Poppins-BoldItalic.ttf'),
         Quicksand: require('../assets/fonts/Quicksand-static/Quicksand-Regular.ttf'),
         Raleway: require('../assets/fonts/Raleway-Regular.ttf'),
         "Raleway-Semibold": require('../assets/fonts/Raleway-static/Raleway-SemiBold.ttf'),
+        "Raleway-Light": require('../assets/fonts/Raleway-static/Raleway-Light.ttf'),
         Sintony: require('../assets/fonts/Sintony-Regular.ttf'),
         "Sintony-Bold": require('../assets/fonts/Sintony-Bold.ttf'),
     });

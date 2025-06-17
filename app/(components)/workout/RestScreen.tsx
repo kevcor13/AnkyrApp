@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import icons from "@/constants/icons";
 import { router } from "expo-router";
+import { styles as globalStyles } from "@/constants/styles";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -116,10 +117,15 @@ const RestScreen: React.FC<RestScreenProps> = ({
       )}
 
       {!isRestFinished && (
+        <View style={{ alignItems: "center", marginTop: 40 }}>
         <TouchableOpacity style={styles.skipButton} onPress={onRestComplete}>
-          <Text style={styles.skipButtonText}>SKIP</Text>
+          <Image source={icons.skipButton}/>
         </TouchableOpacity>
+        </View>
       )}
+      <View style={styles.streakContainer}>
+        <Image source={icons.blueStreak} />
+      </View>
     </LinearGradient>
   );
 };
@@ -139,7 +145,8 @@ const styles = StyleSheet.create({
     borderRadius: 22.5,
   },
   title: {
-    fontFamily: "poppins-bold",
+    fontFamily: "poppins-BoldItalic",
+    fontStyle: "italic",
     fontSize: 40,
     marginTop: 100,
     color: "white",
@@ -165,13 +172,13 @@ const styles = StyleSheet.create({
     fontFamily: "poppins-bold",
   },
   skipButton: {
-    //marginTop: 40,
-    paddingVertical: 10,
-    paddingHorizontal: 35,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.8)",
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    width: 70,
+    height: 70,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 40,
   },
   skipButtonText: {
     color: "rgba(255, 255, 255, 0.9)",
@@ -190,6 +197,10 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: "#FFFFFF",
     borderRadius: 5,
+  },
+  streakContainer: {
+    alignItems: "center",
+    marginTop: 60,
   },
 });
 

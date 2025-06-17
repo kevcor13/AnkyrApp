@@ -31,7 +31,7 @@ export interface Exercise {
 type FlowState = "OVERVIEW" | "EXERCISE" | "INTER_SET_REST" | "POST_EXERCISE_REST";
 
 const ActiveWorkoutScreen = () => {
-    const { warmup, workout, userGameData, userData, ngrokAPI, TodayWorkout } = useGlobal();
+    const { warmup, workout, userGameData, userData, ngrokAPI, TodayWorkout, coolDown } = useGlobal();
     const [liveWorkout, setLiveWorkout] = useState<Exercise[] | null>(null);
     const [exerciseIndex, setExerciseIndex] = useState(0); // Tracks which EXERCISE we're on
     const [currentSetIndex, setCurrentSetIndex] = useState(0); // Tracks which SET we're on
@@ -40,18 +40,23 @@ const ActiveWorkoutScreen = () => {
 
     // useEffect for initializing the workout state
     useEffect(() => {
+
+        
         const taggedWarmup = (warmup || []).map((ex: any) => ({ ...ex, phase: "warmup" as const }));
         const taggedWorkout = (workout || []).map((ex: any) => ({ ...ex, phase: "workout" as const }));
-        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout];
+        const taggedCoolDown = (coolDown || []).map((ex: any) => ({ ...ex, phase: "cooldown" as const }));
+        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout, ...taggedCoolDown];
         if (combinedPlaylist.length > 0) {
             const workoutSession = combinedPlaylist.map(exercise => ({
                 ...exercise,
+                recommendedWeight: exercise.recommendedWeight,
                 restBetweenSeconds: exercise.restBetweenSeconds || (exercise.phase === 'warmup' ? 30 : 60),
                 performedSets: Array(exercise.sets).fill(null).map(() => ({
                     reps: parseInt(exercise.reps.split('-')[0], 10) || 8,
                     weight: -1 // Use -1 as a sentinel for "not yet set"
                 }))
             }));
+
             setLiveWorkout(workoutSession);
             setExerciseIndex(0);
             setCurrentSetIndex(0);
@@ -122,7 +127,8 @@ const ActiveWorkoutScreen = () => {
                         reps: s.reps,
                         weight: s.weight
                     }))
-                })).filter(ex => ex.sets.length > 0)
+                })).filter(ex => ex.sets.length > 0),
+                points: liveWorkout.length * 5, // Example points calculation
             };
             
             // --- API CALLS ---
@@ -139,7 +145,7 @@ const ActiveWorkoutScreen = () => {
             // --- END API CALLS ---
 
             Alert.alert("Workout Complete!", "Great job! Your progress has been saved.");
-            router.replace("/(tabs)/home");
+            router.replace("/(workout)/EndWorkoutScreen");
 
         } catch (error) {
             Alert.alert("Error", "There was a problem saving your workout.");

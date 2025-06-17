@@ -98,8 +98,6 @@ const ChallengesPage: React.FC = () => {
     return (
         <LinearGradient
             colors={['#FF0509', '#271293']} // Gradient colors
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
             style={{ flex: 1 }}
         >
             <ScrollView contentContainerStyle={{ paddingBottom: 70 }}>

@@ -89,7 +89,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
 
   return (
     <LinearGradient
-      colors={isWarmup ? ['#FF0509', '#E89750'] : ['#A12287', '#1F059D']}
+      colors={isWarmup ? ['#FF0509', '#E89750'] : ['#000000', '#272727']}
       style={styles.overviewContainer}
     >
       {/* Progress Bar */}

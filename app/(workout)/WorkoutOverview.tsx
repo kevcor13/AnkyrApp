@@ -10,7 +10,7 @@ import WorkoutCard from '@/components/WorkoutCard';
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData, warmup, workout, TodayWorkout} = useGlobal();
+    const {userWorkoutData, userData, warmup, workout, coolDown, TodayWorkout} = useGlobal();
     const [currentDay, setCurrentDay] = useState('');
     const [workoutRoutine, setworkoutRoutine] = useState([])
     const [focus, setFocus] = useState('');
@@ -82,7 +82,7 @@ const WorkoutOverview = () => {
                         title="Okay let's go!"
                         handlePress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
                         buttonStyle={{
-                            backgroundColor: 'rgba(217, 217, 217, 0.5)',
+                            backgroundColor: 'rgba(217, 217, 217, 0.26)',
                             borderRadius: 20,
                             paddingVertical: 16,
                             marginHorizontal: 38,
@@ -104,6 +104,7 @@ const WorkoutOverview = () => {
                 </View>
                 <WorkoutCard workoutRoutine={warmup} title='Warm-Up'/>
                 <WorkoutCard workoutRoutine={workout} title='Main Workout'/>
+                <WorkoutCard workoutRoutine={coolDown} title='Cool Down'/>
             </ScrollView>
         </LinearGradient>
     )
@@ -126,7 +127,8 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textTransform: 'uppercase',
         color: '#FFFFFF',
-        fontFamily: 'Poppins',
+        fontStyle:'italic',
+        fontFamily: 'poppins-Bold',
     },
 
 })

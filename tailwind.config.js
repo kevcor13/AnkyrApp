@@ -9,9 +9,12 @@ module.exports = {
         poppins: ["Poppins", "sans-serif"],
         "poppins-semibold": ["Poppins-SemiBold", "sans-serif"],
         "poppins-medium" : ["Poppins-Medium", "sans-serif"],
+        "poppins-BoldItalic": ["Poppins-BoldItalic", "sans-serif"],
+
         quicksand: ["Quicksand", "sans-serif"],
         "quicksand-bold": ["Quicksand-Bold", "sans-serif"],
         raleway: ['Raleway-Regular', 'sans-serif'],
+        "raleway-light": ["Raleway-Light", "sans-serif"],
         sintony: ['Sintony', 'sans-serif'],
         "sintony-bold": ["Sintony-Bold", "sans-serif"],
       },

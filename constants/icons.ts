@@ -20,9 +20,11 @@ import infoIcon from "@/assets/icons/informationIcon.png"
 import blueStreak from "@/assets/icons/BlueStreakIcon.png"
 import halfArrow from "@/assets/icons/halfArrowLeft.png"
 import stopButton from "@/assets/icons/StopWorkoutButton.png"
+import skipButton from "@/assets/icons/SkipButton.png"
 
 export default {
     headphonesIcon,
+    skipButton,
     stopButton,
     infoIcon,
     halfArrow,

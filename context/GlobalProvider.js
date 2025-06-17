@@ -12,6 +12,7 @@ const GlobalProvider = ({ children }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [warmup, setWarmup] = useState([])
     const [workout, setworkout] = useState([])
+    const [coolDown, setCoolDown] = useState([])
     const [today, settoday] = useState('')
     const [user, setUser] = useState(null);
     const [userPosts, setUserPosts] = useState('');
@@ -212,6 +213,7 @@ const GlobalProvider = ({ children }) => {
         setTodayWorkout(workoutOfTheDay)      
         setWarmup(workoutOfTheDay.warmup)
         setworkout(workoutOfTheDay.workoutRoutine)
+        setCoolDown(workoutOfTheDay.cooldown)
     }
     // get the followers from user.
     // inside GlobalProvider, replace your old fetchFollowingUsers with this:
@@ -371,6 +373,7 @@ const GlobalProvider = ({ children }) => {
                 setUserData,
                 TodayWorkout,
                 warmup,
+                coolDown,
                 workout,
                 loading,
                 questionStatus,

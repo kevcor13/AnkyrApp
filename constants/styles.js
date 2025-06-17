@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
     },
     workoutCard: { padding: 30 },
-    exerciseNameMain: { fontFamily: 'poppins-semibold', fontStyle: 'italic', color: 'white', fontSize: 40 },
+    exerciseNameMain: { fontFamily: 'raleway', color: 'white', fontSize: 40 },
     repsContainer: { flexDirection: 'row', alignItems: 'baseline', marginTop: 10 },
     repsSetsMain: { fontFamily: 'poppins-semibold', fontSize: 64, color: '#8AFFF9' },
     repsLabel: { fontFamily: 'poppins-semibold', fontSize: 24, color: '#8AFFF9' },
@@ -38,11 +38,11 @@ export const styles = StyleSheet.create({
         paddingVertical: 18,
         borderRadius: 30,
         alignItems: 'center',
-        marginTop: 40
+        marginTop: 10
     },
     nextButtonText: { color: '#271293', fontSize: 20, fontFamily: 'poppins-bold' },
     nextButtonTextWorkout: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
-    streakContainer: { alignItems: 'center', marginTop: 200 },
+    streakContainer: { alignItems: 'center', marginTop: 20 },
     endButton: {
         backgroundColor: '#C0C0C0', // A neutral color to differentiate from 'Start'
         paddingHorizontal: 40,
