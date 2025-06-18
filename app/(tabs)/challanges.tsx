@@ -102,7 +102,7 @@ const ChallengesPage: React.FC = () => {
             colors={['#FF0509', '#271293']} // Gradient colors
             style={{ flex: 1 }}
         >
-            <ScrollView contentContainerStyle={{ paddingBottom: 70 }}>
+            <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
                 <View style={styles.headerContainer}>
                     <View style={{ flexDirection: 'row' }}>
                         <Text style={styles.title}>YOUR{'\n'}{currentDay}{'\n'}WORKOUT</Text>

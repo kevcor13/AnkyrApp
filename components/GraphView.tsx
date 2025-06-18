@@ -62,11 +62,22 @@ const GraphView: React.FC<GraphViewProps> = ({ weeklyData }) => {
           </View>
           <View style={styles.customGridContainer}>
             {weeklyData.map((_, index) => (
-              // Each vertical line is now a LinearGradient component
-              <LinearGradient
+              // Each vertical line is now an SVG gradient line
+              <View
                 key={`grid-${index}`}
-                colors={['rgba(106, 108, 122, 0)', 'rgba(194, 199, 224, 1)']}
-                style={styles.gridLine}
+                style={[
+                  styles.gridLine,
+                  {
+                    backgroundColor: undefined,
+                    height: '100%',
+                    // Optionally, you can add a gradient effect using a custom View or an SVG if needed
+                    // For now, use a solid color similar to your Stop color
+                    //background: undefined,
+                    borderRightWidth: 1,
+                    borderRightColor: 'rgba(194, 199, 224, 1)',
+                    opacity: 0.5,
+                  },
+                ]}
               />
             ))}
           </View>
@@ -74,7 +85,7 @@ const GraphView: React.FC<GraphViewProps> = ({ weeklyData }) => {
             style={{ height: 120, zIndex: 1 }}
             data={weeklyData.map((item) => item.points)}
             svg={{ stroke: "#000DFF", strokeWidth: 2, fill: "url(#gradient)" }}
-            contentInset={{ top: 20, bottom: 20, left: 20, right: 20 }}
+            contentInset={{ top: 5, bottom: 40, left: 20, right: 20 }}
             curve={shape.curveNatural}
           >
             <Gradient />
@@ -122,7 +133,7 @@ const GraphView: React.FC<GraphViewProps> = ({ weeklyData }) => {
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 10,
-        paddingVertical: 10,
+        paddingBottom: 50,
         backgroundColor: "#000000",
     },
     textHeader: {
@@ -135,12 +146,12 @@ const styles = StyleSheet.create({
         position: "relative",
         height: 160, 
         borderRadius: 8,
-        paddingVertical: 10,
+       paddingVertical: 10,
     },
     xpCallout: {
         position: "absolute",
         right: 10,
-        top: 10,
+        top:-50,
         backgroundColor: "rgba(81, 76, 119, 0.74)",
         borderRadius: 15,
         paddingVertical: 10,
@@ -161,16 +172,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-around',
         paddingHorizontal: 20,
-        paddingVertical: 30, 
+        paddingBottom: 50, 
     },
     gridLine: {
         width: 1,
-        backgroundColor: 'rgba(194, 199, 224, 1)',
     },
     // New style for the horizontal axis line
     axisLine: {
         position: 'absolute',
-        bottom: 35, // Positioned 35px from the bottom of the container
+        bottom: 50, // Positioned 35px from the bottom of the container
         left: 20,   // Aligns with horizontal content inset
         right: 20,  // Aligns with horizontal content inset
         height: 1,
@@ -189,13 +199,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     xAxisLabel: {
-        color: 'rgba(255, 255, 255, 0.7)',
-        fontSize: 12,
+        color: 'rgba(224, 221, 255, 0.74)',
+        fontFamily:'poppins-regular',
+        fontSize: 15,
     },
     xAxisLabelSelected: {
         color: '#FFFFFF',
         fontWeight: 'bold',
-        fontSize: 12,
+        fontSize: 15,
     },
     noDataText: {
         color: "white",
