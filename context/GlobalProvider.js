@@ -22,6 +22,8 @@ const GlobalProvider = ({ children }) => {
     const [userGameData, setUserGameData] = useState('');
     const [userWorkoutData, setUserWorkoutData] = useState('')
     const [TodayWorkout, setTodayWorkout] = useState('')
+    const [weeklyData, setWeeklyData] = useState([]);
+
     const [workoutPlan, setWorkoutPlan] = useState('');
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
@@ -198,6 +200,7 @@ const GlobalProvider = ({ children }) => {
             if (response.data.status === "success") {
                 setUserWorkoutData(response.data.data)
                 await seperateWorkouts(response.data.data)
+                await fetchXpHistory(UserID);
                 return response.data.data;
             } else {
                 console.error("Failed to fetch workout data:", response.data.data);
@@ -215,6 +218,21 @@ const GlobalProvider = ({ children }) => {
         setworkout(workoutOfTheDay.workoutRoutine)
         setCoolDown(workoutOfTheDay.cooldown)
     }
+    //fetch the user XP history 
+    const fetchXpHistory = async(UserID) => {
+        try{
+            const response = await axios.post(`${ngrokAPI}/fetchWeeklyPoints`, {UserID});
+            if(!response.data){
+                throw new Error(`Failed to fetch XP history: ${response.statusText}`);
+            }
+            const data = await response.data;
+            setWeeklyData(data);
+
+        } catch (error){
+            console.error("Error fetching XP history:", error);
+        }
+    }
+
     // get the followers from user.
     // inside GlobalProvider, replace your old fetchFollowingUsers with this:
     const fetchFollowingUsers = async () => {
@@ -372,6 +390,7 @@ const GlobalProvider = ({ children }) => {
                 userData, // Expose userData to the rest of the app
                 setUserData,
                 TodayWorkout,
+                weeklyData,
                 warmup,
                 coolDown,
                 workout,

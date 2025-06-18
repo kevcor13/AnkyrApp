@@ -10,12 +10,13 @@ import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Pre
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import GraphView from "@/components/GraphView";
 
 
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, TodayWorkout } = useGlobal()
+    const { userData, userGameData, ngrokAPI, TodayWorkout, weeklyData } = useGlobal()
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [currentDay, setCurrentDay] = useState('')
     const [focus, setFocus] = useState('');
@@ -37,7 +38,8 @@ const ChallengesPage: React.FC = () => {
                 setTodayWorkout(TodayWorkout?.workoutRoutine || null);
                 setTimeEstimate(TodayWorkout.timeEstimate);
                 setFocus(TodayWorkout.focus)
-
+                console.log(weeklyData);
+                
             } catch (error) {
                 console.error("Error fetching workout data:", error);
             }
@@ -172,6 +174,7 @@ const ChallengesPage: React.FC = () => {
                         <Text style={styles.caption}>Hm. That’s kind of a lot of xp.</Text>
                     </View>
                 </View>
+                <GraphView  weeklyData={weeklyData} />
                 <View style={styles.container2}>
                 
                     <TouchableOpacity style={{ flexDirection: 'row' }}
