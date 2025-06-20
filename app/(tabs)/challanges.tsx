@@ -16,7 +16,7 @@ import GraphView from "@/components/GraphView";
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, TodayWorkout, weeklyData } = useGlobal()
+    const { userData, userGameData, ngrokAPI, TodayWorkout, weeklyData, challenges} = useGlobal()
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [currentDay, setCurrentDay] = useState('')
     const [focus, setFocus] = useState('');
@@ -38,7 +38,7 @@ const ChallengesPage: React.FC = () => {
                 setTodayWorkout(TodayWorkout?.workoutRoutine || null);
                 setTimeEstimate(TodayWorkout.timeEstimate);
                 setFocus(TodayWorkout.focus)
-                console.log(weeklyData);
+                
                 
             } catch (error) {
                 console.error("Error fetching workout data:", error);
@@ -106,12 +106,12 @@ const ChallengesPage: React.FC = () => {
                 <View style={styles.headerContainer}>
                     <View style={{ flexDirection: 'row' }}>
                         <Text style={styles.title}>YOUR{'\n'}{currentDay}{'\n'}WORKOUT</Text>
-                        <Image
-                            source={icons.whiteZap}
-                            style={styles.zapImage} />
                     </View>
                     <Text style={styles.subtitle}>{focus}</Text>
-                    <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
+                    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end'}}>
+                        <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
+                        <Image source={icons.blueStreak} style={styles.zapImage} />
+                    </View>
                     {!isWorkoutAllowed ? (
                         <Text style={{ color: '#FF0000', fontFamily: 'poppins-semiBold', fontSize: 16, marginTop: 10 }}>
                             You have already completed your workout for today.
@@ -245,12 +245,11 @@ const styles = StyleSheet.create({
         margin: 10,
     },
     subtitle: {
-        fontFamily: 'poppins-semiBold',
+        fontFamily: 'raleway-light',
         color: '#8B8BEA',
         fontWeight: 'bold',
         fontStyle: 'italic',
-        fontSize: 28,
-        marginTop: 0
+        fontSize: 32,
     },
     title: {
         fontSize: 55,
@@ -262,17 +261,16 @@ const styles = StyleSheet.create({
         paddingTop: 30
     },
     zapImage: {
-        width: 60,
-        height: 60,
+        width: 54,
+        height: 54,
         marginTop: 10,
-        marginLeft: 5,
+        //marginLeft: 5,
     },
     timeIndicator: {
         textAlign: 'right',
         fontFamily: 'poppins-semiBold',
         fontSize: 24,
         color: '#38FFF5',
-        marginLeft: 10,
     },
     userNumbers: {
         color: '#38FFF5',

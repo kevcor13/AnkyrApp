@@ -23,7 +23,7 @@ const GlobalProvider = ({ children }) => {
     const [userWorkoutData, setUserWorkoutData] = useState('')
     const [TodayWorkout, setTodayWorkout] = useState('')
     const [weeklyData, setWeeklyData] = useState([]);
-
+    const [challenges, setChallenges] = useState([]);
     const [workoutPlan, setWorkoutPlan] = useState('');
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
@@ -201,6 +201,7 @@ const GlobalProvider = ({ children }) => {
                 setUserWorkoutData(response.data.data)
                 await seperateWorkouts(response.data.data)
                 await fetchXpHistory(UserID);
+                await fetchChallenges(UserID);
                 return response.data.data;
             } else {
                 console.error("Failed to fetch workout data:", response.data.data);
@@ -232,7 +233,27 @@ const GlobalProvider = ({ children }) => {
             console.error("Error fetching XP history:", error);
         }
     }
+    // fecth the challanges of the day. 
+     const fetchChallenges = async (UserID) => {
+    try {
+        const response = await axios.post(`${ngrokAPI}/randomChallenges`, {UserID});
+        if (!response.data){
+            throw new Error(`Failed to fetch challenges: ${response.status}`);
+        }
 
+        const data = response.data; // Use response.data directly
+        if (data && Array.isArray(data.challenges)) {
+            setChallenges(data.challenges);
+           
+        } else {
+            setChallenges([{name: "No challenges available"}]);
+        }
+
+    } catch (error) {
+        console.error("Error fetching challenges:", error);
+        setChallenges([{name: "No challenges available"}]);
+    }
+}
     // get the followers from user.
     // inside GlobalProvider, replace your old fetchFollowingUsers with this:
     const fetchFollowingUsers = async () => {
@@ -389,6 +410,7 @@ const GlobalProvider = ({ children }) => {
                 user,
                 userData, // Expose userData to the rest of the app
                 setUserData,
+                challenges,
                 TodayWorkout,
                 weeklyData,
                 warmup,
