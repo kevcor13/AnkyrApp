@@ -91,7 +91,7 @@ const EndWorkoutScreen = () => {
     >
       <ScrollView>
         <View style={styles.header}>
-          <Text style={styles.textHeader}>YOUR WORKOUT</Text>
+          <Text style={styles.textHeader}>YOUR {'\n'}WORKOUT</Text>
           <Image source={icons.blueStreak} style={styles.zapImage} />
         </View>
         {/* the workout time and xp details */}
@@ -144,11 +144,12 @@ const EndWorkoutScreen = () => {
               fontFamily: "raleway-semibold",
               color: "white",
               fontSize: 16,
+              marginTop:20
             }}
           >
-            TOTAL XP:
+            TOTAL XP EARNED:
           </Text>
-          <View style={{ flexDirection: "row", marginTop: 20, marginLeft: -80 }}>
+          <View style={{ flexDirection: "row", marginTop: 40, marginLeft: -140}}>
             <Text
               style={{
                 fontFamily: "raleway-semibold",
@@ -223,24 +224,23 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   header: {
-    marginLeft: 38,
+    marginLeft:30,
     marginTop: 80,
     flexDirection: "row",
   },
   textHeader: {
     fontSize: 43,
-    fontFamily: "Poppins-semiBold",
+    fontFamily: "raleway-light",
     color: "#FFFFFF",
-    lineHeight: 35,
-    letterSpacing: -2,
+    lineHeight: 46,
     textTransform: "uppercase",
     paddingTop: 30,
   },
   zapImage: {
-    width: 60,
-    height: 60,
+    width: 105,
+    height: 106,
     marginTop: 10,
-    marginLeft: 5,
+    marginLeft:40
   },
   XpContainer: {
     marginLeft: 38,

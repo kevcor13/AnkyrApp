@@ -38,6 +38,8 @@ const ChallengesPage: React.FC = () => {
                 setTodayWorkout(TodayWorkout?.workoutRoutine || null);
                 setTimeEstimate(TodayWorkout.timeEstimate);
                 setFocus(TodayWorkout.focus)
+                console.log("challanges", challenges);
+                
                 
                 
             } catch (error) {
@@ -158,12 +160,7 @@ const ChallengesPage: React.FC = () => {
                     <View style={styles.block}>
                         <View style={{ flexDirection: 'row' }}>
                             <Text style={styles.header}>My xp:</Text>
-                            {/* XP 
                             <TouchableOpacity onPress={() => setShowInfoModal(true)} style={{ marginLeft: 80, height: 20, width: 20 }}>
-                                <Image source={icons.infoIcon} />
-                            </TouchableOpacity>
-                            */}
-                            <TouchableOpacity onPress={() => showInfo()}>
                                 <Image source={icons.infoIcon} />
                             </TouchableOpacity>
                         </View>
@@ -187,6 +184,20 @@ const ChallengesPage: React.FC = () => {
                         <LeagueHeader league={userGameData.league} />
                     )}
                 </View>
+                <TouchableOpacity style={styles.buttonContainer}>
+            <LinearGradient
+                // Dark blue/purple to dark red gradient to match the image
+                colors={['#1E134B', '#8B0000']}
+                // Horizontal gradient
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.gradient}
+            >
+                <View style={styles.contentView}>
+                    <Text style={styles.buttonText}>Daily Challenges</Text>
+                </View>
+            </LinearGradient>
+        </TouchableOpacity>
             </ScrollView>
 
 
@@ -236,6 +247,35 @@ const ChallengesPage: React.FC = () => {
     );
 };
 const styles = StyleSheet.create({
+    buttonContainer: {
+        margin: 20,
+        borderRadius: 15,
+        // Adding shadow for a subtle lift, common in modern UI
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+        elevation: 8,
+    },
+    gradient: {
+        borderRadius: 15, // Should match the container's borderRadius
+    },
+    contentView: {
+        // Using flexbox to position text and icon
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 20,
+        paddingHorizontal: 25,
+    },
+    buttonText: {
+        color: '#059669', // A shade of green as seen in the image
+        fontSize: 20,
+        fontWeight: 'bold',
+    },
     headerContainer: {
         marginTop: 60,
         padding: 10,
@@ -345,6 +385,7 @@ const styles = StyleSheet.create({
         color: "#666",
         marginTop: 6,
     },
+
 })
 
 

@@ -174,7 +174,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
             </Text>
           </TouchableOpacity>
           <View style={globalStyles.streakContainer}>
-            <Image source={icons.blueStreak} />
+            <Image style={{ height:74, width:75 }} source={icons.blueStreak} />
           </View>
         </ScrollView>
       </LinearGradient>
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   adjusterRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
   adjusterButton: { paddingHorizontal: 20},
   adjusterButtonText: { fontFamily: "poppins-light", fontSize: 60, color: "white" },
-  weightDisplay: { width: 70, height: 70, borderRadius: 60, backgroundColor: "rgba(255, 255, 255, 0.15)", justifyContent: "center", alignItems: "center", marginHorizontal: 15 },
+  weightDisplay: { width: 70, height: 70, borderRadius: 30, backgroundColor: "rgba(255, 255, 255, 0.15)", justifyContent: "center", alignItems: "center", marginHorizontal: 15 },
   weightDisplayText: { fontFamily: "poppins-light", fontSize: 36, color: "white" },
   currentSetIndicator: { fontFamily: "poppins-semibold", fontSize: 18, color: "white", textAlign: "center", marginTop: 20, opacity: 0.8 },
   // --- NEW STYLES ---

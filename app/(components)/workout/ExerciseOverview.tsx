@@ -15,7 +15,7 @@ import { router } from "expo-router";
 interface Exercise {
   exercise: string;
   reps: String;
-  phase: "warmup" | "workout";
+  phase: "warmup" | "workout" | "cooldown";
   // Add other properties if needed
 }
 
@@ -150,7 +150,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
         </Animated.View>
       </View>
       <View style={styles.streakContainer}>
-        <Image style={{ margin: 20 }} source={icons.blueStreak} />
+        <Image style={{ height:74, width:75 }} source={icons.blueStreak} />
       </View>
     </LinearGradient>
   );

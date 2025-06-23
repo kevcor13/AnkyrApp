@@ -78,6 +78,18 @@ const WorkoutOverview = () => {
                         </View>
                     </View>
                 </View>
+                <TouchableOpacity style={styles.buttonContainer}>
+                                    <LinearGradient
+                                        colors={['#FF090D', '#1E00FF']}
+                                        start={{ x: 0, y: 0.5 }}
+                                        end={{ x: 1, y: 0.5 }}
+                                        style={styles.gradient}
+                                    >
+                                        <View style={styles.contentView}>
+                                            <Text style={styles.buttonText}>Daily Challenges</Text>
+                                        </View>
+                                    </LinearGradient>
+                                </TouchableOpacity>
                 <CustomButton
                         title="Okay let's go!"
                         handlePress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
@@ -105,14 +117,18 @@ const WorkoutOverview = () => {
                 <WorkoutCard workoutRoutine={warmup} title='Warm-Up'/>
                 <WorkoutCard workoutRoutine={workout} title='Main Workout'/>
                 <WorkoutCard workoutRoutine={coolDown} title='Cool Down'/>
+                <View style={styles.bottomStreak}>
+                    <Image source={icons.blueStreak} style={{height: 75, width: 74,}}/>
+                </View>
             </ScrollView>
         </LinearGradient>
     )
 };
 
 const styles = StyleSheet.create({
+
     backButton:{
-        backgroundColor: 'rgba(217, 217, 217, 0.5)',
+        backgroundColor: 'rgba(217, 217, 217, 0.26)',
         marginTop: 60,
         marginLeft: 38,
         borderRadius: 50,
@@ -124,13 +140,36 @@ const styles = StyleSheet.create({
     },
     textHeader: {
         fontSize: 43,
-        fontWeight: 'bold',
         textTransform: 'uppercase',
         color: '#FFFFFF',
-        fontStyle:'italic',
-        fontFamily: 'poppins-Bold',
+        fontFamily: 'raleway-light',
     },
-
+    bottomStreak: {
+        alignItems: 'center',
+        justifyContent: 'center', 
+        marginTop: 20,
+        paddingBottom: 40,
+    },
+    buttonContainer: {
+        marginHorizontal: 20,
+        marginTop: 20, // Add space from the league section
+        borderRadius: 15,
+    },
+    gradient: {
+        borderRadius: 15,
+    },
+    contentView: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 20,
+        paddingHorizontal: 25,
+    },
+    buttonText: {
+        color: '#00FFBF',
+        fontSize: 20,
+        fontFamily: 'Poppins-Bold', // Use specific font family if available
+    },
 })
 
 export default WorkoutOverview

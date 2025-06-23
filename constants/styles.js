@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     loadingText: { color: 'white', fontSize: 22, fontFamily: 'poppins-semibold' },
     overviewContainer: { flex:1 },
-    overviewTitle: { color: 'white', fontSize: 40, fontFamily: 'poppins-bold', marginHorizontal: 20, alignContent:'center'},
+    overviewTitle: { color: 'white', fontSize: 40, fontFamily: 'raleway-light', marginHorizontal: 20, alignContent:'center'},
     repsText: { color: '#8AFFF9', fontSize: 40, fontFamily: 'poppins-semibold', marginHorizontal: 20, marginTop: 10, marginBottom: 20 },
     header: {
         width: '100%',
@@ -19,14 +19,14 @@ export const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
     },
     workoutCard: { padding: 30 },
-    exerciseNameMain: { fontFamily: 'raleway', color: 'white', fontSize: 40 },
+    exerciseNameMain: { fontFamily: 'raleway-light', color: 'white', fontSize: 40 },
     repsContainer: { flexDirection: 'row', alignItems: 'baseline', marginTop: 10 },
     repsSetsMain: { fontFamily: 'poppins-semibold', fontSize: 64, color: '#8AFFF9' },
     repsLabel: { fontFamily: 'poppins-semibold', fontSize: 24, color: '#8AFFF9' },
     bodyweightText: { marginTop: 40, fontFamily: 'poppins-medium', color: 'white', fontSize: 24 },
     weightText: { fontFamily: 'poppins-light', color: 'white', fontSize: 19 },
     nextButtonOverview: {
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(217,217,217,0.27)',
         paddingVertical: 18,
         borderRadius: 30,
         alignItems: 'center',
@@ -40,7 +40,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 10
     },
-    nextButtonText: { color: '#271293', fontSize: 20, fontFamily: 'poppins-bold' },
+    nextButtonText: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
     nextButtonTextWorkout: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
     streakContainer: { alignItems: 'center', marginTop: 20 },
     endButton: {

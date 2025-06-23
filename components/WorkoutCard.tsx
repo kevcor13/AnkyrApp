@@ -20,7 +20,8 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
         <View key={index} style={styles.card}>
           <View>
             <Text style={styles.exerciseName}>{exercise.exercise}</Text>
-            <Text style={styles.exerciseDetails}>{exercise.reps}</Text>
+            <Text style={styles.exerciseDetails}>{exercise.sets} sets</Text>
+            <Text style={styles.exerciseDetails}>{exercise.reps} reps</Text>
           </View>
           <View style={styles.rewardBox}>
             <Text style={styles.rewardLabel}>REWARD:</Text>
