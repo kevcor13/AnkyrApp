@@ -24,6 +24,7 @@ const GlobalProvider = ({ children }) => {
     const [TodayWorkout, setTodayWorkout] = useState('')
     const [weeklyData, setWeeklyData] = useState([]);
     const [challenges, setChallenges] = useState([]);
+    const [loggedWorkouts, setLoggedWorkouts] = useState([])
     const [workoutPlan, setWorkoutPlan] = useState('');
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
@@ -202,6 +203,7 @@ const GlobalProvider = ({ children }) => {
                 await seperateWorkouts(response.data.data)
                 await fetchXpHistory(UserID);
                 await fetchChallenges(UserID);
+                await fetchLoggedWorkouts(UserID)
                 return response.data.data;
             } else {
                 console.error("Failed to fetch workout data:", response.data.data);
@@ -234,8 +236,8 @@ const GlobalProvider = ({ children }) => {
         }
     }
     // fecth the challanges of the day. 
-     const fetchChallenges = async (UserID) => {
-    try {
+    const fetchChallenges = async (UserID) => {
+        try {
         const response = await axios.post(`${ngrokAPI}/randomChallenges`, {UserID});
         if (!response.data){
             throw new Error(`Failed to fetch challenges: ${response.status}`);
@@ -254,6 +256,41 @@ const GlobalProvider = ({ children }) => {
         setChallenges([{name: "No challenges available"}]);
     }
 }
+    //fetch all the logged workouts
+    const fetchLoggedWorkouts = async (UserID) => {
+        // Guard clause to prevent API call if UserID is not available
+        if (!UserID) {
+            console.log("UserID is missing, cannot fetch workouts.");
+            return; 
+        }
+
+        try {
+            // Make a POST request to your /getLoggedWorkouts endpoint
+            const response = await axios.post(`${ngrokAPI}/getLoggedWorkouts`, {
+                UserId: UserID // Note: Ensure the key matches your backend ('UserId')
+            });
+                
+            if (!response.data){
+                throw new Error(`Failed to fetch logged workouts: Status ${response.status}`);
+            }
+
+            const data = response.data;
+
+            // Check if the response data is an array before setting the state
+            if (data && Array.isArray(data)) {
+                setLoggedWorkouts(data);
+            } else {
+                console.error("Fetched data for workouts is not an array.");
+                setLoggedWorkouts([]); // Set to empty array if data is invalid
+            }
+
+        } catch (error) {
+            console.error("Error fetching logged workouts:", error);
+            // In case of an error, reset the state to an empty array
+            // to prevent displaying stale or incorrect data.
+            setLoggedWorkouts([]);
+        }
+    }
     // get the followers from user.
     // inside GlobalProvider, replace your old fetchFollowingUsers with this:
     const fetchFollowingUsers = async () => {
@@ -352,8 +389,6 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
-
-
     const fetchQuestionnaireCompletion = async ()  => {
         try{
             const response = userData.questionnaire;
@@ -412,6 +447,7 @@ const GlobalProvider = ({ children }) => {
                 setUserData,
                 challenges,
                 TodayWorkout,
+                loggedWorkouts,
                 weeklyData,
                 warmup,
                 coolDown,
