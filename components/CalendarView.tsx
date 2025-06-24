@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
+    marginBottom:20
   },
   arrowBtn: {
     padding: 8,

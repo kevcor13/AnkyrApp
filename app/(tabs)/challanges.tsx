@@ -52,7 +52,7 @@ const ChallengesPage: React.FC = () => {
     useEffect(() => {
         if (userData) {
             const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionDate, new Date());
-            setIsWorkoutAllowed(!alreadyDoneToday);
+            setIsWorkoutAllowed(alreadyDoneToday);
             setIsLoading(false);
         } else {
             setIsLoading(true);
@@ -71,15 +71,15 @@ const ChallengesPage: React.FC = () => {
 
     // --- 3. Create a handler function for when a date is selected ---
     const handleDateSelect = (selectedDate: Date) => {
-        // Find the workout log from your global state that matches the selected date
         const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, selectedDate));
-
         if (workoutForDay) {
             // If a workout is found, update the state
             setSelectedWorkout(workoutForDay);
+            setIsWorkoutAllowed(true);
         } else {
             // If no workout is found for that day, set the state to null
             setSelectedWorkout(null);
+            setIsWorkoutAllowed(false)
         }
     };
 
@@ -111,32 +111,32 @@ const ChallengesPage: React.FC = () => {
                         <Text style={styles.title}>YOUR{'\n'}{currentDay}{'\n'}WORKOUT</Text>
                     </View>
                     <Text style={styles.subtitle}>{focus}</Text>
-                    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end'}}>
-                        <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
-                        <Image source={icons.blueStreak} style={styles.zapImage} />
-                    </View>
-                    {!isWorkoutAllowed ? (
-                        <Text style={{ color: '#FF0000', fontFamily: 'poppins-semiBold', fontSize: 16, marginTop: 10 }}>
-                            You have already completed your workout for today.
-                        </Text>
+                    {isWorkoutAllowed ? (
+                        <View>
+                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
+                                COMPLETED
+                            </Text>
+                        </View>
                     ) : (
-                        <CustomButton
-                            title="My workout"
-                            handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
-                            buttonStyle={{
-                                backgroundColor: 'rgba(217, 217, 217, 0.5)',
-                                borderRadius: 20,
-                                paddingVertical: 16,
-                                paddingHorizontal: 32,
-                                marginTop: 10,
-                                justifyContent: "center"
-                            }}
-                            textStyle={{
-                                color: '#FFFFFF',
-                                fontSize: 16,
-                                fontFamily: 'poppins-semiBold'
-                            }}
-                        />
+                        <><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
+                                <Image source={icons.blueStreak} style={styles.zapImage} />
+                            </View><CustomButton
+                                    title="My workout"
+                                    handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
+                                    buttonStyle={{
+                                        backgroundColor: 'rgba(217, 217, 217, 0.5)',
+                                        borderRadius: 20,
+                                        paddingVertical: 16,
+                                        paddingHorizontal: 32,
+                                        marginTop: 10,
+                                        justifyContent: "center"
+                                    }}
+                                    textStyle={{
+                                        color: '#FFFFFF',
+                                        fontSize: 16,
+                                        fontFamily: 'poppins-semiBold'
+                                    }} /></>
                     )}
                 </View>
                 
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
         backgroundColor: "black",
         minHeight: 200,
         paddingHorizontal: 20,
-        marginTop: 30,
+        //marginTop: 30,
         paddingTop: 30,
         paddingBottom: 20,
     },

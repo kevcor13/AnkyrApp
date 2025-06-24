@@ -267,7 +267,7 @@ const GlobalProvider = ({ children }) => {
         try {
             // Make a POST request to your /getLoggedWorkouts endpoint
             const response = await axios.post(`${ngrokAPI}/getLoggedWorkouts`, {
-                UserId: UserID // Note: Ensure the key matches your backend ('UserId')
+                UserID // Note: Ensure the key matches your backend ('UserId')
             });
                 
             if (!response.data){
