@@ -47,6 +47,8 @@ const Home = () => {
             fetchWorkout(token, userData._id);
             await fetchGameData(token, userData._id);
             setFollowersUsers(followers);
+            console.log(userData);
+            
 
             // 2. Filter to get only followers with requestStatus = true
             const acceptedFollowers = followers

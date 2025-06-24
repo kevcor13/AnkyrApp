@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Video, ResizeMode } from "expo-av";
 import { styles as globalStyles } from "@/constants/styles";
 import icons from "@/constants/icons";
+import { useGlobal } from "@/context/GlobalProvider";
 
 interface PerformedSet {
   reps: number;
@@ -52,6 +53,10 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const [hasAdjusted, setHasAdjusted] = useState(false);
   // --- NEW: State to manage the selected unit ---
   const [displayUnit, setDisplayUnit] = useState<'lbs' | 'kg'>('lbs');
+  const {userData} = useGlobal();
+  const theme = userData.defaultTheme;
+  console.log(theme);
+  
 
   useEffect(() => {
     if (exercise.performedSets[currentSetIndex]?.weight === -1) {
@@ -107,7 +112,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
         />
       </View>
       <LinearGradient
-        colors={isWarmup ? ["#FF0509", "#E89750"] : isCooldown? ["#A12287", "#1F059D"]: ["#000000", "#272727"]}
+        colors={isWarmup ? ["#FF0509", "#E89750"] : isCooldown? ["#A12287", "#1F059D"]: theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]}
         style={globalStyles.gradientContainer}
       >
         <ScrollView style={globalStyles.workoutCard}>

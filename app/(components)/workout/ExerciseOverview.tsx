@@ -11,6 +11,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "@/constants/styles"; // Import styles
 import icons from "@/constants/icons";
 import { router } from "expo-router";
+import { useGlobal } from "@/context/GlobalProvider";
 
 interface Exercise {
   exercise: string;
@@ -35,6 +36,10 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
   totalExercises,
 }) => {
   const screenWidth = Dimensions.get("window").width;
+  const {userData} = useGlobal();
+  const theme = userData.defaultTheme;
+  console.log(theme);
+  
 
   const isWarmup = exercise.phase === 'warmup';
   // Animation values
@@ -89,7 +94,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
 
   return (
     <LinearGradient
-      colors={isWarmup ? ['#FF0509', '#E89750'] : ['#000000', '#272727']}
+      colors={isWarmup ? ['#FF0509', '#E89750'] : theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]}
       style={styles.overviewContainer}
     >
       {/* Progress Bar */}

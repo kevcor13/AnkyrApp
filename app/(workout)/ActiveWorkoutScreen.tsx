@@ -10,6 +10,7 @@ import { styles as globalStyles } from "@/constants/styles";
 import axios from "axios";
 import { router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ChangeThemeScreen from "../(components)/workout/ChangeThemeScreen";
 
 export interface PerformedSet {
     reps: number;
@@ -28,10 +29,11 @@ export interface Exercise {
     performedSets: PerformedSet[];
 }
 
-type FlowState = "OVERVIEW" | "EXERCISE" | "INTER_SET_REST" | "POST_EXERCISE_REST" | "UP_NEXT";
+type FlowState = "OVERVIEW" | "EXERCISE" | "INTER_SET_REST" | "POST_EXERCISE_REST" | "UP_NEXT" | "CHANGE_THEME";
 
 const ActiveWorkoutScreen = () => {
     const { warmup, workout, coolDown, userGameData, userData, ngrokAPI, TodayWorkout } = useGlobal();
+    const [changeTheme, setchangeTheme] = useState(Boolean);
     const [liveWorkout, setLiveWorkout] = useState<Exercise[] | null>(null);
     const [exerciseIndex, setExerciseIndex] = useState(0);
     const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -58,6 +60,7 @@ const ActiveWorkoutScreen = () => {
             setLiveWorkout(workoutSession);
             setExerciseIndex(0);
             setCurrentSetIndex(0);
+            setchangeTheme(userData.askedThemeQuestion);
         }
     }, [warmup, workout, coolDown]);
 
@@ -99,12 +102,18 @@ const ActiveWorkoutScreen = () => {
         // Show the full Overview screen for the first two exercises (index 0 and 1).
         // After the second exercise is done, switch to the "Up Next" screen for all subsequent exercises.
         if (nextIndex >= 2) {
-            setFlowState("UP_NEXT");
+            if(!changeTheme){
+                setFlowState("CHANGE_THEME")
+            } else {
+                setFlowState("UP_NEXT");
+            }
         } else {
             setFlowState("OVERVIEW");
         }
     };
-    
+    const handleChangeTheme = () => {
+        setFlowState("UP_NEXT");
+    }
     const handleFinishWorkout = async () => {
         if (!liveWorkout || isFinishing) return;
         setIsFinishing(true);
@@ -185,7 +194,10 @@ const ActiveWorkoutScreen = () => {
                         totalExercises={liveWorkout.length}
                     />
                 );
-
+            case "CHANGE_THEME":
+                return (
+                    <ChangeThemeScreen onConfirm={handleChangeTheme}/>
+                )
             case "EXERCISE":
                 return (
                     <WorkoutExerciseScreen

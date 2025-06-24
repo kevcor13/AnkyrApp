@@ -105,7 +105,7 @@ const ChallengesPage: React.FC = () => {
             colors={['#FF0509', '#271293']}
             style={{ flex: 1 }}
         >
-            <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+            <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
                 <View style={styles.headerContainer}>
                     <View style={{ flexDirection: 'row' }}>
                         <Text style={styles.title}>YOUR{'\n'}{currentDay}{'\n'}WORKOUT</Text>
@@ -171,6 +171,20 @@ const ChallengesPage: React.FC = () => {
                     </View>
                 </View>
                 <GraphView  weeklyData={weeklyData} />
+                <View style={{backgroundColor:'#000000'}}>
+                <TouchableOpacity style={styles.buttonContainer}>
+                    <LinearGradient
+                        colors={['#FF090D', '#1E00FF']}
+                        start={{ x: 0, y: 0.5 }}
+                        end={{ x: 1, y: 0.5 }}
+                        style={styles.gradient}
+                    >
+                        <View style={styles.contentView}>
+                            <Text style={styles.buttonText}>Daily Challenges</Text>
+                        </View>
+                    </LinearGradient>
+                </TouchableOpacity>
+                </View>
                 <View style={styles.container2}>
                     <TouchableOpacity style={{ flexDirection: 'row' }}
                         onPress={() => setLeagueOpen(!leagueOpen)}
@@ -182,20 +196,12 @@ const ChallengesPage: React.FC = () => {
                         <LeagueHeader league={userGameData.league} />
                     )}
                 </View>
-                <TouchableOpacity style={styles.buttonContainer}>
-                    <LinearGradient
-                        colors={['#1E134B', '#8B0000']}
-                        start={{ x: 0, y: 0.5 }}
-                        end={{ x: 1, y: 0.5 }}
-                        style={styles.gradient}
-                    >
-                        <View style={styles.contentView}>
-                            <Text style={styles.buttonText}>Daily Challenges</Text>
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
             </ScrollView>
-
+            <Modal>
+                <View style={styles.popupHeader}>
+                    <Text style={{color:'white'}}>Hello</Text>
+                </View>
+            </Modal>
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -225,14 +231,13 @@ const ChallengesPage: React.FC = () => {
 };
 // --- Styles (no changes needed here) ---
 const styles = StyleSheet.create({
+    popupHeader:{
+        
+    },
     buttonContainer: {
         margin: 20,
         borderRadius: 15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4.65,
-        elevation: 8,
+        backgroundColor:'#000000'
     },
     gradient: {
         borderRadius: 15,
@@ -245,7 +250,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 25,
     },
     buttonText: {
-        color: '#059669',
+        color: '#00FFBF',
         fontSize: 20,
         fontWeight: 'bold',
     },

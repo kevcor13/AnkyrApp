@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Exercise } from '@/app/(workout)/ActiveWorkoutScreen';
 import icons from '@/constants/icons';
 import { router } from 'expo-router';
+import { useGlobal } from '@/context/GlobalProvider';
 
 /**
  * Props for the UpNextScreen component.
@@ -32,13 +33,14 @@ const UpNextScreen: React.FC<UpNextScreenProps> = ({
   currentExerciseIndex,
   totalExercises,
 }) => {
+  const {userData} = useGlobal()
   // Animation for the progress bar
   const progressAnim = useRef(new Animated.Value(0)).current;
   const slideAnim1 = useRef(new Animated.Value(-screenWidth)).current;
   const slideAnim2 = useRef(new Animated.Value(-screenWidth)).current;
   const slideAnim3 = useRef(new Animated.Value(-screenWidth)).current;
   const slideAnim4 = useRef(new Animated.Value(-screenWidth)).current;
-
+  const theme = userData.defaultTheme
   // Calculate progress percentage
   const progress = totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
 
@@ -82,7 +84,7 @@ const UpNextScreen: React.FC<UpNextScreenProps> = ({
   });
 
   return (
-    <LinearGradient colors={['#FF0509', '#271293']} style={styles.container}>
+    <LinearGradient colors={ theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         {/* Top Section with Progress Bar */}
         <View style={styles.header}>
