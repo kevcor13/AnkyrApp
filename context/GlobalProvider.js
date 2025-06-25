@@ -28,6 +28,7 @@ const GlobalProvider = ({ children }) => {
     const [workoutPlan, setWorkoutPlan] = useState('');
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
+    const [selectedChallenges, setSelectedChallenges] = useState([]);
     const ngrokAPI = 'https://d076-173-8-115-9.ngrok-free.app'
 
 
@@ -420,6 +421,19 @@ const GlobalProvider = ({ children }) => {
         }
     }
 
+     const addChallengesToWorkout = (challengesToAdd) => {
+        setSelectedChallenges(prevSelected => {
+            // Create a Set of existing challenge names for efficient checking
+            const existingChallengeNames = new Set(prevSelected.map(c => c.name));
+            
+            // Filter the new challenges to only include ones not already in the list
+            const uniqueNewChallenges = challengesToAdd.filter(c => !existingChallengeNames.has(c.name));
+            
+            // Return the new combined array
+            return [...prevSelected, ...uniqueNewChallenges];
+        });
+        console.log("Updated selected challenges:", challengesToAdd);
+    };
     // Function to mark the questionnaire as completed
     const markQuestionnaireCompleted = async () => {
         try {
@@ -450,6 +464,7 @@ const GlobalProvider = ({ children }) => {
                 loggedWorkouts,
                 weeklyData,
                 warmup,
+                selectedChallenges,
                 coolDown,
                 workout,
                 loading,
@@ -463,6 +478,7 @@ const GlobalProvider = ({ children }) => {
                 logoutUser,
                 fetchQuestionnaireCompletion,
                 markQuestionnaireCompleted,
+                addChallengesToWorkout,
                 fetchUserData, // Expose fetchUserData if needed elsewhere
                 fetchGameData,
                 fetchWorkout,

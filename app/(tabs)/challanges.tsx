@@ -16,8 +16,9 @@ import WorkoutLogDetail, { IWorkoutLog } from '@/components/WorkoutLogDetail'
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, TodayWorkout, weeklyData, challenges, loggedWorkouts } = useGlobal();
+    const { userData, userGameData, ngrokAPI, TodayWorkout, weeklyData, challenges, loggedWorkouts, addChallengesToWorkout} = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
@@ -25,6 +26,8 @@ const ChallengesPage: React.FC = () => {
     const [isWorkoutAllowed, setIsWorkoutAllowed] = useState(false);
     const [workoutRoutine, setWorkoutRoutine] = useState([]);
     const [todayWorkout, setTodayWorkout] = useState(null); // State for today's workout
+    const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<{ name: any }[]>([]);
+
 
     // --- 2. Add state to hold the workout for the selected calendar date ---
     const [selectedWorkout, setSelectedWorkout] = useState<IWorkoutLog | null>(null);
@@ -40,6 +43,8 @@ const ChallengesPage: React.FC = () => {
                     setTodayWorkout(TodayWorkout?.workoutRoutine || null);
                     setTimeEstimate(TodayWorkout.timeEstimate);
                     setFocus(TodayWorkout.focus);
+                    console.log(challenges);
+                    
                 }
             } catch (error) {
                 console.error("Error fetching workout data:", error);
@@ -83,22 +88,24 @@ const ChallengesPage: React.FC = () => {
         }
     };
 
-    const showInfo = () => {
-        const entry = {
-            name: "Barbell Deadlift",
-            description: "Lift a loaded barbell from the floor to a standing position, keeping your back straight.",
-            videoUrl: "https://example.com/videos/deadlift.mp4",
-            category: "Back",
-            equipment: ["Barbell", "Weight Plates"],
-            difficulty: "Advanced",
-            recommendedSets: "3-5",
-            recommendedReps: "3-6",
-            isWarmupExercise: false,
-            isCooldownExercise: false,
-            tags: ["compound", "strength"]
-        }
-        axios.post(`${ngrokAPI}/test/add-exercise`, entry);
-    }
+    const handleChallengeSelection = (challengeToToggle: { name: any; }) => {
+        setLocallySelectedChallenges(prev => {
+            const isAlreadySelected = prev.find(c => c.name === challengeToToggle.name);
+            if (isAlreadySelected) {
+                // If selected, remove it from the array
+                return prev.filter(c => c.name !== challengeToToggle.name);
+            } else {
+                // If not selected, add it to the array
+                return [...prev, challengeToToggle];
+            }
+        });
+    };
+    const handleAddSelectedChallenges = () => {
+        addChallengesToWorkout(locallySelectedChallenges);
+        setShowChallanges(false);
+        setLocallySelectedChallenges([]); // Reset for next time
+    };
+
 
     return (
         <LinearGradient
@@ -170,9 +177,9 @@ const ChallengesPage: React.FC = () => {
                         <Text style={styles.caption}>Hm. That’s kind of a lot of xp.</Text>
                     </View>
                 </View>
-                <GraphView  weeklyData={weeklyData} />
+                {/*<GraphView  weeklyData={weeklyData} />*/}
                 <View style={{backgroundColor:'#000000'}}>
-                <TouchableOpacity style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.buttonContainer} onPress={() => setShowChallanges(true)}>
                     <LinearGradient
                         colors={['#FF090D', '#1E00FF']}
                         start={{ x: 0, y: 0.5 }}
@@ -192,14 +199,70 @@ const ChallengesPage: React.FC = () => {
                         <Text style={{ fontFamily: 'poppins-semibold', color: '#FFFFFF', fontSize: 24, marginLeft: 20 }}>MY LEAGUE</Text>
                         <Text style={{ color: '#FFFFFF', fontSize: 24, marginLeft: 180 }}>{leagueOpen ? '▲' : '▼'}</Text>
                     </TouchableOpacity>
-                    {leagueOpen && (
                         <LeagueHeader league={userGameData.league} />
-                    )}
                 </View>
             </ScrollView>
-            <Modal>
-                <View style={styles.popupHeader}>
-                    <Text style={{color:'white'}}>Hello</Text>
+            <Modal
+                animationType='fade'
+                transparent={true}
+                visible={showChallanges}
+                onRequestClose={() => setShowChallanges(false)}
+            >
+                <View style={{flex:1, justifyContent:'center', alignItems:'center', backgroundColor:'rgba(0,0,0,0.7)'}}>
+                    <LinearGradient
+                        colors={['#FF0509', '#271293']}
+                        style={{width:'90%',borderRadius:90,padding:30,paddingTop:50, alignItems:'center'}}
+                    >
+                        {/* ... close button and headers are unchanged ... */}
+                        <TouchableOpacity style={{position:'absolute', top:30, left:30, backgroundColor:'rgba(255,255,255,0.2)', padding:8, borderRadius:20}} onPress={() => setShowChallanges(false)}>
+                            <Image source={icons.x} style={{width:20, height:20, tintColor:'white'}} />
+                        </TouchableOpacity>
+                        <View style={{flexDirection:'row', alignItems:'center', justifyContent:'space-between', margin:10, marginTop:20}}>
+                            <Text style={{fontFamily:'poppins-semibold', fontSize:40, color:'#3AFFDE', letterSpacing:-1, lineHeight:30, paddingTop:30}}>Daily Challenges</Text>
+                            <Image source={icons.whiteZap} style={{width:30, height: 30, tintColor:'#00FFBF'}} />
+                        </View>
+                        <Text style={{fontFamily: 'poppins-semibold',fontSize: 20,color: '#FFFFFF',alignSelf: 'flex-start',marginBottom: 25,}}>GET AHEAD:</Text>
+
+                        <View style={{width: '100%', marginBottom: 30,}}>
+                            {challenges.map((challenge, index) => {
+                                // --- LOGIC: Check if the current challenge is selected ---
+                                const isSelected = locallySelectedChallenges.some(c => c.name === challenge.name);
+                                return (
+                                <View key={index} style={{flexDirection: 'row', alignItems: 'center', marginBottom: 20,}}>
+                                    <TouchableOpacity
+                                        // --- LOGIC: Conditionally add a background color if selected, without changing original styles ---
+                                        style={[{width: 45,height: 44, borderRadius:90 ,backgroundColor: 'rgba(255, 255, 255, 0.2)',justifyContent: 'center',alignItems: 'center',marginRight: 15,}, isSelected && {backgroundColor: '#38FFF5'}]}
+                                        // --- LOGIC: Call the selection handler ---
+                                        onPress={() => handleChallengeSelection(challenge)}
+                                    >
+                                        <Text style={{color: 'white',fontSize: 24,fontWeight: 'bold', alignItems:'center'}}>
+                                            {/* --- LOGIC: Show a checkmark if selected --- */}
+                                            {isSelected ? '✓' : '+'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    
+                                    {/* The rest of the challenge item display is unchanged */}
+                                    <View style={{flex:1, marginTop:10}}>
+                                        <Text style={{fontFamily: 'Poppins-SemiBold',fontSize: 16,color: '#FFFFFF', marginTop:5}}>{challenge.name}</Text>
+                                        <Text style={{fontFamily: 'raleway-light',fontSize: 14,color: '#E0E0E0',}}>{challenge.duration}</Text>
+                                    </View>
+                                    <View style={{alignItems:'flex-end'}}>
+                                        <Text style={{fontFamily: 'Poppins-Regular',fontSize: 12,color: '#E0E0E0',}}>AVAILABLE:</Text>
+                                        <Text style={{fontFamily: 'Poppins-Bold',fontSize: 16,color: '#38FFF5'}}>{challenge.xp} XP</Text>
+                                    </View>
+                                </View>
+                            )})}
+                        </View>
+                        
+                        {/* --- LOGIC: Call the function to add challenges to global state --- */}
+                        <TouchableOpacity 
+                            onPress={handleAddSelectedChallenges}
+                            style={{backgroundColor: 'rgba(217,217,217,0.27)',borderRadius: 15,paddingVertical: 15, width:178,alignItems: 'center', shadowColor: "#000",shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5,}}>
+                            <Text style={{color: '#FFFFFF', fontSize: 18, fontFamily: 'Poppins-Bold',}}>
+                                Add
+                            </Text>
+                        </TouchableOpacity>
+                    </LinearGradient>
                 </View>
             </Modal>
             <Modal
@@ -229,6 +292,8 @@ const ChallengesPage: React.FC = () => {
         </LinearGradient>
     );
 };
+
+export default ChallengesPage;
 // --- Styles (no changes needed here) ---
 const styles = StyleSheet.create({
     popupHeader:{
@@ -329,4 +394,3 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ChallengesPage;
