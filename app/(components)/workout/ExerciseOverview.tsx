@@ -16,7 +16,7 @@ import { useGlobal } from "@/context/GlobalProvider";
 interface Exercise {
   exercise: string;
   reps: String;
-  phase: "warmup" | "workout" | "cooldown";
+  phase: "warmup" | "workout" | "cooldown" | "challanges";
   // Add other properties if needed
 }
 

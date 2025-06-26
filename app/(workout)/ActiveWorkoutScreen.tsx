@@ -23,7 +23,7 @@ export interface Exercise {
     reps: string;
     sets: number;
     videoUrl: string;
-    phase: "warmup" | "workout" | "cooldown";
+    phase: "warmup" | "workout" | "cooldown" | "challanges";
     restBetweenSeconds: number;
     recommendedWeight: number;
     performedSets: PerformedSet[];
@@ -32,7 +32,7 @@ export interface Exercise {
 type FlowState = "OVERVIEW" | "EXERCISE" | "INTER_SET_REST" | "POST_EXERCISE_REST" | "UP_NEXT" | "CHANGE_THEME";
 
 const ActiveWorkoutScreen = () => {
-    const { warmup, workout, coolDown, userGameData, userData, ngrokAPI, TodayWorkout } = useGlobal();
+    const { warmup, workout, coolDown, userGameData, userData, ngrokAPI, TodayWorkout, selectedChallenges} = useGlobal();
     const [changeTheme, setchangeTheme] = useState(Boolean);
     const [liveWorkout, setLiveWorkout] = useState<Exercise[] | null>(null);
     const [exerciseIndex, setExerciseIndex] = useState(0);
@@ -45,7 +45,8 @@ const ActiveWorkoutScreen = () => {
         const taggedWarmup = (warmup || []).map((ex: any) => ({ ...ex, phase: "warmup" as const }));
         const taggedWorkout = (workout || []).map((ex: any) => ({ ...ex, phase: "workout" as const }));
         const taggedCoolDown = (coolDown || []).map((ex: any) => ({ ...ex, phase: "cooldown" as const }));
-        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout, ...taggedCoolDown];
+        const taggedChallanges = (selectedChallenges || []).map((ex:any) => ({...ex,phase:'challanges' as const}))
+        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout, ...taggedCoolDown,...taggedChallanges];
 
         if (combinedPlaylist.length > 0) {
             const workoutSession = combinedPlaylist.map(exercise => ({

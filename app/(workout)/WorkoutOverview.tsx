@@ -10,7 +10,7 @@ import WorkoutCard from '@/components/WorkoutCard';
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData, warmup, workout, coolDown, TodayWorkout} = useGlobal();
+    const {userWorkoutData, userData, warmup, workout, coolDown, TodayWorkout, selectedChallenges} = useGlobal();
     const [currentDay, setCurrentDay] = useState('');
     const [workoutRoutine, setworkoutRoutine] = useState([])
     const [focus, setFocus] = useState('');
@@ -23,7 +23,8 @@ const WorkoutOverview = () => {
                 // Ensure the workout data exists and has the correct structure
                 const routineArray = userWorkoutData?.routine || [];
                 setPoints((TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5);
-            
+                console.log(selectedChallenges);
+                
 
                 
                 
@@ -117,6 +118,7 @@ const WorkoutOverview = () => {
                 <WorkoutCard workoutRoutine={warmup} title='Warm-Up'/>
                 <WorkoutCard workoutRoutine={workout} title='Main Workout'/>
                 <WorkoutCard workoutRoutine={coolDown} title='Cool Down'/>
+                {selectedChallenges && <WorkoutCard workoutRoutine={selectedChallenges} title='Challanges'/> }
                 <View style={styles.bottomStreak}>
                     <Image source={icons.blueStreak} style={{height: 75, width: 74,}}/>
                 </View>

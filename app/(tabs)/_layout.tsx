@@ -38,6 +38,8 @@ const TabsLayout = () => {
                 },
             }}
         >
+
+            {/** 
             <Tabs.Screen
                 name="nutrition"
                 options={{
@@ -48,6 +50,7 @@ const TabsLayout = () => {
                     )
                 }}
             />
+            */}
             <Tabs.Screen
                 name="challanges"
                 options={{

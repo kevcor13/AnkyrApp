@@ -20,7 +20,7 @@ interface PerformedSet {
 
 interface Exercise {
   exercise: string;
-  phase: "warmup" | "workout" | "cooldown";
+  phase: "warmup" | "workout" | "cooldown" | "challanges";
   videoUrl: string;
   sets: number;
   reps: string;

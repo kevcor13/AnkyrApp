@@ -10,8 +10,17 @@ import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal } fr
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 import GraphView from "@/components/GraphView";
-// --- 1. Import the new component and its type definition ---
 import WorkoutLogDetail, { IWorkoutLog } from '@/components/WorkoutLogDetail'
+
+// --- 1. Define an interface for your challenge object for type safety ---
+// This is based on how you use the 'challenge' object in your component.
+interface IChallenge {
+    exercise: string;
+    duration: string;
+    xp: number;
+    // Add any other properties that a challenge object might have.
+    [key: string]: any; 
+}
 
 
 const ChallengesPage: React.FC = () => {
@@ -25,12 +34,12 @@ const ChallengesPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isWorkoutAllowed, setIsWorkoutAllowed] = useState(false);
     const [workoutRoutine, setWorkoutRoutine] = useState([]);
-    const [todayWorkout, setTodayWorkout] = useState(null); // State for today's workout
-    const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<{ name: any }[]>([]);
-
-
-    // --- 2. Add state to hold the workout for the selected calendar date ---
+    const [todayWorkout, setTodayWorkout] = useState(null); 
     const [selectedWorkout, setSelectedWorkout] = useState<IWorkoutLog | null>(null);
+
+    // --- 2. FIX: Correctly type the state for selected challenges ---
+    // It should be an array of IChallenge objects.
+    const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
 
 
     useEffect(() => {
@@ -44,7 +53,6 @@ const ChallengesPage: React.FC = () => {
                     setTimeEstimate(TodayWorkout.timeEstimate);
                     setFocus(TodayWorkout.focus);
                     console.log(challenges);
-                    
                 }
             } catch (error) {
                 console.error("Error fetching workout data:", error);
@@ -56,8 +64,10 @@ const ChallengesPage: React.FC = () => {
 
     useEffect(() => {
         if (userData) {
-            const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionDate, new Date());
-            setIsWorkoutAllowed(alreadyDoneToday);
+            const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionData, new Date());
+            if(alreadyDoneToday){
+                setIsWorkoutAllowed(alreadyDoneToday);
+            }
             setIsLoading(false);
         } else {
             setIsLoading(true);
@@ -73,33 +83,33 @@ const ChallengesPage: React.FC = () => {
             d1.getMonth() === d2.getMonth() &&
             d1.getDate() === d2.getDate();
     };
-
-    // --- 3. Create a handler function for when a date is selected ---
+ 
     const handleDateSelect = (selectedDate: Date) => {
         const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, selectedDate));
         if (workoutForDay) {
-            // If a workout is found, update the state
             setSelectedWorkout(workoutForDay);
             setIsWorkoutAllowed(true);
         } else {
-            // If no workout is found for that day, set the state to null
             setSelectedWorkout(null);
             setIsWorkoutAllowed(false)
         }
     };
 
-    const handleChallengeSelection = (challengeToToggle: { name: any; }) => {
+    // --- 3. FIX: Update the handler to use 'exercise' for comparison ---
+    const handleChallengeSelection = (challengeToToggle: IChallenge) => {
         setLocallySelectedChallenges(prev => {
-            const isAlreadySelected = prev.find(c => c.name === challengeToToggle.name);
+            // Check if the challenge is already in the selection based on its 'exercise' property
+            const isAlreadySelected = prev.some(c => c.exercise === challengeToToggle.exercise);
             if (isAlreadySelected) {
-                // If selected, remove it from the array
-                return prev.filter(c => c.name !== challengeToToggle.name);
+                // If selected, filter it out to de-select it
+                return prev.filter(c => c.exercise !== challengeToToggle.exercise);
             } else {
                 // If not selected, add it to the array
                 return [...prev, challengeToToggle];
             }
         });
     };
+
     const handleAddSelectedChallenges = () => {
         addChallengesToWorkout(locallySelectedChallenges);
         setShowChallanges(false);
@@ -129,25 +139,24 @@ const ChallengesPage: React.FC = () => {
                                 <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
                                 <Image source={icons.blueStreak} style={styles.zapImage} />
                             </View><CustomButton
-                                    title="My workout"
-                                    handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
-                                    buttonStyle={{
-                                        backgroundColor: 'rgba(217, 217, 217, 0.5)',
-                                        borderRadius: 20,
-                                        paddingVertical: 16,
-                                        paddingHorizontal: 32,
-                                        marginTop: 10,
-                                        justifyContent: "center"
-                                    }}
-                                    textStyle={{
-                                        color: '#FFFFFF',
-                                        fontSize: 16,
-                                        fontFamily: 'poppins-semiBold'
-                                    }} /></>
+                                title="My workout"
+                                handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
+                                buttonStyle={{
+                                    backgroundColor: 'rgba(217, 217, 217, 0.5)',
+                                    borderRadius: 20,
+                                    paddingVertical: 16,
+                                    paddingHorizontal: 32,
+                                    marginTop: 10,
+                                    justifyContent: "center"
+                                }}
+                                textStyle={{
+                                    color: '#FFFFFF',
+                                    fontSize: 16,
+                                    fontFamily: 'poppins-semiBold'
+                                }} /></>
                     )}
                 </View>
                 
-                {/* --- 4. Pass the handler to the CalendarSelector --- */}
                 <CalendarSelector onSelect={handleDateSelect} />
                 {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
 
@@ -213,7 +222,6 @@ const ChallengesPage: React.FC = () => {
                         colors={['#FF0509', '#271293']}
                         style={{width:'90%',borderRadius:90,padding:30,paddingTop:50, alignItems:'center'}}
                     >
-                        {/* ... close button and headers are unchanged ... */}
                         <TouchableOpacity style={{position:'absolute', top:30, left:30, backgroundColor:'rgba(255,255,255,0.2)', padding:8, borderRadius:20}} onPress={() => setShowChallanges(false)}>
                             <Image source={icons.x} style={{width:20, height:20, tintColor:'white'}} />
                         </TouchableOpacity>
@@ -224,26 +232,24 @@ const ChallengesPage: React.FC = () => {
                         <Text style={{fontFamily: 'poppins-semibold',fontSize: 20,color: '#FFFFFF',alignSelf: 'flex-start',marginBottom: 25,}}>GET AHEAD:</Text>
 
                         <View style={{width: '100%', marginBottom: 30,}}>
-                            {challenges.map((challenge, index) => {
-                                // --- LOGIC: Check if the current challenge is selected ---
-                                const isSelected = locallySelectedChallenges.some(c => c.name === challenge.name);
+                            {challenges.map((challenge: IChallenge, index: number) => {
+                                // This logic now correctly checks against a state of the proper type.
+                                const isSelected = locallySelectedChallenges.some(c => c.exercise === challenge.exercise);
                                 return (
                                 <View key={index} style={{flexDirection: 'row', alignItems: 'center', marginBottom: 20,}}>
                                     <TouchableOpacity
-                                        // --- LOGIC: Conditionally add a background color if selected, without changing original styles ---
+                                        // The conditional styling is correct.
                                         style={[{width: 45,height: 44, borderRadius:90 ,backgroundColor: 'rgba(255, 255, 255, 0.2)',justifyContent: 'center',alignItems: 'center',marginRight: 15,}, isSelected && {backgroundColor: '#38FFF5'}]}
-                                        // --- LOGIC: Call the selection handler ---
+                                        // The handler is now correctly defined to handle this.
                                         onPress={() => handleChallengeSelection(challenge)}
                                     >
                                         <Text style={{color: 'white',fontSize: 24,fontWeight: 'bold', alignItems:'center'}}>
-                                            {/* --- LOGIC: Show a checkmark if selected --- */}
                                             {isSelected ? '✓' : '+'}
                                         </Text>
                                     </TouchableOpacity>
                                     
-                                    {/* The rest of the challenge item display is unchanged */}
                                     <View style={{flex:1, marginTop:10}}>
-                                        <Text style={{fontFamily: 'Poppins-SemiBold',fontSize: 16,color: '#FFFFFF', marginTop:5}}>{challenge.name}</Text>
+                                        <Text style={{fontFamily: 'Poppins-SemiBold',fontSize: 16,color: '#FFFFFF', marginTop:5}}>{challenge.exercise}</Text>
                                         <Text style={{fontFamily: 'raleway-light',fontSize: 14,color: '#E0E0E0',}}>{challenge.duration}</Text>
                                     </View>
                                     <View style={{alignItems:'flex-end'}}>
@@ -254,7 +260,6 @@ const ChallengesPage: React.FC = () => {
                             )})}
                         </View>
                         
-                        {/* --- LOGIC: Call the function to add challenges to global state --- */}
                         <TouchableOpacity 
                             onPress={handleAddSelectedChallenges}
                             style={{backgroundColor: 'rgba(217,217,217,0.27)',borderRadius: 15,paddingVertical: 15, width:178,alignItems: 'center', shadowColor: "#000",shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5,}}>
@@ -265,7 +270,8 @@ const ChallengesPage: React.FC = () => {
                     </LinearGradient>
                 </View>
             </Modal>
-            <Modal
+            {/* ... other modal and styles are unchanged ... */}
+             <Modal
                 animationType="fade"
                 transparent={true}
                 visible={showInfoModal}
@@ -294,7 +300,7 @@ const ChallengesPage: React.FC = () => {
 };
 
 export default ChallengesPage;
-// --- Styles (no changes needed here) ---
+
 const styles = StyleSheet.create({
     popupHeader:{
         
@@ -393,4 +399,3 @@ const styles = StyleSheet.create({
         marginTop: 6,
     },
 });
-
