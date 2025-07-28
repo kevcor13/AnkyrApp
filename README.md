@@ -34,7 +34,7 @@ A onGoing, cross-platform **fitness-focused mobile application** built with **Ex
 **Clone the frontend repo:**
 
 bash Copy Edit
-git clone [https://github.com/your-username/your-frontend-repo.git](https://github.com/kevcor13/AnkyrApp.git)
+git clone https://github.com/kevcor13/AnkyrApp.git
 cd your-frontend-repo
 
 **Install dependencies**
@@ -46,7 +46,7 @@ npm install
 npm expo start
 
 ## 🌐 Backend Repository
-The backend code is available [here]().
+The backend code is available [here](https://github.com/kevcor13/Ankyr_Backend.git).
 
 AI logic for workout generation
 
