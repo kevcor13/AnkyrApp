@@ -44,9 +44,9 @@ const ActiveWorkoutScreen = () => {
     useEffect(() => {
         const taggedWarmup = (warmup || []).map((ex: any) => ({ ...ex, phase: "warmup" as const }));
         const taggedWorkout = (workout || []).map((ex: any) => ({ ...ex, phase: "workout" as const }));
-        const taggedCoolDown = (coolDown || []).map((ex: any) => ({ ...ex, phase: "cooldown" as const }));
+        //const taggedCoolDown = (coolDown || []).map((ex: any) => ({ ...ex, phase: "cooldown" as const }));
         const taggedChallanges = (selectedChallenges || []).map((ex:any) => ({...ex,phase:'challanges' as const}))
-        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout, ...taggedCoolDown,...taggedChallanges];
+        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout,...taggedChallanges];
 
         if (combinedPlaylist.length > 0) {
             const workoutSession = combinedPlaylist.map(exercise => ({

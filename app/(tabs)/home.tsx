@@ -18,7 +18,6 @@ const Home = () => {
     const [loadingPosts, setLoadingPosts] = useState(true);
     
     useEffect(() => {
-        // Set a short timeout to ensure userData is loaded
         const timer = setTimeout(() => {
             setIsLoading(false);
             if (!userData) {
@@ -41,25 +40,19 @@ const Home = () => {
                 console.error('No authentication token found');
                 return;
             }
-
-            // 1. Fetch followers list (users who follow the current user)
             const followers = await fetchFollowerUsers();
             fetchWorkout(token, userData._id);
             await fetchGameData(token, userData._id);
             setFollowersUsers(followers);
             console.log(userData);
-            
-
-            // 2. Filter to get only followers with requestStatus = true
+        
             const acceptedFollowers = followers
                 .filter((u: { requestStatus: boolean; }) => u.requestStatus === true)
                 .map((u: { id: any; }) => u.id);
 
-            // 3. Fetch following list (users that the current user follows)
             const following = await fetchFollowingUsers(userData._id);
             setFollowingUsers(following);
 
-            // 4. Filter to get only followings with requestStatus = true
             const acceptedFollowings = following
                 .filter((u: { requestStatus: boolean; }) => u.requestStatus === true)
                 .map((u: { id: any; }) => u.id);

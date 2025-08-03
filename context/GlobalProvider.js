@@ -20,7 +20,7 @@ const GlobalProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [questionStatus, setQuestionStatus] = useState(false);
     const [userGameData, setUserGameData] = useState('');
-    const [userWorkoutData, setUserWorkoutData] = useState('')
+    const [userWorkoutData, setUserWorkoutData] = useState([])
     const [TodayWorkout, setTodayWorkout] = useState('')
     const [weeklyData, setWeeklyData] = useState([]);
     const [challenges, setChallenges] = useState([]);
@@ -29,7 +29,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://d076-173-8-115-9.ngrok-free.app'
+    const ngrokAPI = 'https://709ffe267ccd.ngrok-free.app'
 
 
     // function to sign up the user
@@ -202,9 +202,9 @@ const GlobalProvider = ({ children }) => {
             if (response.data.status === "success") {
                 setUserWorkoutData(response.data.data)
                 await seperateWorkouts(response.data.data)
-                await fetchXpHistory(UserID);
-                await fetchChallenges(UserID);
-                await fetchLoggedWorkouts(UserID)
+                //await fetchXpHistory(UserID);
+                //await fetchChallenges(UserID);
+                //await fetchLoggedWorkouts(UserID)
                 return response.data.data;
             } else {
                 console.error("Failed to fetch workout data:", response.data.data);

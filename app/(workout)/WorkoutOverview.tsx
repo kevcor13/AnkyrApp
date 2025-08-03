@@ -34,8 +34,7 @@ const WorkoutOverview = () => {
                 // Find today's workout in the routine array
                 const workoutOfTheDay = routineArray.find((dayRoutine: { day: string; }) => dayRoutine.day === today);
                 setTimeEstimate(workoutOfTheDay.timeEstimate);
-                setFocus(workoutOfTheDay.focus)
-                setworkoutRoutine(routineArray.find((dayRoutine:{day: string;}) => dayRoutine.day === 'Monday')?.workoutRoutine)
+                setFocus(workoutOfTheDay.focus);
                 
                 
             } catch (error) {
@@ -79,18 +78,6 @@ const WorkoutOverview = () => {
                         </View>
                     </View>
                 </View>
-                <TouchableOpacity style={styles.buttonContainer}>
-                                    <LinearGradient
-                                        colors={['#FF090D', '#1E00FF']}
-                                        start={{ x: 0, y: 0.5 }}
-                                        end={{ x: 1, y: 0.5 }}
-                                        style={styles.gradient}
-                                    >
-                                        <View style={styles.contentView}>
-                                            <Text style={styles.buttonText}>Daily Challenges</Text>
-                                        </View>
-                                    </LinearGradient>
-                                </TouchableOpacity>
                 <CustomButton
                         title="Okay let's go!"
                         handlePress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
@@ -117,7 +104,7 @@ const WorkoutOverview = () => {
                 </View>
                 <WorkoutCard workoutRoutine={warmup} title='Warm-Up'/>
                 <WorkoutCard workoutRoutine={workout} title='Main Workout'/>
-                <WorkoutCard workoutRoutine={coolDown} title='Cool Down'/>
+                {/** <WorkoutCard workoutRoutine={coolDown} title='Cool Down'/>*/}
                 {selectedChallenges && <WorkoutCard workoutRoutine={selectedChallenges} title='Challanges'/> }
                 <View style={styles.bottomStreak}>
                     <Image source={icons.blueStreak} style={{height: 75, width: 74,}}/>
