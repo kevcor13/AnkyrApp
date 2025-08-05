@@ -30,7 +30,7 @@ const CodeEntry = () => {
         try {
             const documentId = '680aaab878a04aea3fe07bee'
             const resp = await axios.post(
-                `${ngrokAPI}/checkCodeMatch`,
+                `${ngrokAPI}/api/auth/checkCodeMatch`,
                 { documentId, code }
             )
             const { found } = resp.data

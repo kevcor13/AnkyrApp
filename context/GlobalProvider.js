@@ -29,14 +29,14 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://709ffe267ccd.ngrok-free.app'
+    const ngrokAPI = 'https://001e946bcae8.ngrok-free.app'
 
 
     // function to sign up the user
     const signUpUser = async (name, username, email, password, profile) => {
         console.log(profile);
         try{
-            const response = await axios.post(`${ngrokAPI}/register`, {name, username, email, password, profile});
+            const response = await axios.post(`${ngrokAPI}/api/auth/register`, {name, username, email, password, profile});
             const data = response.data;
             console.log(data)
             if (data.status === "success") {
@@ -57,7 +57,7 @@ const GlobalProvider = ({ children }) => {
     // Function to log in the user
     const loginUser = async (email, password) => {
         try {
-            const response = await axios.post(`${ngrokAPI}/login`, { email, password });
+            const response = await axios.post(`${ngrokAPI}/api/auth/login`, { email, password });
             const data = response.data;
 
             if (data.status === "success") {
