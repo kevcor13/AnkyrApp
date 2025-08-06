@@ -29,7 +29,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://001e946bcae8.ngrok-free.app'
+    const ngrokAPI = 'https://35ee8c7c5af3.ngrok-free.app'
 
 
     // function to sign up the user
@@ -67,7 +67,7 @@ const GlobalProvider = ({ children }) => {
                 setUser(data.user);
 
                 // Fetch user data immediately after login
-                await fetchUserData(data.data);
+                await fetchUserData(data.data); 
                 //await fetchGameData(data.data, data.user._id);
 
                 return { success: true };
@@ -169,7 +169,7 @@ const GlobalProvider = ({ children }) => {
     // get the user data
     const fetchUserData = async (token) => {
         try {
-            const response = await axios.post(`${ngrokAPI}/userdata`, { token });
+            const response = await axios.post(`${ngrokAPI}/api/user/getUserData`, { token });
             if (response.data.status === "success") {
                 setUserData(response.data.data);
             } else {
@@ -183,7 +183,7 @@ const GlobalProvider = ({ children }) => {
     // get the game data
     const fetchGameData = async (token, UserID) => {
         try {
-            const response = await axios.post(`${ngrokAPI}/gamedata`, {token, UserID});
+            const response = await axios.post(`${ngrokAPI}/api/user/getGameData`, {token, UserID});
             if (response.data.status === "success") {
                 setUserGameData(response.data.data);
                 return response.data.data;
@@ -198,7 +198,7 @@ const GlobalProvider = ({ children }) => {
     //get the workout data
     const fetchWorkout = async (token, UserID) => {
         try{
-            const response = await axios.post(`${ngrokAPI}/workout`, {token, UserID});
+            const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, UserID});
             if (response.data.status === "success") {
                 setUserWorkoutData(response.data.data)
                 await seperateWorkouts(response.data.data)

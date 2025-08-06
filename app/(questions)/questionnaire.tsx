@@ -148,10 +148,10 @@ Return the full structured data in pure JSON format, no extra commentary.
                     axios.post(`${ngrokAPI}/userSettings`, { UserID })
                         .then(res => {
                             console.log("user Settings created", res.data)
-                            axios.post(`${ngrokAPI}/gameSystem`, points)
+                            axios.post(`${ngrokAPI}/api/user/createGameSystem`, points)
                                 .then((res) => {
                                     console.log("game system created", res.data)
-                                    axios.post(`${ngrokAPI}/aI`, { Gmessage, UserID })
+                                    axios.post(`${ngrokAPI}/api/GenAI/ai`, { Gmessage, UserID })
                                         .then(res => {
                                             console.log("Workout saved successfully! Response:", res.data)
                                             router.replace('/LoadingScreen');
