@@ -18,8 +18,10 @@ const CalendarSelector: React.FC<{
   useEffect(() => {
     const today = new Date();
     const items: DayItem[] = [];
+    
     for (let offset = -2; offset <= 2; offset++) {
       const d = new Date(today);
+      
       d.setDate(today.getDate() + offset);
       items.push({
         date: d,
