@@ -109,7 +109,7 @@ const Questionnaire = () => {
                 - "sets": number
                 - "reps": number or range (e.g., "8-10")
                 - Optional: suggest difficulty level as "easy", "moderate", or "hard"
-            - "cooldown": brief cooldown recommendation (text)
+            - "cooldown": array of cooldown exercise names
             
             DO NOT include rest days.
             

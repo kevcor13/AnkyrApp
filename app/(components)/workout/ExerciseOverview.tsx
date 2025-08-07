@@ -14,7 +14,7 @@ import { router } from "expo-router";
 import { useGlobal } from "@/context/GlobalProvider";
 
 interface Exercise {
-  exercise: string;
+  exerciseName: string;
   reps: String;
   phase: "warmup" | "workout" | "cooldown" | "challanges";
   // Add other properties if needed
@@ -136,7 +136,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
       </View>
       <View style={{ justifyContent: "center", marginTop: 100 }}>
         <Animated.View style={{ transform: [{ translateX: slideAnim1 }] }}>
-          <Text style={styles.overviewTitle}>{exercise.exercise}</Text>
+          <Text style={styles.overviewTitle}>{exercise.exerciseName}</Text>
         </Animated.View>
 
         <Animated.View style={{ transform: [{ translateX: slideAnim2 }] }}>

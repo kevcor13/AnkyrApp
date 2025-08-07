@@ -10,9 +10,7 @@ import WorkoutCard from '@/components/WorkoutCard';
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData, warmup, workout, coolDown, TodayWorkout, selectedChallenges} = useGlobal();
-    const [currentDay, setCurrentDay] = useState('');
-    const [workoutRoutine, setworkoutRoutine] = useState([])
+    const {userWorkoutData, userData, selectedChallenges} = useGlobal();
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
     const [points, setPoints] = useState(Number)
@@ -21,22 +19,11 @@ const WorkoutOverview = () => {
         const fetchData = async () => {
             try {
                 // Ensure the workout data exists and has the correct structure
-                const routineArray = userWorkoutData?.routine || [];
-                setPoints((TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5);
+                //const routineArray = userWorkoutData?.routine || [];
+                setPoints((userWorkoutData.warmup.length + userWorkoutData.workoutRoutine.length + userWorkoutData.cooldown.length) * 5);
                 console.log(selectedChallenges);
-                
-
-                
-                
-                // Get the current day
-                const today = new Date().toLocaleString("en-US", { weekday: "long" })
-                
-                // Find today's workout in the routine array
-                const workoutOfTheDay = routineArray.find((dayRoutine: { day: string; }) => dayRoutine.day === today);
-                setTimeEstimate(workoutOfTheDay.timeEstimate);
-                setFocus(workoutOfTheDay.focus);
-                
-                
+                setTimeEstimate(userWorkoutData.timeEstimate);
+                setFocus(userWorkoutData.focus);
             } catch (error) {
                 console.error("Error fetching workout data:", error);
             }
@@ -102,9 +89,9 @@ const WorkoutOverview = () => {
                             <Text>Hello</Text>
                         </TouchableOpacity>
                 </View>
-                <WorkoutCard workoutRoutine={warmup} title='Warm-Up'/>
-                <WorkoutCard workoutRoutine={workout} title='Main Workout'/>
-                {/** <WorkoutCard workoutRoutine={coolDown} title='Cool Down'/>*/}
+                <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up'/>
+                <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title='Main Workout'/>
+                <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title='Cool Down'/>
                 {selectedChallenges && <WorkoutCard workoutRoutine={selectedChallenges} title='Challanges'/> }
                 <View style={styles.bottomStreak}>
                     <Image source={icons.blueStreak} style={{height: 75, width: 74,}}/>

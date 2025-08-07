@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import React from 'react';
 
 interface Exercise {
-  exercise: string;
+  exerciseName: string;
   reps: string;
   sets: number;
 }
@@ -19,7 +19,7 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
       {workoutRoutine.map((exercise, index) => (
         <View key={index} style={styles.card}>
           <View>
-            <Text style={styles.exerciseName}>{exercise.exercise}</Text>
+            <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
             <Text style={styles.exerciseDetails}>{exercise.sets} sets</Text>
             <Text style={styles.exerciseDetails}>{exercise.reps} reps</Text>
           </View>

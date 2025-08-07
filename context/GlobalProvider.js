@@ -29,7 +29,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://35ee8c7c5af3.ngrok-free.app'
+    const ngrokAPI = 'https://6e59cf1035b8.ngrok-free.app'
 
 
     // function to sign up the user
@@ -199,9 +199,9 @@ const GlobalProvider = ({ children }) => {
     const fetchWorkout = async (token, UserID) => {
         try{
             const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, UserID});
-            if (response.data.status === "success") {
+            if (response.data.status === "success") {;
                 setUserWorkoutData(response.data.data)
-                await seperateWorkouts(response.data.data)
+                //await seperateWorkouts(response.data.data)
                 //await fetchXpHistory(UserID);
                 //await fetchChallenges(UserID);
                 //await fetchLoggedWorkouts(UserID)

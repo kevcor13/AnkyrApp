@@ -5,7 +5,7 @@ import CustomButton from "@/components/CustomButton";
 import axios from "axios";
 import LeagueHeader from "@/components/LeagueHeader";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal } from "react-native";
 import icons from "@/constants/icons";
 import { router } from "expo-router";
@@ -25,7 +25,7 @@ interface IChallenge {
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, TodayWorkout, weeklyData, challenges, loggedWorkouts, addChallengesToWorkout} = useGlobal();
+    const { userData, userGameData, ngrokAPI,  userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout} = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
@@ -45,14 +45,12 @@ const ChallengesPage: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (TodayWorkout) {
-                    setWorkoutRoutine(TodayWorkout);
+                if (userWorkoutData) {
                     const today = new Date().toLocaleString("en-US", { weekday: "long" });
                     setCurrentDay(today);
-                    setTodayWorkout(TodayWorkout?.workoutRoutine || null);
-                    setTimeEstimate(TodayWorkout.timeEstimate);
-                    setFocus(TodayWorkout.focus);
-                    console.log(challenges);
+                    setTimeEstimate(userWorkoutData.timeEstimate);
+                    setFocus(userWorkoutData.focus);
+                    //console.log(challenges);
                 }
             } catch (error) {
                 console.error("Error fetching workout data:", error);
@@ -60,7 +58,7 @@ const ChallengesPage: React.FC = () => {
         };
 
         fetchData();
-    }, [userData, TodayWorkout]);
+    }, [userData, userWorkoutData]);
 
     useEffect(() => {
         if (userData) {

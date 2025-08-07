@@ -19,7 +19,7 @@ interface PerformedSet {
 }
 
 interface Exercise {
-  exercise: string;
+  exerciseName: string;
   phase: "warmup" | "workout" | "cooldown" | "challanges";
   videoUrl: string;
   sets: number;
@@ -63,7 +63,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
       onSetUpdate(exerciseIndex, currentSetIndex, exercise.recommendedWeight);
     }
     setHasAdjusted(false);
-  }, [exercise.exercise, currentSetIndex]);
+  }, [exercise.exerciseName, currentSetIndex]);
 
   const isWarmup = exercise.phase === "warmup";
   const isCooldown = exercise.phase === "cooldown";
@@ -102,6 +102,12 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   return (
     <View style={{ flex: 1 }}>
       <View style={globalStyles.header}>
+        <Image
+          source={{uri:exercise.videoUrl}}
+          style={globalStyles.video}
+          resizeMode={ResizeMode.COVER}
+        />
+        {/** 
         <Video
           source={{ uri: exercise.videoUrl }}
           style={globalStyles.video}
@@ -110,13 +116,14 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           isLooping
           isMuted
         />
+        */}
       </View>
       <LinearGradient
         colors={isWarmup ? ["#FF0509", "#E89750"] : isCooldown? ["#A12287", "#1F059D"]: theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]}
         style={globalStyles.gradientContainer}
       >
         <ScrollView style={globalStyles.workoutCard}>
-          <Text style={globalStyles.exerciseNameMain}>{exercise.exercise}</Text>
+          <Text style={globalStyles.exerciseNameMain}>{exercise.exerciseName}</Text>
           <View style={globalStyles.repsContainer}>
             <Text style={globalStyles.repsSetsMain}>
               {exercise.reps}
