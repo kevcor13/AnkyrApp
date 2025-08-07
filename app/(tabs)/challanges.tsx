@@ -37,8 +37,6 @@ const ChallengesPage: React.FC = () => {
     const [todayWorkout, setTodayWorkout] = useState(null); 
     const [selectedWorkout, setSelectedWorkout] = useState<IWorkoutLog | null>(null);
 
-    // --- 2. FIX: Correctly type the state for selected challenges ---
-    // It should be an array of IChallenge objects.
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
 
 
@@ -83,6 +81,7 @@ const ChallengesPage: React.FC = () => {
     };
  
     const handleDateSelect = (selectedDate: Date) => {
+        console.log("Selected date:", selectedDate);
         const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, selectedDate));
         if (workoutForDay) {
             setSelectedWorkout(workoutForDay);

@@ -26,8 +26,6 @@ const EndWorkoutScreen = () => {
     TodayWorkout,
     userGameData,
   } = useGlobal();
-  const [currentDay, setCurrentDay] = useState("");
-  const [workoutRoutine, setworkoutRoutine] = useState([]);
   const [focus, setFocus] = useState("");
   const [timeEstimate, setTimeEstimate] = useState("");
   const [badgeImage, setBadgeImage] = useState<string | null>(null);
@@ -37,26 +35,14 @@ const EndWorkoutScreen = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Ensure the workout data exists and has the correct structure
-        const routineArray = userWorkoutData?.routine || [];
+        // Ensure the workout data exists and has the correct structur
         setPoints(
-          (TodayWorkout.warmup.length + TodayWorkout.workoutRoutine.length) * 5
+          (userWorkoutData.warmup.length + userWorkoutData.workoutRoutine.length + userWorkoutData.warmup.length) * 5
         );
         setXP(userGameData?.points || 0);
         // Get the current day
-        const today = new Date().toLocaleString("en-US", { weekday: "long" });
-
-        // Find today's workout in the routine array
-        const workoutOfTheDay = routineArray.find(
-          (dayRoutine: { day: string }) => dayRoutine.day === today
-        );
-        setTimeEstimate(workoutOfTheDay.timeEstimate);
-        setFocus(workoutOfTheDay.focus);
-        setworkoutRoutine(
-          routineArray.find(
-            (dayRoutine: { day: string }) => dayRoutine.day === "Monday"
-          )?.workoutRoutine
-        );
+        setTimeEstimate(userWorkoutData.timeEstimate);
+        setFocus(userWorkoutData.focus);
       } catch (error) {
         console.error("Error fetching workout data:", error);
       }
@@ -207,9 +193,9 @@ const EndWorkoutScreen = () => {
             You did: 
           </Text>
         </View>
-        <WorkoutCard workoutRoutine={warmup} title="Warm-Up" />
-        <WorkoutCard workoutRoutine={workout} title="Main Workout" />
-        <WorkoutCard workoutRoutine={coolDown} title="Cool Down" />
+        <WorkoutCard workoutRoutine={userWorkoutData.warmup} title="Warm-Up" />
+        <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title="Main Workout" />
+        <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title="Cool Down" />
       </ScrollView>
     </LinearGradient>
   );

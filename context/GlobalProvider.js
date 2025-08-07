@@ -29,7 +29,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://6e59cf1035b8.ngrok-free.app'
+    const ngrokAPI = 'https://937b89304277.ngrok-free.app'
 
 
     // function to sign up the user

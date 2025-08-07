@@ -44,9 +44,9 @@ const ActiveWorkoutScreen = () => {
     useEffect(() => {
         const taggedWarmup = (userWorkoutData.warmup || []).map((ex: any) => ({ ...ex, phase: "warmup" as const }));
         const taggedWorkout = (userWorkoutData.workoutRoutine || []).map((ex: any) => ({ ...ex, phase: "workout" as const }));
-        //const taggedCoolDown = (coolDown || []).map((ex: any) => ({ ...ex, phase: "cooldown" as const }));
+        const taggedCoolDown = (userWorkoutData.cooldown || []).map((ex: any) => ({ ...ex, phase: "cooldown" as const }));
         const taggedChallanges = (selectedChallenges || []).map((ex:any) => ({...ex,phase:'challanges' as const}))
-        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout,...taggedChallanges];
+        const combinedPlaylist = [...taggedWarmup, ...taggedWorkout,...taggedCoolDown,...taggedChallanges];
 
         if (combinedPlaylist.length > 0) {
             const workoutSession = combinedPlaylist.map(exercise => ({
@@ -55,7 +55,7 @@ const ActiveWorkoutScreen = () => {
                 restBetweenSeconds: exercise.restBetweenSeconds || (exercise.phase === 'warmup' ? 30 : 60),
                 performedSets: Array(exercise.sets).fill(null).map(() => ({
                     reps: parseInt(exercise.reps.split('-')[0], 10) || 8,
-                    weight: -1
+                    weight: 0
                 }))
             }));
             setLiveWorkout(workoutSession);
@@ -128,7 +128,7 @@ const ActiveWorkoutScreen = () => {
         try {
             const workoutLogPayload = {
                 userId: UserID,
-                workoutName: TodayWorkout?.focus || "Completed Workout",
+                workoutName: userWorkoutData?.focus || "Completed Workout",
                 durationSeconds: 3600,
                 exercises: liveWorkout.map(ex => ({
                     name: ex.exerciseName,
@@ -139,12 +139,13 @@ const ActiveWorkoutScreen = () => {
                 })).filter(ex => ex.sets.length > 0),
                 points: liveWorkout.length * 5,
             };
-
-            await axios.post(`${ngrokAPI}/logWorkout`, workoutLogPayload);
+            console.log("Logging workout:", workoutLogPayload);
+            
+            await axios.post(`${ngrokAPI}/api/update/logWorkout`, workoutLogPayload);
             const points = (userGameData?.points || 0) + (liveWorkout.length * 5);
             const streak = (userGameData?.streak || 0) + 1;
-            await axios.post(`${ngrokAPI}/updatePointAndStreak`, { UserID, points, streak });
-            await axios.post(`${ngrokAPI}/recordWorkoutCompletion`, { UserID });
+            await axios.post(`${ngrokAPI}/api/update/updatePointsAndStreak`, { UserID, points, streak });
+            await axios.post(`${ngrokAPI}/api/update/recordWorkoutCompletion`, { UserID });
 
             Alert.alert("Workout Complete!", "Great job! Your progress has been saved.");
             router.replace("/(workout)/EndWorkoutScreen");

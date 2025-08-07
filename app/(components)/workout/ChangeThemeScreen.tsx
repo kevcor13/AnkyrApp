@@ -30,7 +30,7 @@ const ChangeThemeScreen: React.FC<ChangeThemeScreenProps> = ({ onConfirm }) => {
     
     try {
         // Send the update to the server and get the response
-        const response = await axios.post(`${ngrokAPI}/updateTheme`, {
+        const response = await axios.post(`${ngrokAPI}/api/update/updateTheme`, {
             userId: userData._id,
             askedThemeQuestion: true,
             defaultTheme: isDefaultTheme,

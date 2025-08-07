@@ -118,7 +118,7 @@ const UpNextScreen: React.FC<UpNextScreenProps> = ({
           </Animated.View>
           <Animated.View style={{ transform: [{ translateX: slideAnim3 }] }}>
           <Text style={styles.exerciseName}>
-            {nextExercise.exercise.toUpperCase()}
+            {nextExercise.exerciseName.toUpperCase()}
           </Text>
           </Animated.View>
 
