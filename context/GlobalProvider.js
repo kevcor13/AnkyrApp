@@ -29,7 +29,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://937b89304277.ngrok-free.app'
+    const ngrokAPI = 'https://035e11c6a0c7.ngrok-free.app'
 
 
     // function to sign up the user
@@ -198,13 +198,14 @@ const GlobalProvider = ({ children }) => {
     //get the workout data
     const fetchWorkout = async (token, UserID) => {
         try{
-            const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, UserID});
+            const date = new Date();
+            const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, date, UserID});
             if (response.data.status === "success") {;
                 setUserWorkoutData(response.data.data)
                 //await seperateWorkouts(response.data.data)
                 //await fetchXpHistory(UserID);
                 //await fetchChallenges(UserID);
-                //await fetchLoggedWorkouts(UserID)
+                await fetchLoggedWorkouts(UserID)
                 return response.data.data;
             } else {
                 console.error("Failed to fetch workout data:", response.data.data);
@@ -267,7 +268,7 @@ const GlobalProvider = ({ children }) => {
 
         try {
             // Make a POST request to your /getLoggedWorkouts endpoint
-            const response = await axios.post(`${ngrokAPI}/getLoggedWorkouts`, {
+            const response = await axios.post(`${ngrokAPI}/api/update/getLoggedWorkouts`, {
                 UserID // Note: Ensure the key matches your backend ('UserId')
             });
                 

@@ -33,10 +33,10 @@ const ChallengesPage: React.FC = () => {
     const [timeEstimate, setTimeEstimate] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isWorkoutAllowed, setIsWorkoutAllowed] = useState(false);
-    const [workoutRoutine, setWorkoutRoutine] = useState([]);
-    const [todayWorkout, setTodayWorkout] = useState(null); 
     const [selectedWorkout, setSelectedWorkout] = useState<IWorkoutLog | null>(null);
-
+    const [showNextDayWorkout, setShowNextDayWorkout] = useState(false);
+    const [nextDayWorkout, setNextDayWorkout] = useState(null)
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null)
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
 
 
@@ -61,8 +61,10 @@ const ChallengesPage: React.FC = () => {
     useEffect(() => {
         if (userData) {
             const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionData, new Date());
+            const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, new Date()));
             if(alreadyDoneToday){
                 setIsWorkoutAllowed(alreadyDoneToday);
+                setSelectedWorkout(workoutForDay);
             }
             setIsLoading(false);
         } else {
@@ -80,18 +82,24 @@ const ChallengesPage: React.FC = () => {
             d1.getDate() === d2.getDate();
     };
  
-    const handleDateSelect = (selectedDate: Date) => {
+    const handleDateSelect = async (selectedDate: Date) => {
         console.log("Selected date:", selectedDate);
+        setSelectedDate(selectedDate);
         const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, selectedDate));
-        if (workoutForDay) {
-            setSelectedWorkout(workoutForDay);
-            setIsWorkoutAllowed(true);
-        } else {
-            setSelectedWorkout(null);
-            setIsWorkoutAllowed(false)
+            if (workoutForDay) {
+                setSelectedWorkout(workoutForDay);
+                setIsWorkoutAllowed(true);
+            } else {
+                const token = await AsyncStorage.getItem("token");
+                const date = selectedDate;
+                const UserID = userData._id;
+                const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, date, UserID});
+                setNextDayWorkout(response.data.data);
+                setShowNextDayWorkout(true);
+                setSelectedWorkout(null);
+                setIsWorkoutAllowed(false)
+            }
         }
-    };
-
     // --- 3. FIX: Update the handler to use 'exercise' for comparison ---
     const handleChallengeSelection = (challengeToToggle: IChallenge) => {
         setLocallySelectedChallenges(prev => {
@@ -112,7 +120,9 @@ const ChallengesPage: React.FC = () => {
         setShowChallanges(false);
         setLocallySelectedChallenges([]); // Reset for next time
     };
-
+    const handleNextDay = () => {
+        router.navigate("/(workout)/WorkoutOverview")
+    }
 
     return (
         <LinearGradient
@@ -131,7 +141,29 @@ const ChallengesPage: React.FC = () => {
                                 COMPLETED
                             </Text>
                         </View>
-                    ) : (
+                    ) : showNextDayWorkout ?(
+                        <View>
+                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
+                                NEXT DAY WORKOUT
+                            </Text>
+                            <CustomButton
+                                title="My workout"
+                                handlePress={() => handleNextDay()}
+                                buttonStyle={{
+                                    backgroundColor: 'rgba(217, 217, 217, 0.5)',
+                                    borderRadius: 20,
+                                    paddingVertical: 16,
+                                    paddingHorizontal: 32,
+                                    marginTop: 10,
+                                    justifyContent: "center"
+                                }}
+                                textStyle={{
+                                    color: '#FFFFFF',
+                                    fontSize: 16,
+                                    fontFamily: 'poppins-semiBold'
+                                }} />
+                        </View>
+                    ):(
                         <><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
                                 <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
                                 <Image source={icons.blueStreak} style={styles.zapImage} />
@@ -227,7 +259,7 @@ const ChallengesPage: React.FC = () => {
                             <Image source={icons.whiteZap} style={{width:30, height: 30, tintColor:'#00FFBF'}} />
                         </View>
                         <Text style={{fontFamily: 'poppins-semibold',fontSize: 20,color: '#FFFFFF',alignSelf: 'flex-start',marginBottom: 25,}}>GET AHEAD:</Text>
-
+                        
                         <View style={{width: '100%', marginBottom: 30,}}>
                             {challenges.map((challenge: IChallenge, index: number) => {
                                 // This logic now correctly checks against a state of the proper type.
@@ -256,7 +288,6 @@ const ChallengesPage: React.FC = () => {
                                 </View>
                             )})}
                         </View>
-                        
                         <TouchableOpacity 
                             onPress={handleAddSelectedChallenges}
                             style={{backgroundColor: 'rgba(217,217,217,0.27)',borderRadius: 15,paddingVertical: 15, width:178,alignItems: 'center', shadowColor: "#000",shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5,}}>
