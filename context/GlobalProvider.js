@@ -14,6 +14,7 @@ const GlobalProvider = ({ children }) => {
     const [workout, setworkout] = useState([])
     const [coolDown, setCoolDown] = useState([])
     const [today, settoday] = useState('')
+    const [recipes, setRecipes] = useState([]);
     const [user, setUser] = useState(null);
     const [userPosts, setUserPosts] = useState('');
     const [userData, setUserData] = useState('');
@@ -29,7 +30,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://035e11c6a0c7.ngrok-free.app'
+    const ngrokAPI = 'https://d93d5f728b2d.ngrok-free.app'
 
 
     // function to sign up the user
@@ -194,7 +195,32 @@ const GlobalProvider = ({ children }) => {
             console.error("Error fetching game data:", error);
         }
     }
-
+    //update Game Data
+    const updateGameData = async ( userId, points) => {
+        try {
+            console.log("Updating game data for user:", userId, "with points:", points);
+          let league = "NOVICE";
+          if (points >= 30000)      league = "OLYMPIAN";
+          else if (points >= 20000) league = "TITAN";
+          else if (points >= 12000) league = "SKIPPER";
+          else if (points >= 5000)  league = "PILOT";
+          else if (points >= 1000)  league = "PRIVATE";
+      
+          const response = await axios.post(`${ngrokAPI}/api/update/updateBadge`, {
+            token,
+            UserID: userId,
+            league
+          });
+      
+          if (response.data.status === "success") {
+            console.log("Game data updated successfully:", response.data.data);
+          } else {
+            console.error("Failed to update data", response.data.data);
+          }
+        } catch (error) {
+          console.error("Error updating game data:", error);
+        }
+      };
     //get the workout data
     const fetchWorkout = async (token, UserID) => {
         try{
@@ -214,6 +240,33 @@ const GlobalProvider = ({ children }) => {
             console.error("Login Error:", error);
         }
     }
+
+    const fetchRecipes = async () => {
+        try {
+            // The URL should match the route you set up in your backend
+            const response = await axios.post(`${ngrokAPI}/api/meals/getFeaturedRecipes`);
+
+            // Check if the request was successful
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            // Parse the JSON response from the server
+            const result = await response.json();
+            console.log("Fetched recipes:", result.data);
+            // 3. Store the data in state
+            // We access `result.data` based on the API structure we defined
+            setRecipes(result.data);
+
+        } catch (err) {
+            // If an error occurs, store the error message
+            setError(err.message);
+        } finally {
+            // Set loading to false once the request is complete (whether it succeeded or failed)
+            setLoading(false);
+        }
+    };
+
     const seperateWorkouts = async (rawWorkoutData) => {
         const routineArray = rawWorkoutData?.routine || [];
         const today = new Date().toLocaleString("en-US", { weekday: "long" });
@@ -472,10 +525,12 @@ const GlobalProvider = ({ children }) => {
                 questionStatus,
                 userGameData,
                 ngrokAPI,
+                recipes,
                 userWorkoutData,
                 fetchUserPosts,
                 signUpUser,
                 loginUser,
+                fetchRecipes,
                 logoutUser,
                 fetchQuestionnaireCompletion,
                 markQuestionnaireCompleted,
@@ -484,7 +539,8 @@ const GlobalProvider = ({ children }) => {
                 fetchGameData,
                 fetchWorkout,
                 fetchFollowingUsers,
-                fetchFollowerUsers
+                fetchFollowerUsers,
+                updateGameData
             }}
         >
             {!loading && children}

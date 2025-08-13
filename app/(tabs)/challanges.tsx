@@ -11,6 +11,8 @@ import icons from "@/constants/icons";
 import { router } from "expo-router";
 import GraphView from "@/components/GraphView";
 import WorkoutLogDetail, { IWorkoutLog } from '@/components/WorkoutLogDetail'
+import NextDayWorkout from "@/components/NextDayWorkout";
+import LeagueMembers from "@/components/LeagueMembers";
 
 // --- 1. Define an interface for your challenge object for type safety ---
 // This is based on how you use the 'challenge' object in your component.
@@ -25,7 +27,7 @@ interface IChallenge {
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI,  userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout} = useGlobal();
+    const { userData, userGameData, ngrokAPI,  userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, updateGameData, fetchGameData} = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
@@ -36,7 +38,8 @@ const ChallengesPage: React.FC = () => {
     const [selectedWorkout, setSelectedWorkout] = useState<IWorkoutLog | null>(null);
     const [showNextDayWorkout, setShowNextDayWorkout] = useState(false);
     const [nextDayWorkout, setNextDayWorkout] = useState(null)
-    const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [isNotCompleted, setIsNotCompleted] = useState(false);
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
 
 
@@ -46,8 +49,11 @@ const ChallengesPage: React.FC = () => {
                 if (userWorkoutData) {
                     const today = new Date().toLocaleString("en-US", { weekday: "long" });
                     setCurrentDay(today);
+                    const token = await AsyncStorage.getItem("token");
+                    fetchGameData(token, userData._id);
                     setTimeEstimate(userWorkoutData.timeEstimate);
                     setFocus(userWorkoutData.focus);
+                    //updateGameData(userData._id, userGameData.points);
                     //console.log(challenges);
                 }
             } catch (error) {
@@ -61,6 +67,7 @@ const ChallengesPage: React.FC = () => {
     useEffect(() => {
         if (userData) {
             const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionData, new Date());
+            console.log(alreadyDoneToday);
             const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, new Date()));
             if(alreadyDoneToday){
                 setIsWorkoutAllowed(alreadyDoneToday);
@@ -81,25 +88,64 @@ const ChallengesPage: React.FC = () => {
             d1.getMonth() === d2.getMonth() &&
             d1.getDate() === d2.getDate();
     };
- 
+    const getStatusForDate = (date: Date) => {
+        const today = new Date();
+        if (isSameDay(date, today)) {
+            return loggedWorkouts.some((log: { date: string | number | Date; }) => isSameDay(log.date, today)) ? "completed" : "today";
+        } else if ( date < today) {
+            return "upcoming";
+        } else {
+            return loggedWorkouts.some((log: { date: string | number | Date; }) => isSameDay(log.date, date)) ? "completed" : "missed";
+        }
+    }
+
     const handleDateSelect = async (selectedDate: Date) => {
         console.log("Selected date:", selectedDate);
         setSelectedDate(selectedDate);
-        const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, selectedDate));
-            if (workoutForDay) {
+        const today = new Date();
+
+        if(isSameDay(selectedDate, today)){
+            const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
+            if(workoutForDay){
                 setSelectedWorkout(workoutForDay);
+                setNextDayWorkout(null);
                 setIsWorkoutAllowed(true);
+        } else {
+            setSelectedWorkout(null);
+            setNextDayWorkout(null);
+            setIsWorkoutAllowed(false);
+            setIsNotCompleted(false);
+        }
+
+        } else if (selectedDate > today) {
+            const token = await AsyncStorage.getItem("token");
+            const UserID = userData._id;
+            const date = selectedDate
+            const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {
+                token: token,
+                date,
+                UserID
+            });
+            setSelectedWorkout(null);
+            setNextDayWorkout(response.data.data);
+            setShowNextDayWorkout(true);
+            setIsWorkoutAllowed(false);
+        } else {
+            console.log("else");
+            
+            const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
+            if(workoutForDay){
+                setSelectedWorkout(workoutForDay || null);
+                setNextDayWorkout(null);
+                setIsWorkoutAllowed(false);
             } else {
-                const token = await AsyncStorage.getItem("token");
-                const date = selectedDate;
-                const UserID = userData._id;
-                const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, date, UserID});
-                setNextDayWorkout(response.data.data);
-                setShowNextDayWorkout(true);
                 setSelectedWorkout(null);
-                setIsWorkoutAllowed(false)
+                setNextDayWorkout(null);
+                setIsWorkoutAllowed(false);
+                setIsNotCompleted(true);
             }
         }
+    };
     // --- 3. FIX: Update the handler to use 'exercise' for comparison ---
     const handleChallengeSelection = (challengeToToggle: IChallenge) => {
         setLocallySelectedChallenges(prev => {
@@ -134,40 +180,38 @@ const ChallengesPage: React.FC = () => {
                     <View style={{ flexDirection: 'row' }}>
                         <Text style={styles.title}>YOUR{'\n'}{currentDay}{'\n'}WORKOUT</Text>
                     </View>
-                    <Text style={styles.subtitle}>{focus}</Text>
                     {isWorkoutAllowed ? (
                         <View>
                             <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
                                 COMPLETED
                             </Text>
                         </View>
-                    ) : showNextDayWorkout ?(
+                    ):   selectedWorkout ? (
+                        <View>
+                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
+                                COMPLETED
+                            </Text>
+                        </View>
+                    ): selectedDate && selectedDate > new Date() ?(
                         <View>
                             <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
                                 NEXT DAY WORKOUT
                             </Text>
-                            <CustomButton
-                                title="My workout"
-                                handlePress={() => handleNextDay()}
-                                buttonStyle={{
-                                    backgroundColor: 'rgba(217, 217, 217, 0.5)',
-                                    borderRadius: 20,
-                                    paddingVertical: 16,
-                                    paddingHorizontal: 32,
-                                    marginTop: 10,
-                                    justifyContent: "center"
-                                }}
-                                textStyle={{
-                                    color: '#FFFFFF',
-                                    fontSize: 16,
-                                    fontFamily: 'poppins-semiBold'
-                                }} />
+                    </View>
+                    ): isNotCompleted? (
+                        <View>
+                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
+                                NOT COMPLETED
+                            </Text>
                         </View>
-                    ):(
-                        <><View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    ) : (
+                        <>
+                            <Text style={styles.subtitle}>{focus}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
                                 <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
                                 <Image source={icons.blueStreak} style={styles.zapImage} />
-                            </View><CustomButton
+                            </View>
+                            <CustomButton
                                 title="My workout"
                                 handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
                                 buttonStyle={{
@@ -182,12 +226,17 @@ const ChallengesPage: React.FC = () => {
                                     color: '#FFFFFF',
                                     fontSize: 16,
                                     fontFamily: 'poppins-semiBold'
-                                }} /></>
+                                }} 
+                            />
+                        </>
                     )}
-                </View>
+                    </View>
+                <CalendarSelector onSelect={handleDateSelect} getStatusForDate={getStatusForDate} />
                 
-                <CalendarSelector onSelect={handleDateSelect} />
+                
                 {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
+
+                {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
 
                 <View style={styles.container}>
                     <View style={styles.block}>
@@ -217,7 +266,16 @@ const ChallengesPage: React.FC = () => {
                 </View>
                 {/*<GraphView  weeklyData={weeklyData} />*/}
                 <View style={{backgroundColor:'#000000'}}>
-                <TouchableOpacity style={styles.buttonContainer} onPress={() => setShowChallanges(true)}>
+                </View>
+                <View style={styles.container2}>
+                    <TouchableOpacity style={{ flexDirection: 'row' }}
+                        onPress={() => setLeagueOpen(!leagueOpen)}
+                    >
+                        <Text style={{ fontFamily: 'poppins-semibold', color: '#FFFFFF', fontSize: 24, marginLeft: 20 }}>MY LEAGUE</Text>
+                        <Text style={{ color: '#FFFFFF', fontSize: 24, marginLeft: 180 }}>{leagueOpen ? '▲' : '▼'}</Text>
+                    </TouchableOpacity>
+                        <LeagueHeader league={userGameData.league} />
+                        <TouchableOpacity style={styles.buttonContainer} onPress={() => setShowChallanges(true)}>
                     <LinearGradient
                         colors={['#FF090D', '#1E00FF']}
                         start={{ x: 0, y: 0.5 }}
@@ -229,15 +287,6 @@ const ChallengesPage: React.FC = () => {
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
-                </View>
-                <View style={styles.container2}>
-                    <TouchableOpacity style={{ flexDirection: 'row' }}
-                        onPress={() => setLeagueOpen(!leagueOpen)}
-                    >
-                        <Text style={{ fontFamily: 'poppins-semibold', color: '#FFFFFF', fontSize: 24, marginLeft: 20 }}>MY LEAGUE</Text>
-                        <Text style={{ color: '#FFFFFF', fontSize: 24, marginLeft: 180 }}>{leagueOpen ? '▲' : '▼'}</Text>
-                    </TouchableOpacity>
-                        <LeagueHeader league={userGameData.league} />
                 </View>
             </ScrollView>
             <Modal

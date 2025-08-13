@@ -144,7 +144,14 @@ const ActiveWorkoutScreen = () => {
             await axios.post(`${ngrokAPI}/api/update/logWorkout`, workoutLogPayload);
             const points = (userGameData?.points || 0) + (liveWorkout.length * 5);
             const streak = (userGameData?.streak || 0) + 1;
-            await axios.post(`${ngrokAPI}/api/update/updatePointsAndStreak`, { UserID, points, streak });
+            let league = "NOVICE";
+            if (points >= 30000)      league = "OLYMPIAN";
+            else if (points >= 20000) league = "TITAN";
+            else if (points >= 12000) league = "SKIPPER";
+            else if (points >= 5000)  league = "PILOT";
+            else if (points >= 1000)  league = "PRIVATE";
+      
+            await axios.post(`${ngrokAPI}/api/update/updatePointsAndStreak`, { UserID, points, streak, league });
             await axios.post(`${ngrokAPI}/api/update/recordWorkoutCompletion`, { UserID });
 
             Alert.alert("Workout Complete!", "Great job! Your progress has been saved.");

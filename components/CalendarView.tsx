@@ -8,9 +8,12 @@ type DayItem = {
   dayOfMonth: number;   // e.g. 24, 25
 };
 
+type DayStatus= "completed" | "upcoming" | "missed" | "today" | "none";
+
 const CalendarSelector: React.FC<{
   onSelect?: (d: Date) => void;
-}> = ({ onSelect }) => {
+  getStatusForDate?: (d: Date) => DayStatus;
+}> = ({ onSelect, getStatusForDate}) => {
   const [days, setDays] = useState<DayItem[]>([]);
   const [selected, setSelected] = useState<Date>(new Date());
 
@@ -50,6 +53,7 @@ const CalendarSelector: React.FC<{
         contentContainerStyle={styles.daysContainer}
       >
         {days.map((d) => {
+          const status = getStatusForDate ? getStatusForDate(d.date) : "none";
           const isActive =
             d.dayOfMonth === selected.getDate() &&
             d.date.getMonth() === selected.getMonth();
@@ -59,6 +63,11 @@ const CalendarSelector: React.FC<{
               style={[
                 styles.dayItem,
                 isActive && styles.dayItemActive,
+                status === "completed" && { backgroundColor: "#38FFF5" },
+                status === "missed" && { backgroundColor: "#888" },
+                status === "missed" && { borderColor: "red"},
+                status === "today" && { borderColor: "#78F5D8", borderWidth: 2 },
+
               ]}
               onPress={() => handlePress(d)}
             >

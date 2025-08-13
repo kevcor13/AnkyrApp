@@ -10,7 +10,7 @@ import axios from "axios";
 import PostCard from '@/components/PostCard';
 
 const Home = () => {
-    const { userData, fetchFollowerUsers, fetchFollowingUsers, ngrokAPI,fetchWorkout,fetchGameData} = useGlobal();
+    const { userData, fetchFollowerUsers, fetchFollowingUsers, ngrokAPI,fetchWorkout,fetchGameData, recipes, userGameData} = useGlobal();
     const [isLoading, setIsLoading] = useState(true);
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
@@ -42,9 +42,13 @@ const Home = () => {
             }
             const followers = await fetchFollowerUsers();
             fetchWorkout(token, userData._id);
-            await fetchGameData(token, userData._id);
+            fetchGameData(token, userData._id);
+            
             setFollowersUsers(followers);
-            console.log(userData);
+            
+            
+            const points = userGameData.points;
+
         
             const acceptedFollowers = followers
                 .filter((u: { requestStatus: boolean; }) => u.requestStatus === true)
