@@ -14,7 +14,7 @@ const GlobalProvider = ({ children }) => {
     const [workout, setworkout] = useState([])
     const [coolDown, setCoolDown] = useState([])
     const [today, settoday] = useState('')
-    const [recipes, setRecipes] = useState([]);
+    const [recipes, setRecipes] = useState([])
     const [user, setUser] = useState(null);
     const [userPosts, setUserPosts] = useState('');
     const [userData, setUserData] = useState('');
