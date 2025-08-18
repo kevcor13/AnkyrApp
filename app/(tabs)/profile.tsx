@@ -7,7 +7,7 @@ import icons from "@/constants/icons";
 import LeagueScreen from "../../components/LeagueScreen";
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
 import PostScreen from '@/components/PostScreen';
 import NotificationScreen from '@/components/NotificationScreen';
 import axios from "axios";
@@ -36,8 +36,8 @@ interface NotificationType {
 }
 
 const Profile: React.FC = () => {
+    const { userData, fetchGameData, ngrokAPI, isLoggedIn} = useGlobal();
     const [activeTab, setActiveTab] = useState<'POSTS'|'NOTIFICATIONS'|'PLAYLISTS'|'LEAGUE'>('POSTS');
-    const { userData, fetchGameData, ngrokAPI } = useGlobal();
 
     const [posts, setPosts] = useState<Post[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(false);
@@ -50,8 +50,30 @@ const Profile: React.FC = () => {
     const [streak, setStreak] = useState<number|null>(null);
     const [league, setLeague] = useState<string|null>(null);
     const [badgeImage, setBadgeImage] = useState<string|null>(null);
+    const [loading, setLoading] = useState(true);
+    const [err, setErr] = useState<string | null>(null);
 
-
+    useEffect(() => {
+        if (!isLoggedIn) {
+          // navigate away if logged out
+          router.replace("/sign-in");
+          return;
+        }
+        // fetch stuff when logged in
+        (async () => {
+          try {
+            setLoading(true);
+            // example:
+            // const p = await fetchUserPosts();
+            // setPosts(p);
+          } catch (e: any) {
+            setErr(e?.message ?? "Failed to load");
+          } finally {
+            setLoading(false);
+          }
+        })();
+      }, [isLoggedIn]);
+    
     // Create a reusable function to fetch notifications
     const fetchUserNotifications = useCallback(async () => {
         if (!userData?._id) return;

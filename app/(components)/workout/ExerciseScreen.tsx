@@ -43,6 +43,7 @@ interface ExerciseScreenProps {
 
 const LBS_TO_KG_CONVERSION = 0.453592;
 
+
 const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   exercise,
   exerciseIndex,
@@ -51,12 +52,9 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   onSetLogged,
 }) => {
   const [hasAdjusted, setHasAdjusted] = useState(false);
-  // --- NEW: State to manage the selected unit ---
   const [displayUnit, setDisplayUnit] = useState<'lbs' | 'kg'>('lbs');
-  const {userData} = useGlobal();
+  const { userData } = useGlobal();
   const theme = userData.defaultTheme;
-  console.log(theme);
-  
 
   useEffect(() => {
     if (exercise.performedSets[currentSetIndex]?.weight === -1) {
@@ -69,41 +67,86 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const isCooldown = exercise.phase === "cooldown";
   const isBodyweight = exercise.recommendedWeight === 0;
 
-  const handleLogSet = () => {
-    onSetLogged();
-  };
+  const handleLogSet = () => onSetLogged();
 
   const adjustWeight = (amount: number) => {
-    // Adjustments are always made in lbs, regardless of display unit
     const currentWeight = exercise.performedSets[currentSetIndex]?.weight;
-    const baseWeight = currentWeight === -1 ? exercise.recommendedWeight : currentWeight;
+    const baseWeight =
+      typeof currentWeight === "number" && currentWeight >= 0
+        ? currentWeight
+        : exercise.recommendedWeight;
     const newWeight = Math.max(0, baseWeight + amount);
     onSetUpdate(exerciseIndex, currentSetIndex, newWeight);
     setHasAdjusted(true);
   };
 
-  // Determine the weight in LBS to use for calculations
-  const weightInLbs = exercise.performedSets[currentSetIndex]?.weight === -1
-      ? exercise.recommendedWeight
-      : exercise.performedSets[currentSetIndex]?.weight;
-      
-  // Convert the LBS weight for display if KG is selected
-  const displayWeight = displayUnit === 'kg'
+  // safe weight values
+  const rawWeight = exercise.performedSets[currentSetIndex]?.weight;
+  const weightInLbs =
+    typeof rawWeight === "number" && rawWeight >= 0
+      ? rawWeight
+      : exercise.recommendedWeight;
+
+  const displayWeight =
+    displayUnit === "kg"
       ? Math.round(weightInLbs * LBS_TO_KG_CONVERSION)
       : weightInLbs;
 
-  // Calculate the total adjustment from the recommendation
   const adjustmentAmountLbs = weightInLbs - exercise.recommendedWeight;
-  // Convert adjustment amount for display if needed
-  const displayAdjustmentAmount = displayUnit === 'kg'
+  const displayAdjustmentAmount =
+    displayUnit === "kg"
       ? Math.round(adjustmentAmountLbs * LBS_TO_KG_CONVERSION)
       : adjustmentAmountLbs;
+
+  // --- TIMER: "30.0 seconds" when reps mentions seconds ----------------------
+  const isTimed = /\bseconds?\b/i.test(exercise.reps);
+  const [secondsLeftMs, setSecondsLeftMs] = useState<number | null>(null);
+  const [timerActive, setTimerActive] = useState(false);
+
+  useEffect(() => {
+    if (isTimed) {
+      const match = exercise.reps.match(/(\d+(?:\.\d+)?)\s*seconds?/i);
+      const secs = match ? parseFloat(match[1]) : 0;
+      const ms = Math.max(0, Math.round(secs * 1000));
+      setSecondsLeftMs(ms);
+      setTimerActive(ms > 0);
+    } else {
+      setSecondsLeftMs(null);
+      setTimerActive(false);
+    }
+  }, [exercise.reps, exercise.exerciseName, currentSetIndex, isTimed]);
+
+  useEffect(() => {
+    if (!timerActive || !isTimed || secondsLeftMs == null || secondsLeftMs <= 0) return;
+    const id = setInterval(() => {
+      setSecondsLeftMs((prev) => {
+        if (prev == null) return 0;
+        const next = prev - 100; // update every 0.1s
+        return next > 0 ? next : 0;
+      });
+    }, 100);
+    return () => clearInterval(id);
+  }, [timerActive, isTimed, secondsLeftMs]);
+
+  useEffect(() => {
+    if (secondsLeftMs === 0 && timerActive) setTimerActive(false);
+  }, [secondsLeftMs, timerActive]);
+  // ---------------------------------------------------------------------------
+
+  // --- NEW: simple "per ..." formatting (e.g., "10 per leg") -----------------
+  const repsText = exercise.reps ?? "";
+  const perMatch = repsText.match(/\bper\s+.+/i);          // "per leg", "per arm", etc.
+  const isPer = !!perMatch && !isTimed;                    // only when not a timer set
+  const repsNumberMatch = repsText.match(/(\d+(?:\.\d+)?)/);
+  const repsNumber = repsNumberMatch ? repsNumberMatch[1] : repsText; // keep big number font
+  const perPhrase = perMatch ? perMatch[0] : "";           // full "per ..." phrase
+  // ---------------------------------------------------------------------------
 
   return (
     <View style={{ flex: 1 }}>
       <View style={globalStyles.header}>
         <Image
-          source={{uri:exercise.videoUrl}}
+          source={{ uri: exercise.videoUrl }}
           style={globalStyles.video}
           resizeMode={ResizeMode.COVER}
         />
@@ -119,17 +162,45 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
         */}
       </View>
       <LinearGradient
-        colors={isWarmup ? ["#FF0509", "#E89750"] : isCooldown? ["#A12287", "#1F059D"]: theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]}
+        colors={
+          isWarmup
+            ? ["#FF0509", "#E89750"]
+            : isCooldown
+            ? ["#A12287", "#1F059D"]
+            : theme
+            ? ["#FF0509", "#271293"]
+            : ["#000000", "#272727"]
+        }
         style={globalStyles.gradientContainer}
       >
         <ScrollView style={globalStyles.workoutCard}>
           <Text style={globalStyles.exerciseNameMain}>{exercise.exerciseName}</Text>
+
           <View style={globalStyles.repsContainer}>
-            <Text style={globalStyles.repsSetsMain}>
-              {exercise.reps}
-            </Text>
-            <Text style={globalStyles.repsLabel}> reps</Text>
+            {isTimed ? (
+              <>
+                <Text style={globalStyles.repsSetsMain}>
+                  {((secondsLeftMs ?? 0) / 1000).toFixed(1)}
+                </Text>
+                <Text style={globalStyles.repsLabel}>seconds</Text>
+              </>
+            ) : isPer ? (
+              <>
+                <Text style={globalStyles.repsSetsMain}>{repsNumber}</Text>
+                <Text style={globalStyles.repsLabel}> reps</Text>
+              </>
+            ) : (
+              <>
+                <Text style={globalStyles.repsSetsMain}>{exercise.reps}</Text>
+                <Text style={globalStyles.repsLabel}> reps</Text>
+              </>
+            )}
           </View>
+
+          {/* NEW: small line under "10 reps" showing "per leg"/"per arm" */}
+          {!isTimed && isPer ? (
+            <Text style={styles.perQualifier}>{perPhrase}</Text>
+          ) : null}
 
           {isBodyweight ? (
             <Text style={globalStyles.bodyweightText}>Bodyweight Exercise</Text>
@@ -138,7 +209,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
               {hasAdjusted && adjustmentAmountLbs !== 0 ? (
                 <Text style={styles.adjustmentIndicatorText}>
                   {displayAdjustmentAmount > 0 ? `+${displayAdjustmentAmount}` : displayAdjustmentAmount}
-                  <Text style={{fontSize: 18}}> {displayUnit}</Text>
+                  <Text style={{ fontSize: 18 }}> {displayUnit}</Text>
                 </Text>
               ) : (
                 <Text style={styles.suggestedText}>suggested:</Text>
@@ -156,37 +227,40 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                 </TouchableOpacity>
               </View>
 
-              {/* --- NEW: Unit Selector Buttons --- */}
               <View style={styles.unitSelector}>
-                <TouchableOpacity 
-                  style={[styles.unitButton, displayUnit === 'lbs' && styles.unitButtonActive]}
-                  onPress={() => setDisplayUnit('lbs')}
+                <TouchableOpacity
+                  style={[styles.unitButton, displayUnit === "lbs" && styles.unitButtonActive]}
+                  onPress={() => setDisplayUnit("lbs")}
                 >
-                  <Text style={[styles.unitButtonText, displayUnit === 'lbs' && styles.unitButtonTextActive]}>lbs.</Text>
+                  <Text style={[styles.unitButtonText, displayUnit === "lbs" && styles.unitButtonTextActive]}>
+                    lbs.
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.unitButton, displayUnit === 'kg' && styles.unitButtonActive]}
-                  onPress={() => setDisplayUnit('kg')}
+                <TouchableOpacity
+                  style={[styles.unitButton, displayUnit === "kg" && styles.unitButtonActive]}
+                  onPress={() => setDisplayUnit("kg")}
                 >
-                  <Text style={[styles.unitButtonText, displayUnit === 'kg' && styles.unitButtonTextActive]}>kg.</Text>
+                  <Text style={[styles.unitButtonText, displayUnit === "kg" && styles.unitButtonTextActive]}>
+                    kg.
+                  </Text>
                 </TouchableOpacity>
               </View>
-
             </View>
           )}
 
-          <TouchableOpacity
-            style={globalStyles.nextButtonWorkout}
-            onPress={handleLogSet}
-          >
-            <Text style={globalStyles.nextButtonTextWorkout}>
-              {currentSetIndex >= exercise.sets - 1
-                ? "Finish Exercise"
-                : `Log Set ${currentSetIndex + 1} of ${exercise.sets}`}
-            </Text>
-          </TouchableOpacity>
+          {/* Show the same Log/Finish button after countdown completes for timed sets */}
+          {(!isTimed || secondsLeftMs === 0) && (
+            <TouchableOpacity style={globalStyles.nextButtonWorkout} onPress={handleLogSet}>
+              <Text style={globalStyles.nextButtonTextWorkout}>
+                {currentSetIndex >= exercise.sets - 1
+                  ? "Finish Exercise"
+                  : `Log Set ${currentSetIndex + 1} of ${exercise.sets}`}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <View style={globalStyles.streakContainer}>
-            <Image style={{ height:74, width:75 }} source={icons.blueStreak} />
+            <Image style={{ height: 74, width: 75 }} source={icons.blueStreak} />
           </View>
         </ScrollView>
       </LinearGradient>
@@ -194,18 +268,16 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   );
 };
 
-// Styles (with additions for the unit selector)
 const styles = StyleSheet.create({
   weightAdjusterContainer: { alignItems: "center", marginTop: 10, marginBottom: 20, minHeight: 220 },
   suggestedText: { fontFamily: "poppins-medium", fontSize: 16, color: "rgba(255, 255, 255, 0.8)", marginBottom: 10, height: 30 },
   adjustmentIndicatorText: { fontFamily: "poppins-semibold", fontSize: 24, color: "#8AFFF9", marginBottom: 10, height: 30 },
   adjusterRow: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  adjusterButton: { paddingHorizontal: 20},
+  adjusterButton: { paddingHorizontal: 20 },
   adjusterButtonText: { fontFamily: "poppins-light", fontSize: 60, color: "white" },
   weightDisplay: { width: 70, height: 70, borderRadius: 30, backgroundColor: "rgba(255, 255, 255, 0.15)", justifyContent: "center", alignItems: "center", marginHorizontal: 15 },
   weightDisplayText: { fontFamily: "poppins-light", fontSize: 36, color: "white" },
   currentSetIndicator: { fontFamily: "poppins-semibold", fontSize: 18, color: "white", textAlign: "center", marginTop: 20, opacity: 0.8 },
-  // --- NEW STYLES ---
   unitSelector: {
     flexDirection: "row",
     backgroundColor: "rgba(0, 0, 0, 0.2)",
@@ -213,25 +285,21 @@ const styles = StyleSheet.create({
     padding: 4,
     marginTop: 15,
   },
-  unitButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 25,
-    borderRadius: 18,
-  },
-  unitButtonActive: {
-    backgroundColor: "white",
-  },
-  unitButtonText: {
-    fontFamily: "poppins-semibold",
+  unitButton: { paddingVertical: 8, paddingHorizontal: 25, borderRadius: 18 },
+  unitButtonActive: { backgroundColor: "white" },
+  unitButtonText: { fontFamily: "poppins-semibold", fontSize: 14, color: "white" },
+  unitButtonTextActive: { color: "#271293" },
+
+  // NEW: small "per ..." line that sits under "10 reps"
+  perQualifier: {
+    fontFamily: "poppins-medium",
     fontSize: 14,
-    color: "white",
+    color: "rgba(255, 255, 255, 0.85)",
+    textAlign: "center",
+    marginTop: 4,
   },
-  unitButtonTextActive: {
-    color: "#271293",
-  },
-  nextButtonContainer:{
-    
-  }
+
+  nextButtonContainer: {},
 });
 
 export default ExerciseScreen;

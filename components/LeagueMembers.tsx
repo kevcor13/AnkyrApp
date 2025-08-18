@@ -8,7 +8,7 @@ import { useGlobal } from "@/context/GlobalProvider";
 type Row = {
   userId: string;
   username: string;
-  profileImage?: string | null;
+  profileImage: string;
   points: number;
   rank: number;
   isSelf?: boolean;
@@ -66,7 +66,7 @@ const LeagueMembers: React.FC = () => {
               <Text style={styles.rank}>{item.rank}.</Text>
 
               <Image
-                source={{ uri: item.profileImage || '' }}
+                source={{ uri: item.profileImage}}
                 style={styles.avatar}
               />
 

@@ -131,7 +131,7 @@ const Nutrition = () => {
                         <Text className="text-white font-poppins-medium mt-2 text-center">Quick Meal</Text>
                     </View>
                     <View className="items-center">
-                        <TouchableOpacity className="p-5 rounded-full bg-white">
+                        <TouchableOpacity className="p-5 rounded-full bg-white" onPress={() => router.push('/(nutrition)/SavedMeals')}>
                             <Image source={icons.heart} className="w-6 h-6" />
                         </TouchableOpacity>
                         <Text className="text-white font-poppins-medium mt-2 text-center">Saved meals</Text>

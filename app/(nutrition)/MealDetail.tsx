@@ -77,21 +77,45 @@ const MealDetail = () => {
         } else {
           throw new Error(response?.data?.message || 'Failed to fetch meal details.');
         }
+
       } catch (err: any) {
         setError(err?.response?.data?.message || err?.message || 'An error occurred while fetching the meal.');
       } finally {
         setLoading(false);
       }
     };
+    const fetchFavoriteStatus = async () => {
+      if (!mealId || !userData?._id) return;
 
+      try {
+        const response = await axios.post(`${ngrokAPI}/api/meals/hasFavoriteMeal`, {
+          userId: userData._id,
+          mealId,
+        });
+
+        if (response?.data?.status === 'success') {
+          setIsFavorited(response.data.favorite);
+        } else {
+          console.error('Failed to fetch favorite status:', response.data.message);
+        }
+      } catch (err) {
+        console.error('Error checking favorite status:', err);
+      } 
+    }
+    fetchFavoriteStatus();
     fetchMealDetails();
   }, [mealId, ngrokAPI]);
 
   const handleToggleFavorite = () => {
-    setIsFavorited((v) => !v);
     const userId  = userData._id; 
-    axios.post(`${ngrokAPI}/api/meals/addFavoriteMeal`, { userId, mealId})
-    console.log(`Toggled favorite for meal ${mealId} for user ${userId}`);
+    if(isFavorited){
+      axios.post(`${ngrokAPI}/api/meals/removeFavMeal`, { userId, mealId });
+      setIsFavorited(false);
+    }
+    else{
+      axios.post(`${ngrokAPI}/api/meals/addFavoriteMeal`, { userId, mealId});
+      setIsFavorited(true);
+    }
   };
 
   if (loading) {

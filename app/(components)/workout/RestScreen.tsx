@@ -9,6 +9,7 @@ import {
   Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 import { styles as globalStyles } from "@/constants/styles";
@@ -16,40 +17,45 @@ import { styles as globalStyles } from "@/constants/styles";
 const screenWidth = Dimensions.get("window").width;
 
 type RestScreenProps = {
-  duration: number;
+  duration: number;              // seconds
   onRestComplete: () => void;
 };
 
-const RestScreen: React.FC<RestScreenProps> = ({
-  duration,
-  onRestComplete,
-}) => {
-  const [countdown, setCountdown] = useState(duration);
-  const [isRestFinished, setIsRestFinished] = useState(false);
+const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => {
+  // keep public state simple; show one decimal
+  const [countdownMs, setCountdownMs] = useState(Math.max(0, Math.round(duration * 1000)));
+  const [isRestFinished, setIsRestFinished] = useState(duration <= 0);
+
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
-  // --- This will now control the width of the progress bar ---
   const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Timer countdown and progress bar animation logic
+  // progress bar anim (fill from 0% to 100% over the whole rest)
   useEffect(() => {
-    // Animate the progress bar filling up over the total duration
+    progressAnim.setValue(0);
     Animated.timing(progressAnim, {
-      toValue: 1, // Animate to 1 (which will represent 100%)
-      duration: duration, // The total duration of the rest in milliseconds
-      useNativeDriver: false, // width is not supported by native driver
+      toValue: 1,
+      duration: Math.max(0, Math.round(duration * 1000)), // duration is in seconds -> ms
+      useNativeDriver: false, // width can't use native driver
     }).start();
+  }, [duration]);
 
-    if (countdown > 0) {
-      const timer = setInterval(() => {
-        setCountdown((prevCountdown) => prevCountdown - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else {
+  // countdown ticker (updates every 0.1s so we can render "30.0")
+  useEffect(() => {
+    if (countdownMs <= 0) {
       setIsRestFinished(true);
+      setCountdownMs(0);
+      return;
     }
-  }, [countdown]);
+    const id = setInterval(() => {
+      setCountdownMs((prev) => {
+        const next = prev - 100; // 100ms steps
+        return next > 0 ? next : 0;
+      });
+    }, 100);
+    return () => clearInterval(id);
+  }, [countdownMs]);
 
-  // Animation for the "Next" button
+  // slide in NEXT button when finished
   useEffect(() => {
     if (isRestFinished) {
       Animated.timing(slideAnim, {
@@ -60,31 +66,25 @@ const RestScreen: React.FC<RestScreenProps> = ({
     }
   }, [isRestFinished]);
 
-  // --- Interpolate the progress animation to a width percentage ---
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
   });
 
+  const secondsDisplay = (countdownMs / 1000).toFixed(1);
+
   return (
     <LinearGradient colors={["#7BCFC7", "#271293"]} style={styles.container}>
-      <View
-        style={{
-          flexDirection: "row",
-          marginTop: 70,
-          margin: 30,
-          alignItems: "center",
-        }}
-      >
-        <TouchableOpacity style={styles.iconButton} onPress={router.back}>
+      {/* Status bar fix: light, translucent over gradient */}
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+
+      <View style={{ flexDirection: "row", marginTop: 70, margin: 30, alignItems: "center" }}>
+        <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
           <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
         </TouchableOpacity>
 
         <View style={styles.progressBarContainer}>
-          {/* --- The Animated.View now uses the progressWidth style --- */}
-          <Animated.View
-            style={[styles.progressBar, { width: progressWidth }]}
-          />
+          <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
         </View>
 
         <TouchableOpacity style={styles.iconButton}>
@@ -95,7 +95,8 @@ const RestScreen: React.FC<RestScreenProps> = ({
       <View style={{ justifyContent: "center", margin: 30 }}>
         <Text style={styles.title}>REST</Text>
         <View style={{ flexDirection: "row" }}>
-          <Text style={styles.timer}>{countdown}</Text>
+          {/* show like 30.0 seconds */}
+          <Text style={styles.timer}>{secondsDisplay}</Text>
           <Text
             style={{
               fontFamily: "poppins-semibold",
@@ -108,6 +109,7 @@ const RestScreen: React.FC<RestScreenProps> = ({
           </Text>
         </View>
       </View>
+
       {isRestFinished && (
         <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
           <TouchableOpacity style={styles.nextButton} onPress={onRestComplete}>
@@ -118,11 +120,12 @@ const RestScreen: React.FC<RestScreenProps> = ({
 
       {!isRestFinished && (
         <View style={{ alignItems: "center", marginTop: 40 }}>
-        <TouchableOpacity style={styles.skipButton} onPress={onRestComplete}>
-          <Image source={icons.skipButton}/>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.skipButton} onPress={onRestComplete}>
+            <Image source={icons.skipButton} />
+          </TouchableOpacity>
         </View>
       )}
+
       <View style={styles.streakContainer}>
         <Image source={icons.blueStreak} />
       </View>
@@ -131,11 +134,7 @@ const RestScreen: React.FC<RestScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    //justifyContent: "center",
-    //alignItems: "center",
-  },
+  container: { flex: 1 },
   iconButton: {
     backgroundColor: "rgba(217,217, 217, 0.27)",
     justifyContent: "center",
@@ -155,7 +154,6 @@ const styles = StyleSheet.create({
     fontFamily: "poppins-semibold",
     fontSize: 120,
     color: "#8AFFF9",
-    //marginBottom: 40,
   },
   nextButton: {
     backgroundColor: "white",
@@ -166,11 +164,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 40,
   },
-  nextButtonText: {
-    color: "#2980B9",
-    fontSize: 20,
-    fontFamily: "poppins-bold",
-  },
+  nextButtonText: { color: "#2980B9", fontSize: 20, fontFamily: "poppins-bold" },
   skipButton: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     width: 70,
@@ -198,10 +192,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 5,
   },
-  streakContainer: {
-    alignItems: "center",
-    marginTop: 60,
-  },
+  streakContainer: { alignItems: "center", marginTop: 60 },
 });
 
 export default RestScreen;

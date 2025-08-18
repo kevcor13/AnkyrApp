@@ -30,7 +30,17 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [followersUsers, setFollowersUsers] = useState([]);
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://d93d5f728b2d.ngrok-free.app'
+    const ngrokAPI = 'https://55230ecf627f.ngrok-free.app'
+    const resetClientSideState = () => {
+        delete axios.defaults.headers.common.Authorization;
+      
+        // If you attached interceptors for auth, you can eject them here too
+        // axios.interceptors.request.eject(reqId);
+        // axios.interceptors.response.eject(resId);
+      
+        // If you use React Query:
+        // queryClient.clear();
+      };
 
 
     // function to sign up the user
@@ -124,29 +134,28 @@ const GlobalProvider = ({ children }) => {
     // Function to log out the user
     const logoutUser = async () => {
         try {
-            // Get token for potential server-side logout
-            const token = await AsyncStorage.getItem("token");
-            await AsyncStorage.setItem("isLoggedIn", "false");
-           console.log("signing out");
-            // Reset all state variables
-            setIsLoggedIn(false);
-            setUser(null);
-            setUserData('');
-            setUserPosts('');
-            setQuestionStatus(false);
-            setUserGameData('');
-            setWorkoutPlan('');
-            setFollowingUsers([]);
-
-            // Navigate to login screen
-            router.replace("/sign-in");
-
-            return { success: true, message: "Successfully logged out" };
+          // (Optional) tell your API to revoke refresh token/session
+          // const token = await AsyncStorage.getItem("token");
+          // await axios.post(`${ngrokAPI}/api/auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+      
+          // Clear local auth markers first to prevent any racey requests
+          await AsyncStorage.multiRemove(["token", "isLoggedIn"]);
+      
+          // Reset in-memory state
+          setIsLoggedIn(false);
+      
+          // Nuke any client caches / headers
+          resetClientSideState();
+      
+          // Navigate to sign-in; add a query param to force remount of the route
+          router.replace({ pathname: "/sign-in", params: { ts: Date.now().toString() } });
+      
+          return { success: true, message: "Successfully logged out" };
         } catch (error) {
-            console.error("Logout Error:", error);
-            return { success: false, message: "Logout failed" };
+          console.error("Logout Error:", error);
+          return { success: false, message: "Logout failed" };
         }
-    };
+      };
 
     // Function to check the login state
     const checkLoginState = async () => {

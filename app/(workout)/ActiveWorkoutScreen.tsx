@@ -93,8 +93,7 @@ const ActiveWorkoutScreen = () => {
         setCurrentSetIndex(prev => prev + 1);
         setFlowState("EXERCISE");
     };
-
-    // CHANGED: This function now controls when to show the "Up Next" screen.
+    
     const handlePostExerciseRestComplete = () => {
         const nextIndex = exerciseIndex + 1;
         setExerciseIndex(nextIndex);
@@ -102,7 +101,7 @@ const ActiveWorkoutScreen = () => {
 
         // Show the full Overview screen for the first two exercises (index 0 and 1).
         // After the second exercise is done, switch to the "Up Next" screen for all subsequent exercises.
-        if (nextIndex >= 2) {
+        if (nextIndex > 2) {
             if(!changeTheme){
                 setFlowState("CHANGE_THEME")
             } else {

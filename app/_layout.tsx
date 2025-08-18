@@ -3,6 +3,7 @@ import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
 import GlobalProvider from '../context/GlobalProvider.js';
+import ScaleProvider  from "@/providers/ScaleProvider";
 import "../global.css";
 
 // Set the notification handler to show alerts even when the app is foregrounded
@@ -38,6 +39,8 @@ const RootLayout = () => {
         <GlobalProvider>
             <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(root)/sign-in" options={{gestureEnabled: false}}/>
+                <Stack.Screen name="(root)/sign-up" options={{gestureEnabled: false}}/>
+                
                 <Stack.Screen name="(workout)/ActiveWorkoutScreen" options={{gestureEnabled: false}}/>
             </Stack>
         </GlobalProvider>

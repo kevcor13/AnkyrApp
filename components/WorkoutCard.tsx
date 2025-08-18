@@ -20,8 +20,10 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
         <View key={index} style={styles.card}>
           <View>
             <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-            <Text style={styles.exerciseDetails}>{exercise.sets} sets</Text>
-            <Text style={styles.exerciseDetails}>{exercise.reps} reps</Text>
+            <View style={styles.workoutInfo}>
+              <Text style={styles.exerciseDetails}>{exercise.sets} sets x</Text>
+              <Text style={styles.exerciseDetails}> {exercise.reps} reps</Text>
+            </View>
           </View>
           <View style={styles.rewardBox}>
             <Text style={styles.rewardLabel}>REWARD:</Text>
@@ -92,6 +94,11 @@ const styles = StyleSheet.create({
     color: '#8AFFF9',
     marginTop: 2,
   },
+  workoutInfo: {
+    flex:1, 
+    flexDirection: 'row',
+  }
 });
+
 
 export default WorkoutCategoryCard;
