@@ -6,14 +6,16 @@ import { router } from 'expo-router';
 import CustomButton from '@/components/CustomButton';
 import { useGlobal } from '@/context/GlobalProvider';
 import WorkoutCard from '@/components/WorkoutCard';
+import axios from 'axios';
 
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData, selectedChallenges} = useGlobal();
+    const {userWorkoutData, userData, selectedChallenges, fetchWorkoutFocus} = useGlobal();
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
-    const [points, setPoints] = useState(Number)
+    const [points, setPoints] = useState(Number);
+    const theme = userData.defaultTheme;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -34,9 +36,19 @@ const WorkoutOverview = () => {
 
     
 
+    async function handleEdit() {
+        const res = await fetchWorkoutFocus(focus);
+        if (res) {
+            router.push('/(components)/workout/EditWorkout');
+        } else{
+            console.log("Error fetching workout focus");
+        }
+        
+    }
+
     return (
         <LinearGradient
-            colors={['#FF0509', '#271293']} // Gradient colors
+            colors={theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]} // Gradient colors
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{ flex: 1 }}
@@ -85,8 +97,11 @@ const WorkoutOverview = () => {
                     />
                 <View style={{flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 38, marginTop: 60}}>
                         <Text style={{fontFamily:'poppins-semibold', fontSize:20, color:'white'}}>Overview: </Text>
-                        <TouchableOpacity style={{alignItems:'center', justifyContent: 'flex-end'}}>
-                            <Text>Hello</Text>
+                        <TouchableOpacity 
+                            style={{alignItems:'center', justifyContent: 'flex-end'}}
+                            onPress={() => handleEdit()}
+                        >
+                            <Text>EDIT</Text>
                         </TouchableOpacity>
                 </View>
                 <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up'/>

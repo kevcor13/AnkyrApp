@@ -20,6 +20,7 @@ import login from "@/assets/images/loginPicture.png"
 import onboard from "@/assets/images/onboard.png"
 import questionCover from "@/assets/images/QuestionnaireCover.png"
 import novice from "@/assets/Leagues/Novice.png"
+import bronze from "@/assets/Leagues/BronzeBadge.png"
 import Olympian from "@/assets/Leagues/Olympian.png"
 import pilot from "@/assets/Leagues/Pilot.png"
 import Private from "@/assets/Leagues/Private.png"
@@ -27,8 +28,11 @@ import skipper from "@/assets/Leagues/Skipper.png"
 import titan from "@/assets/Leagues/Titan.png"
 import spotify from "@/assets/images/spotifyLogo.png"
 import appleMusic from "@/assets/images/AppleMusicLogo.png"
+import skipperBadge from "@/assets/Leagues/BadgesWeffect/SKIPPER WREATH.png"
 
 export default {
+    skipperBadge,
+    bronze,
     aperture,
     spotify,
     appleMusic,

@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { SafeAreaView } from "react-native-safe-area-context";
 import images from "@/constants/images";
 import icons from "@/constants/icons";
@@ -10,139 +10,196 @@ import PostScreen from '@/components/PostScreen';
 import axios from "axios";
 import LeagueScreen from "@/components/LeagueScreen";
 
-interface Post { _id: string; username: string; content: string; imageUrl: string; createdAt: string; UserID: string; }
-interface UserData { _id: string; username: string; profileImage: string; followers: any[]; following: any[]; }
-interface GameData { points: number; streak: number; }
-interface FollowingEntry { id?: string; userId?: string; username: string; profileImage?: string; requestStatus: boolean | null; }
+interface Post {
+  _id: string;
+  username: string;
+  content: string;
+  imageUrl: string;
+  createdAt: string;
+  UserID: string;
+}
+
+interface UserData {
+  _id: string;
+  username: string;
+  profileImage: string;
+}
+
+interface GameData {
+  points: number;
+  streak: number;
+}
+
+interface FriendEntry {
+  id: string;
+  username: string;
+  avatar: string;
+  requestStatus: boolean | null; // true = accepted, null/false = pending
+}
 
 const UserProfile: React.FC = () => {
-  const params = useLocalSearchParams();
-  const targetId = useMemo(() => {
-    const raw = params.userId as string | string[] | undefined;
-    return Array.isArray(raw) ? raw[0] : (raw ?? "");
-  }, [params.userId]);
-
-  const { userData, ngrokAPI, fetchFollowingUsers, fetchFollowerUsers } = useGlobal();
+  const { userId } = useLocalSearchParams<{ userId?: string }>();
+  const { userData, ngrokAPI, fetchFriends } = useGlobal();
 
   const [targetUser, setTargetUser] = useState<UserData | null>(null);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isApprovedFollower, setIsApprovedFollower] = useState(false);
+  const [isFriendRelated, setIsFriendRelated] = useState(false);      // any relationship (pending/accepted)
+  const [isFriendAccepted, setIsFriendAccepted] = useState(false);    // accepted == true
   const [posts, setPosts] = useState<Post[]>([]);
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
   const [league, setLeague] = useState<string | null>(null);
-  const [badgeImage, setBadgeImage] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'POSTS' | 'PLAYLISTS' | 'LEAGUE'>('POSTS');
-  const [followingList, setFollowingList] = useState<FollowingEntry[]>([]);
-  const [followersList, setFollowersList] = useState<FollowingEntry[]>([]);
+  const [badgeImage, setBadgeImage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'POSTS' | 'WORKOUTS' | 'PLAYLISTS' | 'LEAGUE'>('POSTS');
+  const [friendsList, setFriendsList] = useState<FriendEntry[]>([]);
 
-  const sameId = (entry: FollowingEntry, id: string) => (entry.id ?? entry.userId) === id;
-  const canUseRemoteImage = (uri?: string) => !!uri && /^https?:\/\//i.test(uri);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        if (!userData?._id) return;
-        const following = await fetchFollowingUsers(userData._id);
-        const followers = await fetchFollowerUsers(userData._id);
-        if (!alive) return;
-        setFollowingList(Array.isArray(following) ? following : []);
-        setFollowersList(Array.isArray(followers) ? followers : []);
-      } catch (err) {
-        console.error('Error loading connections:', err);
-      }
-    })();
-    return () => { alive = false; };
-  }, [userData?._id, fetchFollowingUsers, fetchFollowerUsers]);
-
-  useEffect(() => {
-    if (!targetId) return;
-    const f = followingList.find(u => sameId(u, targetId));
-    const fb = followersList.find(u => sameId(u, targetId));
-    if (f || fb) {
-      setIsFollowing(true);
-      setIsApprovedFollower((f?.requestStatus === true) || (fb?.requestStatus === true));
-    } else {
-      setIsFollowing(false);
-      setIsApprovedFollower(false);
+  // Load full friends list for the current user
+  const loadFriends = useCallback(async () => {
+    try {
+      if (!userData?._id) return;
+      const friends = await fetchFriends();
+      setFriendsList(friends || []);
+    } catch (err) {
+      console.error('Error loading friends:', err);
     }
-  }, [targetId, followingList, followersList]);
+  }, [userData?._id, fetchFriends]);
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
+    loadFriends();
+  }, [loadFriends]);
+
+  // Update relationship/acceptance status based on friends list
+  useEffect(() => {
+    if (!userId) return;
+    const entry = friendsList.find(u => u.id === userId);
+    if (entry) {
+      setIsFriendRelated(true);
+      setIsFriendAccepted(entry.requestStatus === true);
+    } else {
+      setIsFriendRelated(false);
+      setIsFriendAccepted(false);
+    }
+  }, [userId, friendsList]);
+
+  // Fetch user data and posts
+  useEffect(() => {
+    const fetchUserData = async () => {
       try {
-        if (!targetId) return;
         setLoading(true);
         const token = await AsyncStorage.getItem("token");
-        if (!token) return;
+        if (!token) {
+          console.error('No authentication token found');
+          return;
+        }
 
-        const userRes = await axios.post(`${ngrokAPI}/getUserById`, { token, userId: targetId });
-        if (alive && userRes.data.status === 'success') setTargetUser(userRes.data.data);
+        // Fetch profile owner's data
+        const userResponse = await axios.post(`${ngrokAPI}/getUserById`, { token, userId });
+        if (userResponse.data.status === 'success') {
+          setTargetUser(userResponse.data.data);
+        }
 
-        if (userData?._id === targetId || isApprovedFollower) {
-          const postsRes = await axios.post(`${ngrokAPI}/getUserPosts`, { token, UserId: targetId });
-          if (alive && postsRes.data.status === 'success') setPosts(postsRes.data.data);
-        } else if (alive) {
+        // Only fetch posts if it's the user's own profile or friendship is accepted
+        if (userData?._id === userId || isFriendAccepted) {
+          const postsResponse = await axios.post(`${ngrokAPI}/getUserPosts`, { token, UserId: userId });
+          if (postsResponse.data.status === 'success') {
+            setPosts(postsResponse.data.data);
+          }
+        } else {
           setPosts([]);
         }
 
-        const gameRes = await axios.post(`${ngrokAPI}/gamedata`, { token, UserID: targetId });
-        if (alive && gameRes.data.status === 'success') setGameData(gameRes.data.data);
-      } catch (e) {
-        console.error('Error fetching user data:', e);
+        // Fetch game data
+        const gameResponse = await axios.post(`${ngrokAPI}/gamedata`, { token, UserID: userId });
+        if (gameResponse.data.status === 'success') {
+          setGameData(gameResponse.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
       } finally {
-        if (alive) setLoading(false);
+        setLoading(false);
       }
-    })();
-    return () => { alive = false; };
-  }, [targetId, userData?._id, isApprovedFollower, ngrokAPI]);
+    };
 
+    if (userId) fetchUserData();
+  }, [userId, userData?._id, isFriendAccepted, ngrokAPI]);
+
+  // Determine league and badge based on points
   useEffect(() => {
-    const p = gameData?.points ?? 0;
-    if (p >= 30000) { setLeague("OLYMPIAN"); setBadgeImage(images.Olympian); }
-    else if (p >= 20000) { setLeague("TITAN"); setBadgeImage(images.titan); }
-    else if (p >= 12000) { setLeague("SKIPPER"); setBadgeImage(images.skipper); }
-    else if (p >= 5000) { setLeague("PILOT"); setBadgeImage(images.pilot); }
-    else if (p >= 1000) { setLeague("PRIVATE"); setBadgeImage(images.Private); }
-    else { setLeague("NOVICE"); setBadgeImage(images.novice); }
+    if (gameData?.points != null) {
+      const points = gameData.points;
+
+      if (points >= 30000) { setLeague("OLYMPIAN"); setBadgeImage(images.Olympian); }
+      else if (points >= 20000) { setLeague("TITAN"); setBadgeImage(images.titan); }
+      else if (points >= 12000) { setLeague("SKIPPER"); setBadgeImage(images.skipper); }
+      else if (points >= 5000) { setLeague("PILOT"); setBadgeImage(images.pilot); }
+      else if (points >= 1000) { setLeague("PRIVATE"); setBadgeImage(images.Private); }
+      else { setLeague("NOVICE"); setBadgeImage(images.novice); }
+    }
   }, [gameData]);
 
-  const toggleFollow = async () => {
+  // Send friend request / cancel (unfriend or cancel pending)
+  const toggleFriend = async () => {
     try {
-      if (!userData?._id || !targetUser?._id) return;
-      const endpoint = isFollowing ? 'unfollow' : 'follow';
-      const resp = await axios.post(`${ngrokAPI}/${endpoint}`, {
+      if (!userData?._id || !targetUser?._id) {
+        console.error('No user ID available');
+        return;
+      }
+
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      // If any relationship exists -> hitting again cancels/unfriends
+      const endpoint = isFriendRelated ? 'unfollow' : 'follow';
+      const response = await axios.post(`${ngrokAPI}/${endpoint}`, {
         userId: userData._id,
         targetId: targetUser._id
       });
-      if (resp.data?.status !== 'success') return;
 
-      if (endpoint === 'follow') {
-        axios.post(`${ngrokAPI}/createNotification`, {
-          type: 'follow',
-          from: userData._id,
-          owner: targetUser._id,
-          userProfileImageUrl: userData.profileImage,
-          username: userData.username,
-          message: 'has requested to follow'
-        }).catch(() => {});
-        setIsFollowing(true);
-        setIsApprovedFollower(false);
-      } else {
-        setIsFollowing(false);
-        setIsApprovedFollower(false);
-        setPosts([]);
+      if (endpoint === "follow") {
+        // optional: notify target
+        try {
+          await axios.post(`${ngrokAPI}/createNotification`, {
+            type: 'follow',
+            from: userData._id,
+            owner: targetUser._id,
+            userProfileImageUrl: userData.profileImage,
+            username: userData.username,
+            message: `has requested to follow`
+          });
+        } catch {}
       }
-    } catch (e) {
-      console.error(`Error ${isFollowing ? 'unfollowing' : 'following'} user:`, e);
+      
+      if (response.data.status === 'success') {
+        // flip local flags and refresh friends for accurate pending/accepted icons
+        setIsFriendRelated(!isFriendRelated);
+        if (endpoint === 'unfollow') {
+          setIsFriendAccepted(false);
+          setPosts([]);
+        }
+        await loadFriends();
+      }
+    } catch (error) {
+      console.error(`Error ${isFriendRelated ? 'unfriending/canceling' : 'requesting'} user:`, error);
     }
   };
 
-  const canViewProfilePicture = () => userData?._id === targetId || (isFollowing && isApprovedFollower);
-  const canViewProfileContent = () => userData?._id === targetId || (isFollowing && isApprovedFollower);
-  const canViewPosts = () => userData?._id === targetId || isApprovedFollower;
+  // Visibility helpers
+  const canViewProfilePicture = () => {
+    if (userData?._id === userId) return true;
+    return isFriendRelated && isFriendAccepted;
+  };
+
+  const canViewProfileContent = () => {
+    if (userData?._id === userId) return true;
+    return isFriendRelated && isFriendAccepted;
+  };
+
+  const canViewPosts = () => {
+    if (userData?._id === userId || isFriendAccepted) return true;
+    return isFriendRelated && isFriendAccepted;
+  };
 
   if (loading) {
     return (
@@ -153,54 +210,64 @@ const UserProfile: React.FC = () => {
     );
   }
 
-  if (!targetUser || !targetId) {
+  if (!targetUser) {
     return (
       <SafeAreaView className="bg-black flex-1 justify-center items-center">
         <Text className="text-white text-lg">User not found</Text>
-        <TouchableOpacity className="mt-4 bg-gray-800 px-4 py-2 rounded-lg" onPress={() => router.back()}>
+        <TouchableOpacity
+          className="mt-4 bg-gray-800 px-4 py-2 rounded-lg"
+          onPress={() => router.back()}
+        >
           <Text className="text-white">Go Back</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
+  // Header with user info and follow button
   const renderHeader = () => (
     <>
       <View className="flex-row justify-between items-center mb-4">
-        <TouchableOpacity onPress={() => router.back()} className="flex-row items-center">
-          <Image source={icons.arrow} style={{ width: 18, height: 18 }} />
+        <TouchableOpacity onPress={() => router.back()} className="flex-row">
+          <Image source={icons.arrow}/>
           <Text className="text-white px-2 font-poppins-semibold text-lg">Back</Text>
         </TouchableOpacity>
-        <View style={{ width: 32 }} />
+        <View className="w-8" />
       </View>
 
       <View className="flex-row items-center justify-between mt-4">
-        {canViewProfilePicture() && canUseRemoteImage(targetUser.profileImage) ? (
-          <Image source={{ uri: targetUser.profileImage }} className="w-28 h-28 rounded-full" />
+      <Image
+            source={{ uri: targetUser.profileImage }}
+            className="w-28 h-28 rounded-full"
+          />
+
+        {userData?._id !== userId ? (
+          <TouchableOpacity
+            className="mt-12 pr-20"
+            onPress={toggleFriend}
+          >
+            {isFriendRelated ? (
+              isFriendAccepted ? (
+                <Image source={icons.followedIcon} className="h-10 w-10" />
+              ) : (
+                <View className="">
+                  <Text className="text-[#94ACAB] font-poppins-semibold text-[12px]">Requested</Text>
+                </View>
+              )
+            ) : (
+              <Image source={images.followButton} className="h-10 w-10" />
+            )}
+          </TouchableOpacity>
         ) : (
-          <View className="w-28 h-28 rounded-full bg-gray-700 justify-center items-center">
-            <Text className="text-white text-3xl font-bold">
-              {targetUser.username ? targetUser.username.charAt(0).toUpperCase() : "?"}
-            </Text>
-          </View>
+          <View className="mt-12 pr-28" />
         )}
 
-        <TouchableOpacity className="mt-12 pr-28" onPress={toggleFollow}>
-          {isFollowing ? (
-            isApprovedFollower ? (
-              <Image source={icons.followedIcon} className="h-10 w-10" />
-            ) : (
-              <View className="px-3 py-1">
-                <Text className="text-[#94ACAB] font-poppins-semibold text-[15px]">Requested</Text>
-              </View>
-            )
-          ) : (
-            <Image source={images.followButton} className="h-10 w-10" />
-          )}
-        </TouchableOpacity>
-
         {badgeImage ? (
-          <Image source={badgeImage} className="w-28 h-28" resizeMode="contain" />
+          <Image
+            source={typeof badgeImage === "string" ? { uri: badgeImage } : badgeImage}
+            className="w-28 h-28"
+            resizeMode="contain"
+          />
         ) : (
           <View className="w-28 h-28 justify-center items-center">
             <Text className="text-gray-500">Loading badge...</Text>
@@ -209,14 +276,20 @@ const UserProfile: React.FC = () => {
       </View>
 
       <View className="flex-row items-center justify-between mt-6">
-        <Text className="text-3xl font-bold text-white">{targetUser.username || "User"}</Text>
-        <Text className="text-3xl text-blue-400">{gameData?.streak ?? 0}</Text>
+        <Text className="text-3xl font-bold text-white">
+          {targetUser?.username || "User"}
+        </Text>
+        <Text className="text-3xl text-blue-400">
+          {gameData?.streak !== undefined ? gameData.streak : "0"}
+        </Text>
       </View>
 
       <View className="flex-row justify-around mt-6 border-b border-gray-600 pb-2">
-        {(['POSTS', 'PLAYLISTS', 'LEAGUE'] as const).map((tab) => (
-          <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
-            <Text className={`text-lg ${activeTab === tab ? 'text-white' : 'text-gray-400'}`}>{tab}</Text>
+        {['POSTS', 'PLAYLISTS', 'LEAGUE'].map((tab) => (
+          <TouchableOpacity key={tab} onPress={() => setActiveTab(tab as any)}>
+            <Text className={`text-lg ${activeTab === tab ? 'text-white' : 'text-gray-400'}`}>
+              {tab}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -230,44 +303,50 @@ const UserProfile: React.FC = () => {
 
         {canViewProfileContent() ? (
           <>
-            {activeTab === 'POSTS' && (canViewPosts() ? (
+            {activeTab === 'POSTS' && canViewPosts() ? (
               posts.length > 0 ? (
                 <PostScreen posts={posts} showImages={canViewProfilePicture()} />
               ) : (
                 <View className="flex-1 justify-center items-center mt-8">
-                  <Text className="text-gray-500 italic">This user hasn't posted anything yet.</Text>
+                  <Text className="text-gray-500 italic">
+                    This user hasn't posted anything yet.
+                  </Text>
                 </View>
               )
-            ) : (
+            ) : activeTab === 'POSTS' && !canViewPosts() ? (
               <View className="flex-1 justify-center items-center mt-20">
-                <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain" />
+                <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain"/>
                 <Text className="text-white mt-6 font-poppins-semibold text-[13px]">
-                  Follow {targetUser.username}'s account to see posts.
+                  Follow {targetUser.username}'s account to see their posts.
                 </Text>
               </View>
-            ))}
+            ) : null}
 
             {activeTab === 'PLAYLISTS' && (
               <View className="flex-1 justify-center items-center mt-8">
-                <Text className="text-gray-500 italic">No playlists created.</Text>
+                <Text className="text-gray-500 italic">
+                  No playlists created.
+                </Text>
               </View>
             )}
 
             {activeTab === 'LEAGUE' && (
               <View className="flex-1 mt-4">
                 {gameData?.points != null ? (
-                  <LeagueScreen userXP={gameData.points} League={league ?? 'NOVICE'} />
+                  <LeagueScreen userXP={gameData.points} League={league} />
                 ) : (
-                  <Text className="text-gray-500 text-center">Loading League...</Text>
+                  <Text className="text-gray-500 text-center">
+                    Loading League...
+                  </Text>
                 )}
               </View>
             )}
           </>
         ) : (
           <View className="flex-1 justify-center items-center mt-20">
-            <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain" />
+            <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain"/>
             <Text className="text-white mt-6 font-poppins-semibold text-[13px]">
-              Follow {targetUser.username}'s account to see posts.
+              Follow {targetUser.username}'s account to see their posts.
             </Text>
           </View>
         )}

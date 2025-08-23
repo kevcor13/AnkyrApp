@@ -7,6 +7,8 @@ import images from "@/constants/images";
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from 'expo-notifications';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+
 
 export default function CreatePost() {
     const { userData, ngrokAPI } = useGlobal();
@@ -67,7 +69,13 @@ export default function CreatePost() {
                     behavior={Platform.OS === "ios" ? "padding" : "height"}
                     className="flex-1"
                 >
-                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                    <KeyboardAwareScrollView
+                        enableOnAndroid
+                        keyboardOpeningTime={0}
+                        extraScrollHeight={16}               // nudge to sit nicely above keyboard
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
+                    >
                         {/* Header with Back button */}
                         <View className="flex-row items-center justify-between px-4 py-2">
                             <TouchableOpacity onPress={() => router.push('/camera')}>
@@ -118,16 +126,15 @@ export default function CreatePost() {
                             <TouchableOpacity
                                 onPress={handleShare}
                                 disabled={isLoading || !imageUri}
-                                className={`p-6 rounded-md items-center ${
-                                    isLoading || !imageUri ? 'bg-gray-500' : 'bg-[#DCE0E3]'
-                                }`}
+                                className={`p-6 rounded-md items-center ${isLoading || !imageUri ? 'bg-gray-500' : 'bg-[#DCE0E3]'
+                                    }`}
                             >
                                 <Text className="text-black font-semibold">
                                     {isLoading ? 'Sharing...' : 'Share'}
                                 </Text>
                             </TouchableOpacity>
                         </View>
-                    </ScrollView>
+                    </KeyboardAwareScrollView>
                 </KeyboardAvoidingView>
             </TouchableWithoutFeedback>
         </SafeAreaView>

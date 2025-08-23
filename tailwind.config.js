@@ -17,6 +17,8 @@ module.exports = {
         "raleway-light": ["Raleway-Light", "sans-serif"],
         sintony: ['Sintony', 'sans-serif'],
         "sintony-bold": ["Sintony-Bold", "sans-serif"],
+        saire: ['Saire', 'sans-serif'],
+        "saire-bold": ["Saire-Bold", "sans-serif"],
       },
     },
   },

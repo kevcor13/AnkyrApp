@@ -1,5 +1,5 @@
 import {View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator, StyleSheet} from 'react-native'
-import React, {useEffect, useState} from 'react'
+import React, {use, useEffect, useState} from 'react'
 import {SafeAreaView} from "react-native-safe-area-context";
 import images from "@/constants/images"
 import icons from "@/constants/icons"
@@ -10,10 +10,9 @@ import axios from "axios";
 import PostCard from '@/components/PostCard';
 
 const Home = () => {
-    const { userData, fetchFollowerUsers, fetchFollowingUsers, ngrokAPI,fetchWorkout,fetchGameData, recipes, userGameData} = useGlobal();
+    const { userData, fetchWorkout, fetchGameData, fetchFriends, ngrokAPI, userGameData, fetchUserData } = useGlobal();
     const [isLoading, setIsLoading] = useState(true);
-    const [followingUsers, setFollowingUsers] = useState([]);
-    const [followersUsers, setFollowersUsers] = useState([]);
+    const [friends, setFriends] = useState([]);
     const [posts, setPosts] = useState<any[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(true);
     
@@ -23,14 +22,37 @@ const Home = () => {
             if (!userData) {
                 router.push('/(root)/sign-in');
             } else {
-                loadFollowingAndPosts();
+                loadFriendsAndPosts();
+                
             }
         }, 500);
 
         return () => clearTimeout(timer);
     }, [userData]);
+
+    useEffect(() => {
+        // Define an async function inside the useEffect
+        const getChallenges = async () => {
+            // Make sure userData._id exists before making the API call
+            if (userData?._id) {
+                try {
+                    const UserID = userData._id;
+                    const response = await axios.post(`${ngrokAPI}/api/GenAI/AIchallanges`, { UserID });
+                    // Log the 'data' property of the response object
+                    console.log("AI Challenges Response:", response.data);
+                } catch (error) {
+                    console.error("Error fetching AI challenges:", error);
+                }
+            }
+        };
+    
+        // Call the async function
+        getChallenges();
+    
+    }, [userData]); 
+
  
-    const loadFollowingAndPosts = async () => {
+    const loadFriendsAndPosts = async () => {
         try {
             setLoadingPosts(true);
 
@@ -40,38 +62,28 @@ const Home = () => {
                 console.error('No authentication token found');
                 return;
             }
-            const followers = await fetchFollowerUsers();
+
+            // 1. Fetch friends list
+            const friendsList = await fetchFriends();
+            setFriends(friendsList);
+
+            // 2. Fetch workouts + game data
             fetchWorkout(token, userData._id);
             fetchGameData(token, userData._id);
-            
-            setFollowersUsers(followers);
-            
-            
-            const points = userGameData.points;
 
-        
-            const acceptedFollowers = followers
-                .filter((u: { requestStatus: boolean; }) => u.requestStatus === true)
-                .map((u: { id: any; }) => u.id);
+            // 3. Only accepted friends (requestStatus === true)
+            const acceptedFriends = friendsList
+                .filter((u: { requestStatus: boolean }) => u.requestStatus === true)
+                .map((u: { id: string }) => u.id);
 
-            const following = await fetchFollowingUsers(userData._id);
-            setFollowingUsers(following);
-
-            const acceptedFollowings = following
-                .filter((u: { requestStatus: boolean; }) => u.requestStatus === true)
-                .map((u: { id: any; }) => u.id);
-
-            // 5. Combine both lists to get all users whose posts we want to show
-            const combinedUserIds = [...new Set([...acceptedFollowings, ...acceptedFollowers])];
-
-            // 6. Also include the current user's ID to show their own posts
-            if (!combinedUserIds.includes(userData._id)) {
-                combinedUserIds.push(userData._id);
+            // 4. Also include the current user's ID to show their own posts
+            if (!acceptedFriends.includes(userData._id)) {
+                acceptedFriends.push(userData._id);
             }
 
-            // 7. Fetch posts for all users in the combined list
-            let allPosts: any[] | ((prevState: never[]) => never[]) = [];
-            for (const userId of combinedUserIds) {
+            // 5. Fetch posts for all accepted friends + self
+            let allPosts: any[] = [];
+            for (const userId of acceptedFriends) {
                 const resp = await axios.post(
                     `${ngrokAPI}/getUserPosts`,
                     { token, UserId: userId }
@@ -83,7 +95,7 @@ const Home = () => {
                 }
             }
 
-            // 8. Sort newest first and set state
+            // 6. Sort newest first and set state
             allPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setPosts(allPosts);
 
@@ -94,6 +106,7 @@ const Home = () => {
             setIsLoading(false);
         }
     };
+
 
     const renderHeader = () => (
         <>
@@ -147,7 +160,7 @@ const Home = () => {
                 <ActivityIndicator size="large" color="#FFFFFF" />
             ) : (
                 <Text className="text-white text-center px-4">
-                    No posts found. Start following users to see their posts here!
+                    No posts found. Add friends to see their posts here!
                 </Text>
             )}
         </View>
@@ -168,13 +181,12 @@ const Home = () => {
         <SafeAreaView className="bg-black h-full">
             <FlatList
                 data={posts}
-                //keyExtractor={(item) => item._id}
                 renderItem={({item}) => <PostCard post={item} />}
                 ListHeaderComponent={renderHeader}
                 ListEmptyComponent={renderEmptyComponent}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                contentContainerStyle={{ paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
-                onRefresh={loadFollowingAndPosts}
+                onRefresh={loadFriendsAndPosts}
                 refreshing={loadingPosts}
             />
         </SafeAreaView>
@@ -201,13 +213,11 @@ const styles = StyleSheet.create({
     color: '#DAEEED',
     paddingLeft: 20,
   },
-  // icons view 
   iconsContainer:{
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 40,
   }
-  // ...add other styles as needed...
 });
 
 export default Home

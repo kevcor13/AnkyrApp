@@ -50,6 +50,7 @@ const Profile: React.FC = () => {
     const [streak, setStreak] = useState<number|null>(null);
     const [league, setLeague] = useState<string|null>(null);
     const [badgeImage, setBadgeImage] = useState<string|null>(null);
+    const [badge, setBadge] = useState(null);
     const [loading, setLoading] = useState(true);
     const [err, setErr] = useState<string | null>(null);
 
@@ -128,6 +129,7 @@ const Profile: React.FC = () => {
                     if (gd) {
                         setPoints(gd.points);
                         setStreak(gd.streak);
+                        setBadge(gd.league);
                     }
                 }
             } catch (e) {
@@ -145,15 +147,15 @@ const Profile: React.FC = () => {
 
     useEffect(() => {
         if (points === null) return;
-        if (points >= 30000) {
+        if (badge === "OLYMPIAN") {
             setLeague("OLYMPIAN"); setBadgeImage(images.Olympian);
-        } else if (points >= 20000) {
+        } else if (badge === "TITAN") {
             setLeague("TITAN"); setBadgeImage(images.titan);
-        } else if (points >= 12000) {
+        } else if (badge === "SKIPPER") {
             setLeague("SKIPPER"); setBadgeImage(images.skipper);
-        } else if (points >= 5000) {
+        } else if (badge === "PILOT") {
             setLeague("PILOT"); setBadgeImage(images.pilot);
-        } else if (points >= 1000) {
+        } else if (badge === "PRIVATE") {
             setLeague("PRIVATE"); setBadgeImage(images.Private);
         } else {
             setLeague("NOVICE"); setBadgeImage(images.novice);
@@ -255,9 +257,9 @@ const Profile: React.FC = () => {
 
                 {/* LEAGUE tab */}
                 {activeTab==='LEAGUE' && (
-                    <View className="flex-1 mt-4">
+                    <View className="flex-1 mt-4 pb-10">
                         {loadingLeague
-                            ? <ActivityIndicator size="large" color="#FFF" style={{ marginTop: 20 }} />
+                            ? <ActivityIndicator size="large" color="#FFF" style={{ marginTop: 40 }} />
                             : points !== null
                                 ? <LeagueScreen userXP={points} League={league ?? ""} />
                                 : <Text className="text-gray-500 text-center">No league data available</Text>

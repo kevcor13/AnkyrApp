@@ -268,25 +268,18 @@ const ChallengesPage: React.FC = () => {
                 <View style={{backgroundColor:'#000000'}}>
                 </View>
                 <View style={styles.container2}>
-                    <TouchableOpacity style={{ flexDirection: 'row' }}
-                        onPress={() => setLeagueOpen(!leagueOpen)}
-                    >
-                        <Text style={{ fontFamily: 'poppins-semibold', color: '#FFFFFF', fontSize: 24, marginLeft: 20 }}>MY LEAGUE</Text>
-                        <Text style={{ color: '#FFFFFF', fontSize: 24, marginLeft: 180 }}>{leagueOpen ? '▲' : '▼'}</Text>
-                    </TouchableOpacity>
-                        <LeagueHeader league={userGameData.league} />
-                        <TouchableOpacity style={styles.buttonContainer} onPress={() => setShowChallanges(true)}>
-                    <LinearGradient
-                        colors={['#FF090D', '#1E00FF']}
-                        start={{ x: 0, y: 0.5 }}
-                        end={{ x: 1, y: 0.5 }}
-                        style={styles.gradient}
-                    >
+                <TouchableOpacity style={styles.buttonContainer} onPress={() => setShowChallanges(true)}>
+                    <View>
                         <View style={styles.contentView}>
-                            <Text style={styles.buttonText}>Daily Challenges</Text>
+                            <Text style={styles.buttonText1}>WEEKLY</Text>
+                            <Text style={styles.buttonText2}>CHALLENGES</Text>
                         </View>
-                    </LinearGradient>
+                    </View>
                 </TouchableOpacity>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={{ fontFamily: 'poppins-semibold', color: '#FFFFFF', fontSize: 24, marginLeft: 20 }}>MY LEAGUE</Text>
+                    </View>
+                    <LeagueHeader league={userGameData.league} />
                 </View>
             </ScrollView>
             <Modal
@@ -383,23 +376,35 @@ const styles = StyleSheet.create({
         
     },
     buttonContainer: {
-        margin: 20,
         borderRadius: 15,
-        backgroundColor:'#000000'
-    },
+        backgroundColor: '#000000',
+        marginBottom: 30,
+        borderColor: 'white',   // teal
+        borderWidth: 2,           // <-- required to show the border
+        marginHorizontal: 30,
+      },
     gradient: {
         borderRadius: 15,
     },
     contentView: {
-        flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 20,
         paddingHorizontal: 25,
     },
-    buttonText: {
-        color: '#00FFBF',
-        fontSize: 20,
+    buttonText1: {
+        color: 'white',
+        fontSize: 45,
+        fontWeight: 'bold',
+        fontFamily: 'Poppins',
+        letterSpacing: 15,
+    },
+    buttonText2: {
+        color: 'white',
+        fontSize: 45,
+        letterSpacing: -2,
+        lineHeight: 30,
+        paddingTop: 15,
+        fontFamily: 'saira-bold',
         fontWeight: 'bold',
     },
     headerContainer: {
@@ -452,7 +457,6 @@ const styles = StyleSheet.create({
     },
     block: {
         flex: 1,
-        paddingHorizontal: 8,
     },
     header: {
         fontFamily: "Poppins-SemiBold",

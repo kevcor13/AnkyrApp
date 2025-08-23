@@ -13,10 +13,7 @@ import { styles as globalStyles } from "@/constants/styles";
 import icons from "@/constants/icons";
 import { useGlobal } from "@/context/GlobalProvider";
 
-interface PerformedSet {
-  reps: number;
-  weight: number;
-}
+interface PerformedSet { reps: number; weight: number; }
 
 interface Exercise {
   exerciseName: string;
@@ -25,7 +22,7 @@ interface Exercise {
   sets: number;
   reps: string;
   restBetweenSeconds: number;
-  recommendedWeight: number;
+  recommendedWeight: number;     // may come in as number but normalize anyway
   performedSets: PerformedSet[];
 }
 
@@ -33,16 +30,11 @@ interface ExerciseScreenProps {
   exercise: Exercise;
   exerciseIndex: number;
   currentSetIndex: number;
-  onSetUpdate: (
-    exerciseIndex: number,
-    setIndex: number,
-    weight: number
-  ) => void;
+  onSetUpdate: (exerciseIndex: number, setIndex: number, weight: number) => void;
   onSetLogged: () => void;
 }
 
 const LBS_TO_KG_CONVERSION = 0.453592;
-
 
 const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   exercise,
@@ -52,53 +44,68 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   onSetLogged,
 }) => {
   const [hasAdjusted, setHasAdjusted] = useState(false);
-  const [displayUnit, setDisplayUnit] = useState<'lbs' | 'kg'>('lbs');
+  const [displayUnit, setDisplayUnit] = useState<"lbs" | "kg">("lbs");
   const { userData } = useGlobal();
   const theme = userData.defaultTheme;
 
+  // ✅ Always work with a numeric recommendation (handles "35" strings or undefined)
+  const recommendedLbs = Number(exercise.recommendedWeight ?? 0);
+
+  // If a set weight is unset (-1) OR is 0 while we have a positive recommendation,
+  // initialize it to the recommended weight.
   useEffect(() => {
-    if (exercise.performedSets[currentSetIndex]?.weight === -1) {
-      onSetUpdate(exerciseIndex, currentSetIndex, exercise.recommendedWeight);
+    const setWeight = exercise.performedSets[currentSetIndex]?.weight;
+    if (
+      setWeight === -1 ||
+      (setWeight === 0 && recommendedLbs > 0) ||
+      typeof setWeight !== "number"
+    ) {
+      onSetUpdate(exerciseIndex, currentSetIndex, recommendedLbs);
     }
     setHasAdjusted(false);
-  }, [exercise.exerciseName, currentSetIndex]);
+  }, [exercise.exerciseName, currentSetIndex, recommendedLbs]);
 
   const isWarmup = exercise.phase === "warmup";
   const isCooldown = exercise.phase === "cooldown";
-  const isBodyweight = exercise.recommendedWeight === 0;
+  const isBodyweight = recommendedLbs === 0;
 
   const handleLogSet = () => onSetLogged();
 
   const adjustWeight = (amount: number) => {
     const currentWeight = exercise.performedSets[currentSetIndex]?.weight;
+    // ✅ If currentWeight is 0 but we have a positive recommendation,
+    // use the recommendation as the base instead of 0.
     const baseWeight =
-      typeof currentWeight === "number" && currentWeight >= 0
+      typeof currentWeight === "number" &&
+      (currentWeight > 0 || (currentWeight === 0 && recommendedLbs === 0))
         ? currentWeight
-        : exercise.recommendedWeight;
+        : recommendedLbs;
+
     const newWeight = Math.max(0, baseWeight + amount);
     onSetUpdate(exerciseIndex, currentSetIndex, newWeight);
     setHasAdjusted(true);
   };
 
-  // safe weight values
   const rawWeight = exercise.performedSets[currentSetIndex]?.weight;
   const weightInLbs =
-    typeof rawWeight === "number" && rawWeight >= 0
-      ? rawWeight
-      : exercise.recommendedWeight;
+    typeof rawWeight === "number"
+      ? rawWeight > 0 || (rawWeight === 0 && recommendedLbs === 0)
+        ? rawWeight
+        : recommendedLbs
+      : recommendedLbs;
 
   const displayWeight =
     displayUnit === "kg"
       ? Math.round(weightInLbs * LBS_TO_KG_CONVERSION)
-      : weightInLbs;
+      : Math.round(weightInLbs); // round lbs for a cleaner badge
 
-  const adjustmentAmountLbs = weightInLbs - exercise.recommendedWeight;
+  const adjustmentAmountLbs = weightInLbs - recommendedLbs;
   const displayAdjustmentAmount =
     displayUnit === "kg"
       ? Math.round(adjustmentAmountLbs * LBS_TO_KG_CONVERSION)
       : adjustmentAmountLbs;
 
-  // --- TIMER: "30.0 seconds" when reps mentions seconds ----------------------
+  // --- TIMER / reps parsing (unchanged) --------------------------------------
   const isTimed = /\bseconds?\b/i.test(exercise.reps);
   const [secondsLeftMs, setSecondsLeftMs] = useState<number | null>(null);
   const [timerActive, setTimerActive] = useState(false);
@@ -121,7 +128,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
     const id = setInterval(() => {
       setSecondsLeftMs((prev) => {
         if (prev == null) return 0;
-        const next = prev - 100; // update every 0.1s
+        const next = prev - 100;
         return next > 0 ? next : 0;
       });
     }, 100);
@@ -131,16 +138,13 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   useEffect(() => {
     if (secondsLeftMs === 0 && timerActive) setTimerActive(false);
   }, [secondsLeftMs, timerActive]);
-  // ---------------------------------------------------------------------------
 
-  // --- NEW: simple "per ..." formatting (e.g., "10 per leg") -----------------
   const repsText = exercise.reps ?? "";
-  const perMatch = repsText.match(/\bper\s+.+/i);          // "per leg", "per arm", etc.
-  const isPer = !!perMatch && !isTimed;                    // only when not a timer set
+  const perMatch = repsText.match(/\bper\s+.+/i);
+  const isPer = !!perMatch && !isTimed;
   const repsNumberMatch = repsText.match(/(\d+(?:\.\d+)?)/);
-  const repsNumber = repsNumberMatch ? repsNumberMatch[1] : repsText; // keep big number font
-  const perPhrase = perMatch ? perMatch[0] : "";           // full "per ..." phrase
-  // ---------------------------------------------------------------------------
+  const repsNumber = repsNumberMatch ? repsNumberMatch[1] : repsText;
+  const perPhrase = perMatch ? perMatch[0] : "";
 
   return (
     <View style={{ flex: 1 }}>
@@ -150,16 +154,6 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           style={globalStyles.video}
           resizeMode={ResizeMode.COVER}
         />
-        {/** 
-        <Video
-          source={{ uri: exercise.videoUrl }}
-          style={globalStyles.video}
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping
-          isMuted
-        />
-        */}
       </View>
       <LinearGradient
         colors={
@@ -197,16 +191,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
             )}
           </View>
 
-          {/* NEW: small line under "10 reps" showing "per leg"/"per arm" */}
           {!isTimed && isPer ? (
             <Text style={styles.perQualifier}>{perPhrase}</Text>
           ) : null}
 
-          {isBodyweight ? (
-            <Text style={globalStyles.bodyweightText}>Bodyweight Exercise</Text>
+          {recommendedLbs === 0 ? (
+            <Text style={globalStyles.bodyweightText}>Bodyweight</Text>
           ) : (
             <View style={styles.weightAdjusterContainer}>
-              {hasAdjusted && adjustmentAmountLbs !== 0 ? (
+              {hasAdjusted && displayAdjustmentAmount !== 0 ? (
                 <Text style={styles.adjustmentIndicatorText}>
                   {displayAdjustmentAmount > 0 ? `+${displayAdjustmentAmount}` : displayAdjustmentAmount}
                   <Text style={{ fontSize: 18 }}> {displayUnit}</Text>
@@ -220,6 +213,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                   <Text style={styles.adjusterButtonText}>-</Text>
                 </TouchableOpacity>
                 <View style={styles.weightDisplay}>
+                  {/* ✅ This will now show the recommended weight instead of 0 */}
                   <Text style={styles.weightDisplayText}>{displayWeight}</Text>
                 </View>
                 <TouchableOpacity onPress={() => adjustWeight(5)} style={styles.adjusterButton}>
@@ -248,7 +242,6 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
             </View>
           )}
 
-          {/* Show the same Log/Finish button after countdown completes for timed sets */}
           {(!isTimed || secondsLeftMs === 0) && (
             <TouchableOpacity style={globalStyles.nextButtonWorkout} onPress={handleLogSet}>
               <Text style={globalStyles.nextButtonTextWorkout}>
@@ -289,16 +282,7 @@ const styles = StyleSheet.create({
   unitButtonActive: { backgroundColor: "white" },
   unitButtonText: { fontFamily: "poppins-semibold", fontSize: 14, color: "white" },
   unitButtonTextActive: { color: "#271293" },
-
-  // NEW: small "per ..." line that sits under "10 reps"
-  perQualifier: {
-    fontFamily: "poppins-medium",
-    fontSize: 14,
-    color: "rgba(255, 255, 255, 0.85)",
-    textAlign: "center",
-    marginTop: 4,
-  },
-
+  perQualifier: { fontFamily: "poppins-medium", fontSize: 14, color: "rgba(255, 255, 255, 0.85)", textAlign: "center", marginTop: 4 },
   nextButtonContainer: {},
 });
 

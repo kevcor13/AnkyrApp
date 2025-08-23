@@ -1,10 +1,11 @@
-import React, {useEffect, useState} from 'react';
-import {View, Text, ScrollView, Image, TouchableOpacity} from 'react-native';
+import React, { use, useEffect, useState } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import axios from "axios";
 import icons from '@/constants/icons'
 import images from '@/constants/images'
-import {useGlobal} from "@/context/GlobalProvider";
+import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from 'expo-router';
 
 interface Notification {
     _id: string;
@@ -89,7 +90,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ notifications, 
             const accept = true;
             const notificationId = id;
             const response = await axios.post(`${ngrokAPI}/response`, { userId, targetId, accept });
-            const res = await axios.post(`${ngrokAPI}/deleteNotification`, {notificationId} );
+            const res = await axios.post(`${ngrokAPI}/deleteNotification`, { notificationId });
             await axios.post(`${ngrokAPI}/createNotification`, {
                 type: 'accept',
                 from: targetId,
@@ -127,7 +128,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ notifications, 
 
             // Make API calls
             const response = await axios.post(`${ngrokAPI}/response`, { userId, targetId, accept });
-            const res = await axios.post(`${ngrokAPI}/deleteNotification`, {notificationId} );
+            const res = await axios.post(`${ngrokAPI}/deleteNotification`, { notificationId });
 
             // Refresh notifications to update the UI
             await refreshNotifications();
@@ -135,6 +136,39 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ notifications, 
             console.error(`Error rejecting follow from ${fromId}:`, error);
         }
     };
+    const navigateToProfile = (userId: string) => {
+        console.log(`Navigating to profile of user: ${userId}`);
+
+        router.push(`/(components)/UserProfile?userId=${userId}`);
+    };
+
+    const handleFollowBack = async (fromId: string, id: string, targetUsername: string, profileImage: string) => {
+        const userId = userData._id;
+        const targetId = fromId;
+        const notificationId = id;
+        const res = await axios.post(`${ngrokAPI}/follow`, {userId, targetId});
+        const response = await axios.post(`${ngrokAPI}/deleteNotification`, { notificationId });
+        if(res.data.status === 'success'){
+            await axios.post(`${ngrokAPI}/createNotification`, {
+                type: 'accept',
+                from: userData._id,
+                owner: targetId,
+                userProfileImageUrl: userData.profileImage,
+                username: userData.username,
+                message: `is now folloqwing you`
+        })
+        await axios.post(`${ngrokAPI}/createNotification`, {
+            type: 'accept',
+            from: targetId,
+            owner: userData._id, 
+            userProfileImageUrl: profileImage,
+            username: targetUsername,
+            message: `is now following you`
+        });
+
+        await refreshNotifications();
+    } 
+    }
 
     return (
         <ScrollView className="flex-1 bg-black pt-4">
@@ -142,9 +176,9 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ notifications, 
                 notifications.map((n) => (
                     <View key={n._id} className="mb-6 rounded-2xl overflow-hidden">
                         <View className="flex-row items-center px-4 py-3">
-                            <TouchableOpacity className="">
+                            <TouchableOpacity className="" onPress={() => { navigateToProfile(n.from) }}>
                                 <Image
-                                    source={n.userProfileImageUrl ? {uri: n.userProfileImageUrl} : null}
+                                    source={n.userProfileImageUrl ? { uri: n.userProfileImageUrl } : null}
                                     className="w-12 h-12 rounded-full mr-3"
                                 />
                             </TouchableOpacity>
@@ -152,30 +186,28 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ notifications, 
                                 {n.username} {n.message}  <Text className="text-gray-500">{formatTimestamp(n.createdAt)}</Text>
                             </Text>
                             {n.type === 'like' || n.type === 'accept' ? (
-                                <>
-                                    <Image
-                                        source={{ uri: n.imageUrl }}
-                                        className="w-10 h-10"
-                                        resizeMode="cover"
-                                    />
-                                </>
+                                // 1) like/accept => just show the image
+                                <Image
+                                    source={{ uri: n.imageUrl }}
+                                    className="w-10 h-10"
+                                    resizeMode="cover"
+                                />
                             ) : (
-                                <>
-                                    <View className="flex-row space-x-2">
-                                        <TouchableOpacity
-                                            onPress={() => handleAccept(n.from, n._id, n.username, n.userProfileImageUrl)}
-                                            className="px-3 py-1 "
-                                        >
-                                            <Image source={images.followButton} className="w-6 h-6" />
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            onPress={() => handleReject(n.from, n._id)}
-                                            className="px-3 py-1 "
-                                        >
-                                            <Image source={icons.deniedIcon} className="w-6 h-6" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </>
+                                // 3) everything else (e.g., incoming follow request) => accept/reject
+                                <View className="flex-row space-x-2">
+                                    <TouchableOpacity
+                                        onPress={() => handleAccept(n.from, n._id, n.username, n.userProfileImageUrl)}
+                                        className="px-3 py-1"
+                                    >
+                                        <Image source={images.followButton} className="w-6 h-6" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => handleReject(n.from, n._id)}
+                                        className="px-3 py-1"
+                                    >
+                                        <Image source={icons.deniedIcon} className="w-6 h-6" />
+                                    </TouchableOpacity>
+                                </View>
                             )}
                         </View>
                     </View>

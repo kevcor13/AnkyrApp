@@ -28,7 +28,7 @@ const GlobalProvider = ({ children }) => {
     const [loggedWorkouts, setLoggedWorkouts] = useState([])
     const [workoutPlan, setWorkoutPlan] = useState('');
     const [followingUsers, setFollowingUsers] = useState([]);
-    const [followersUsers, setFollowersUsers] = useState([]);
+    const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
     const ngrokAPI = 'https://55230ecf627f.ngrok-free.app'
     const resetClientSideState = () => {
@@ -276,6 +276,7 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
+
     const seperateWorkouts = async (rawWorkoutData) => {
         const routineArray = rawWorkoutData?.routine || [];
         const today = new Date().toLocaleString("en-US", { weekday: "long" });
@@ -319,7 +320,9 @@ const GlobalProvider = ({ children }) => {
         console.error("Error fetching challenges:", error);
         setChallenges([{name: "No challenges available"}]);
     }
-}
+    }
+
+
     //fetch all the logged workouts
     const fetchLoggedWorkouts = async (UserID) => {
         // Guard clause to prevent API call if UserID is not available
@@ -357,6 +360,9 @@ const GlobalProvider = ({ children }) => {
     }
     // get the followers from user.
     // inside GlobalProvider, replace your old fetchFollowingUsers with this:
+    
+
+
     const fetchFollowingUsers = async () => {
         try {
             // make sure you have the current user’s ID
@@ -405,7 +411,7 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
-    const fetchFollowerUsers = async () => {
+    const fetchFriends = async () => {
         try {
             // make sure you have the current user’s ID
             if (!userData?._id) {
@@ -415,7 +421,7 @@ const GlobalProvider = ({ children }) => {
 
             // call your updated backend endpoint
             const response = await axios.post(
-                `${ngrokAPI}/getFollowers`,
+                `${ngrokAPI}/api/user/getFriends`,
                 { userId: userData._id },
                 {
                     headers: {
@@ -427,7 +433,6 @@ const GlobalProvider = ({ children }) => {
             );
 
             if (response.data.status === 'success') {
-                console.log(response.data.data);
                 // response.data.data is now an array of:
                 // { userId, username, email, profileImage, requestStatus }
                 const formatted = response.data.data.map(u => ({
@@ -438,7 +443,7 @@ const GlobalProvider = ({ children }) => {
                     requestStatus: u.requestStatus  // true | false | null
                 }));
 
-                setFollowersUsers(formatted);
+                //setFollowersUsers(formatted);
                 return formatted;
             } else {
                 console.error('Failed to fetch following users:', response.data.message);
@@ -463,28 +468,7 @@ const GlobalProvider = ({ children }) => {
         }
     }
 
-    const AI = async () => {
-        //const message = `what is ${random} * ${random}`
-        console.log(message)
-
-        try {
-            // Send API request
-            const res = await axios.post("http://localhost:5001/AI", {
-                //message,
-            });
-
-            const chatResponse = res.data.reply.content;
-            console.log("ChatGPT Response:", chatResponse);
-
-            // Save response to state
-            setWorkoutPlan(chatResponse);
-
-        } catch (error) {
-            console.error("Error communicating with ChatGPT:", error);
-        }
-    }
-
-     const addChallengesToWorkout = (challengesToAdd) => {
+    const addChallengesToWorkout = (challengesToAdd) => {
         setSelectedChallenges(prevSelected => {
             // Create a Set of existing challenge names for efficient checking
             const existingChallengeNames = new Set(prevSelected.map(c => c.name));
@@ -497,7 +481,7 @@ const GlobalProvider = ({ children }) => {
         });
         console.log("Updated selected challenges:", challengesToAdd);
     };
-    // Function to mark the questionnaire as completed
+
     const markQuestionnaireCompleted = async () => {
         try {
             const UserID = userData._id;
@@ -511,6 +495,22 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
+    const fetchWorkoutFocus = async (focus) => {
+        try {
+            const response = await axios.post(`${ngrokAPI}/api/workout/getFocusExercise`, { focus });
+            if (response.data.status === "success") {
+                setFocusWorkouts(response.data.data);
+                return response
+            } else {
+                console.error("Failed to fetch workout focus:", response.data.message);
+                return [];
+            }
+        } catch (error) {
+            console.error("Error fetching workout focus:", error);
+            return [];
+        }
+    }
+
     useEffect(() => {
         checkLoginState();
     }, []);
@@ -522,6 +522,7 @@ const GlobalProvider = ({ children }) => {
                 user,
                 userData, // Expose userData to the rest of the app
                 setUserData,
+                setUserWorkoutData,
                 challenges,
                 TodayWorkout,
                 loggedWorkouts,
@@ -535,6 +536,7 @@ const GlobalProvider = ({ children }) => {
                 userGameData,
                 ngrokAPI,
                 recipes,
+                focusWorkouts,
                 userWorkoutData,
                 fetchUserPosts,
                 signUpUser,
@@ -548,8 +550,9 @@ const GlobalProvider = ({ children }) => {
                 fetchGameData,
                 fetchWorkout,
                 fetchFollowingUsers,
-                fetchFollowerUsers,
-                updateGameData
+                fetchFriends,
+                updateGameData,
+                fetchWorkoutFocus
             }}
         >
             {!loading && children}

@@ -22,6 +22,9 @@ const RootLayout = () => {
         "Raleway-Light": require('../assets/fonts/Raleway-static/Raleway-Light.ttf'),
         Sintony: require('../assets/fonts/Sintony-Regular.ttf'),
         "Sintony-Bold": require('../assets/fonts/Sintony-Bold.ttf'),
+        Saira: require('../assets/fonts/Saira_Extra_Condensed/SairaExtraCondensed-Regular.ttf'),
+        "Saira-Bold": require('../assets/fonts/Saira_Extra_Condensed/SairaExtraCondensed-Bold.ttf'),
+
     });
 
     useEffect(() => {

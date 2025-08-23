@@ -78,56 +78,62 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
       {/* Status bar fix: light, translucent over gradient */}
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
-      <View style={{ flexDirection: "row", marginTop: 70, margin: 30, alignItems: "center" }}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
-          <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
-        </TouchableOpacity>
-
-        <View style={styles.progressBarContainer}>
-          <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
-        </View>
-
-        <TouchableOpacity style={styles.iconButton}>
-          <Image source={icons.stopButton} style={{ height: 24, width: 24 }} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ justifyContent: "center", margin: 30 }}>
-        <Text style={styles.title}>REST</Text>
-        <View style={{ flexDirection: "row" }}>
-          {/* show like 30.0 seconds */}
-          <Text style={styles.timer}>{secondsDisplay}</Text>
-          <Text
-            style={{
-              fontFamily: "poppins-semibold",
-              fontSize: 24,
-              color: "#8AFFF9",
-              marginTop: 80,
-            }}
-          >
-            seconds
-          </Text>
-        </View>
-      </View>
-
-      {isRestFinished && (
-        <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
-          <TouchableOpacity style={styles.nextButton} onPress={onRestComplete}>
-            <Text style={styles.nextButtonText}>NEXT EXERCISE</Text>
+      {/* All main content; leave space at the bottom for the streak bar */}
+      <View style={styles.content}>
+        <View style={{ flexDirection: "row", marginTop: 70, margin: 30, alignItems: "center" }}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
+            <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
           </TouchableOpacity>
-        </Animated.View>
-      )}
 
-      {!isRestFinished && (
-        <View style={{ alignItems: "center", marginTop: 40 }}>
-          <TouchableOpacity style={styles.skipButton} onPress={onRestComplete}>
-            <Image source={icons.skipButton} />
+          <View style={styles.progressBarContainer}>
+            <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
+          </View>
+
+          <TouchableOpacity style={styles.iconButton}>
+            <Image source={icons.stopButton} style={{ height: 24, width: 24 }} />
           </TouchableOpacity>
         </View>
-      )}
 
-      <View style={styles.streakContainer}>
-        <Image source={icons.blueStreak} />
+        <View style={{ justifyContent: "center", margin: 30 }}>
+          <Text style={styles.title}>REST</Text>
+          <View style={{ flexDirection: "row" }}>
+            {/* show like 30.0 seconds */}
+            <Text style={styles.timer}>{secondsDisplay}</Text>
+            <Text
+              style={{
+                fontFamily: "poppins-semibold",
+                fontSize: 24,
+                color: "#8AFFF9",
+                marginTop: 80,
+              }}
+            >
+              seconds
+            </Text>
+          </View>
+        </View>
+
+        {isRestFinished ? (
+          <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+            <TouchableOpacity style={styles.nextButton} onPress={onRestComplete}>
+              <Text style={styles.nextButtonText}>NEXT EXERCISE</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        ) : (
+          <View style={{ alignItems: "center", marginTop: 40 }}>
+            <TouchableOpacity style={styles.skipButton} onPress={onRestComplete}>
+              <Image source={icons.skipButton} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {/* Fixed bottom streak bar */}
+      <View pointerEvents="none" style={styles.streakContainer}>
+        <Image
+          source={icons.blueStreak}
+          style={styles.streakImage}
+          resizeMode="contain"
+        />
       </View>
     </LinearGradient>
   );
@@ -135,6 +141,13 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+
+  // Push content above the fixed streak; keep enough bottom padding so it's never covered
+  content: {
+    flex: 1,
+    paddingBottom: 96, // space reserved for the streak image + breathing room
+  },
+
   iconButton: {
     backgroundColor: "rgba(217,217, 217, 0.27)",
     justifyContent: "center",
@@ -192,7 +205,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 5,
   },
-  streakContainer: { alignItems: "center", marginTop: 60 },
+
+  // Bottom-pinned streak
+  streakContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    paddingBottom: 24, // pseudo safe-area; tweak if you use insets
+  },
+  streakImage: {
+    width: "75%",
+    height: 36,
+  },
 });
 
 export default RestScreen;
