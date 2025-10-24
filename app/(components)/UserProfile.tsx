@@ -150,9 +150,8 @@ const UserProfile: React.FC = () => {
         return;
       }
 
-      // If any relationship exists -> hitting again cancels/unfriends
       const endpoint = isFriendRelated ? 'unfollow' : 'follow';
-      const response = await axios.post(`${ngrokAPI}/${endpoint}`, {
+      const response = await axios.post(`${ngrokAPI}/api/media/follow`, {
         userId: userData._id,
         targetId: targetUser._id
       });
@@ -166,7 +165,7 @@ const UserProfile: React.FC = () => {
             owner: targetUser._id,
             userProfileImageUrl: userData.profileImage,
             username: userData.username,
-            message: `has requested to follow`
+            message: `wants to be friends`
           });
         } catch {}
       }

@@ -29,7 +29,7 @@ const Home = () => {
 
         return () => clearTimeout(timer);
     }, [userData]);
-
+{/** 
     useEffect(() => {
         // Define an async function inside the useEffect
         const getChallenges = async () => {
@@ -50,8 +50,8 @@ const Home = () => {
         getChallenges();
     
     }, [userData]); 
-
- 
+*/}
+ // retreives all the friends and their posts. 
     const loadFriendsAndPosts = async () => {
         try {
             setLoadingPosts(true);

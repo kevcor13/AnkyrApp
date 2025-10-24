@@ -176,7 +176,6 @@ const ChallengesPage: React.FC = () => {
             colors={['#FF0509', '#271293']}
             style={{ flex: 1 }}
         >
-            <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
                 <View style={styles.headerContainer}>
                     <View style={{ flexDirection: 'row' }}>
                         <Text style={styles.title}>YOUR{'\n'}{currentDay}{'\n'}WORKOUT</Text>
@@ -238,7 +237,7 @@ const ChallengesPage: React.FC = () => {
                 {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
 
                 {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
-
+                <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
                 <View style={styles.container}>
                     <View style={styles.block}>
                         <Text style={styles.header}>My streak:</Text>
