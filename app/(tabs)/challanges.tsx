@@ -171,6 +171,7 @@ const ChallengesPage: React.FC = () => {
     }
 
     return (
+        
         <LinearGradient
             colors={['#FF0509', '#271293']}
             style={{ flex: 1 }}
@@ -282,6 +283,9 @@ const ChallengesPage: React.FC = () => {
                     <LeagueHeader league={userGameData.league} />
                 </View>
             </ScrollView>
+
+
+
             <Modal
                 animationType='fade'
                 transparent={true}
