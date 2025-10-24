@@ -30,7 +30,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://55230ecf627f.ngrok-free.app'
+    const ngrokAPI = 'https://2fef3428d606.ngrok-free.app'
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       
@@ -38,7 +38,7 @@ const GlobalProvider = ({ children }) => {
         // axios.interceptors.request.eject(reqId);
         // axios.interceptors.response.eject(resId);
       
-        // If you use React Query:
+        // If you use React Query:r
         // queryClient.clear();
       };
 
