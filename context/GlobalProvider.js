@@ -50,7 +50,7 @@ const GlobalProvider = ({ children }) => {
             const response = await axios.post(`${ngrokAPI}/api/auth/register`, {name, username, email, password, profile});
             const data = response.data;
             console.log(data)
-            if (data.status === "success") {
+            if (data.status === "succes") {
                 await AsyncStorage.setItem("token", data.data); // Save the JWT token
                 await AsyncStorage.setItem("isLoggedIn", "true");
                 setIsLoggedIn(true);
