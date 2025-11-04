@@ -34,7 +34,7 @@ interface FriendEntry {
   id: string;
   username: string;
   avatar: string;
-  requestStatus: boolean | null; // true = accepted, null/false = pending
+  requestStatus: boolean | null;  
 }
 
 const UserProfile: React.FC = () => {
@@ -72,10 +72,8 @@ const UserProfile: React.FC = () => {
     if (!userId) return;
     const entry = friendsList.find(u => u.id === userId);
     if (entry) {
-      setIsFriendRelated(true);
       setIsFriendAccepted(entry.requestStatus === true);
     } else {
-      setIsFriendRelated(false);
       setIsFriendAccepted(false);
     }
   }, [userId, friendsList]);
@@ -151,7 +149,7 @@ const UserProfile: React.FC = () => {
       }
 
       const endpoint = isFriendRelated ? 'unfollow' : 'follow';
-      const response = await axios.post(`${ngrokAPI}/api/media/follow`, {
+      const response = await axios.post(`${ngrokAPI}/api/media/${endpoint}`, {
         userId: userData._id,
         targetId: targetUser._id
       });

@@ -127,7 +127,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ notifications, 
             const notificationId = id;
 
             // Make API calls
-            const response = await axios.post(`${ngrokAPI}/response`, { userId, targetId, accept });
+            const response = await axios.post(`${ngrokAPI}/api/media/response`, { userId, targetId, accept });
             const res = await axios.post(`${ngrokAPI}/deleteNotification`, { notificationId });
 
             // Refresh notifications to update the UI
