@@ -30,7 +30,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://07f2b7be0ba3.ngrok-free.app'
+    const ngrokAPI = 'https://7c5c6597ac9e.ngrok-free.app'
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       
@@ -363,54 +363,6 @@ const GlobalProvider = ({ children }) => {
     
 
 
-    const fetchFollowingUsers = async () => {
-        try {
-            // make sure you have the current user’s ID
-            if (!userData?._id) {
-                console.error('No user ID available for fetching followings');
-                return [];
-            }
-
-            // call your updated backend endpoint
-            const response = await axios.post(
-                `${ngrokAPI}/getFollowing`,
-                { userId: userData._id },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        // if you require auth, include your token here:
-                        // Authorization: `Bearer ${await AsyncStorage.getItem("token")}`
-                    }
-                }
-            );
-
-            if (response.data.status === 'success') {
-                console.log(response.data.data);
-                // response.data.data is now an array of:
-                // { userId, username, email, profileImage, requestStatus }
-                const formatted = response.data.data.map(u => ({
-                    id:            u.userId,
-                    username:      u.username,
-                    email:         u.email,
-                    avatar:        u.profileImage,
-                    requestStatus: u.requestStatus  // true | false | null
-                }));
-
-                setFollowingUsers(formatted);
-                return formatted;
-            } else {
-                console.error('Failed to fetch following users:', response.data.message);
-                setFollowingUsers([]);
-                return [];
-            }
-
-        } catch (error) {
-            console.error('Error fetching following users:', error);
-            setFollowingUsers([]);
-            return [];
-        }
-    };
-
     const fetchFriends = async () => {
         try {
             // make sure you have the current user’s ID
@@ -458,6 +410,7 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
+    
     const fetchQuestionnaireCompletion = async ()  => {
         try{
             const response = userData.questionnaire;
@@ -549,7 +502,6 @@ const GlobalProvider = ({ children }) => {
                 fetchUserData, // Expose fetchUserData if needed elsewhere
                 fetchGameData,
                 fetchWorkout,
-                fetchFollowingUsers,
                 fetchFriends,
                 updateGameData,
                 fetchWorkoutFocus

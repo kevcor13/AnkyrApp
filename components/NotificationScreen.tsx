@@ -87,9 +87,9 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ notifications, 
         try {
             const userId = userData._id;
             const targetId = fromId;
-            const accept = true;
+            const accept = "Accepted";
             const notificationId = id;
-            const response = await axios.post(`${ngrokAPI}/response`, { userId, targetId, accept });
+            const response = await axios.post(`${ngrokAPI}/api/media/response`, { userId, targetId, accept });
             const res = await axios.post(`${ngrokAPI}/deleteNotification`, { notificationId });
             await axios.post(`${ngrokAPI}/createNotification`, {
                 type: 'accept',

@@ -34,7 +34,7 @@ interface FriendEntry {
   id: string;
   username: string;
   avatar: string;
-  requestStatus: boolean | null;  
+  requestStatus: string;  
 }
 
 const UserProfile: React.FC = () => {
@@ -42,8 +42,9 @@ const UserProfile: React.FC = () => {
   const { userData, ngrokAPI, fetchFriends } = useGlobal();
 
   const [targetUser, setTargetUser] = useState<UserData | null>(null);
-  const [isFriendRelated, setIsFriendRelated] = useState(false);      // any relationship (pending/accepted)
-  const [isFriendAccepted, setIsFriendAccepted] = useState(false);    // accepted == true
+  const [isFriendRelated, setIsFriendRelated] = useState(false);
+  const [isFriendAccepted, setIsFriendAccepted] = useState(false);
+  const [friendStatus, setFriendStatus] = useState('')
   const [posts, setPosts] = useState<Post[]>([]);
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,8 +73,12 @@ const UserProfile: React.FC = () => {
     if (!userId) return;
     const entry = friendsList.find(u => u.id === userId);
     if (entry) {
-      setIsFriendAccepted(entry.requestStatus === true);
+      setIsFriendRelated(true);
+      setFriendStatus(entry.requestStatus);
+      setIsFriendAccepted(entry.requestStatus === 'Accepted');
     } else {
+      setIsFriendRelated(false);
+      setFriendStatus('');
       setIsFriendAccepted(false);
     }
   }, [userId, friendsList]);
@@ -96,14 +101,16 @@ const UserProfile: React.FC = () => {
         }
 
         // Only fetch posts if it's the user's own profile or friendship is accepted
-        if (userData?._id === userId || isFriendAccepted) {
+        if (userData?._id === userId || friendStatus === 'Accepted') {
           const postsResponse = await axios.post(`${ngrokAPI}/getUserPosts`, { token, UserId: userId });
+          console.log('Posts response:', postsResponse.data);
           if (postsResponse.data.status === 'success') {
             setPosts(postsResponse.data.data);
           }
         } else {
           setPosts([]);
         }
+        console.log('Friend status:', friendStatus);
 
         // Fetch game data
         const gameResponse = await axios.post(`${ngrokAPI}/gamedata`, { token, UserID: userId });
@@ -118,7 +125,7 @@ const UserProfile: React.FC = () => {
     };
 
     if (userId) fetchUserData();
-  }, [userId, userData?._id, isFriendAccepted, ngrokAPI]);
+  }, [userId, userData?._id, friendStatus, ngrokAPI]); 
 
   // Determine league and badge based on points
   useEffect(() => {
@@ -169,7 +176,6 @@ const UserProfile: React.FC = () => {
       }
       
       if (response.data.status === 'success') {
-        // flip local flags and refresh friends for accurate pending/accepted icons
         setIsFriendRelated(!isFriendRelated);
         if (endpoint === 'unfollow') {
           setIsFriendAccepted(false);
@@ -182,21 +188,6 @@ const UserProfile: React.FC = () => {
     }
   };
 
-  // Visibility helpers
-  const canViewProfilePicture = () => {
-    if (userData?._id === userId) return true;
-    return isFriendRelated && isFriendAccepted;
-  };
-
-  const canViewProfileContent = () => {
-    if (userData?._id === userId) return true;
-    return isFriendRelated && isFriendAccepted;
-  };
-
-  const canViewPosts = () => {
-    if (userData?._id === userId || isFriendAccepted) return true;
-    return isFriendRelated && isFriendAccepted;
-  };
 
   if (loading) {
     return (
@@ -224,7 +215,7 @@ const UserProfile: React.FC = () => {
   // Header with user info and follow button
   const renderHeader = () => (
     <>
-      <View className="flex-row justify-between items-center mb-4">
+      <View className="flex-row justify-between items-center mb-4 px-6">
         <TouchableOpacity onPress={() => router.back()} className="flex-row">
           <Image source={icons.arrow}/>
           <Text className="text-white px-2 font-poppins-semibold text-lg">Back</Text>
@@ -232,7 +223,7 @@ const UserProfile: React.FC = () => {
         <View className="w-8" />
       </View>
 
-      <View className="flex-row items-center justify-between mt-4">
+      <View className="flex-row items-center justify-between mt-4 px-6">
       <Image
             source={{ uri: targetUser.profileImage }}
             className="w-28 h-28 rounded-full"
@@ -244,7 +235,7 @@ const UserProfile: React.FC = () => {
             onPress={toggleFriend}
           >
             {isFriendRelated ? (
-              isFriendAccepted ? (
+              friendStatus === 'Accepted' ? (
                 <Image source={icons.followedIcon} className="h-10 w-10" />
               ) : (
                 <View className="">
@@ -272,7 +263,7 @@ const UserProfile: React.FC = () => {
         )}
       </View>
 
-      <View className="flex-row items-center justify-between mt-6">
+      <View className="flex-row items-center justify-between mt-6 px-10">
         <Text className="text-3xl font-bold text-white">
           {targetUser?.username || "User"}
         </Text>
@@ -294,15 +285,15 @@ const UserProfile: React.FC = () => {
   );
 
   return (
-    <SafeAreaView className="px-6 bg-black flex-1">
-      <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
+    <SafeAreaView className=" bg-black flex-1">
+      <ScrollView contentContainerStyle={{ paddingBottom: 10 }} showsVerticalScrollIndicator={false}>
         {renderHeader()}
 
-        {canViewProfileContent() ? (
+        {isFriendRelated ? (
           <>
-            {activeTab === 'POSTS' && canViewPosts() ? (
+            {activeTab === 'POSTS' && friendStatus === 'Accepted' ? (
               posts.length > 0 ? (
-                <PostScreen posts={posts} showImages={canViewProfilePicture()} />
+                <PostScreen posts={posts} />
               ) : (
                 <View className="flex-1 justify-center items-center mt-8">
                   <Text className="text-gray-500 italic">
@@ -310,7 +301,7 @@ const UserProfile: React.FC = () => {
                   </Text>
                 </View>
               )
-            ) : activeTab === 'POSTS' && !canViewPosts() ? (
+            ) : activeTab === 'POSTS' ? (
               <View className="flex-1 justify-center items-center mt-20">
                 <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain"/>
                 <Text className="text-white mt-6 font-poppins-semibold text-[13px]">

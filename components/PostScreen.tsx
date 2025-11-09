@@ -18,8 +18,8 @@ interface PostScreenProps {
 
 const PostScreen: React.FC<PostScreenProps> = ({ posts }) => {
     return (
-        <ScrollView contentContainerStyle={{ paddingVertical: 20}}>
-            <View className="mb-6">
+        <ScrollView contentContainerStyle={{ paddingVertical: 10}}>
+            <View className="mt-6">
                 {posts.map((post) => (
                     <PostCard key={post._id} post={post} />
                 ))}
