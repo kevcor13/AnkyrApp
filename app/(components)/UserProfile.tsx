@@ -9,6 +9,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import PostScreen from '@/components/PostScreen';
 import axios from "axios";
 import LeagueScreen from "@/components/LeagueScreen";
+import ProfilePreview from '@/components/ProfilePreview';
 
 interface Post {
   _id: string;
@@ -23,6 +24,7 @@ interface UserData {
   _id: string;
   username: string;
   profileImage: string;
+  previewPictures: { url: string; uploadedAt: string }[];
 }
 
 interface GameData {
@@ -91,7 +93,7 @@ const UserProfile: React.FC = () => {
         const token = await AsyncStorage.getItem("token");
         if (!token) {
           console.error('No authentication token found');
-          return;
+          return; 
         }
 
         // Fetch profile owner's data
@@ -126,7 +128,7 @@ const UserProfile: React.FC = () => {
 
     if (userId) fetchUserData();
   }, [userId, userData?._id, friendStatus, ngrokAPI]); 
-
+  console.log(targetUser)
   // Determine league and badge based on points
   useEffect(() => {
     if (gameData?.points != null) {
@@ -187,7 +189,6 @@ const UserProfile: React.FC = () => {
       console.error(`Error ${isFriendRelated ? 'unfriending/canceling' : 'requesting'} user:`, error);
     }
   };
-
 
   if (loading) {
     return (
@@ -270,8 +271,7 @@ const UserProfile: React.FC = () => {
         <Text className="text-3xl text-blue-400">
           {gameData?.streak !== undefined ? gameData.streak : "0"}
         </Text>
-      </View>
-
+      </View> 
       <View className="flex-row justify-around mt-6 border-b border-gray-600 pb-2">
         {['POSTS', 'PLAYLISTS', 'LEAGUE'].map((tab) => (
           <TouchableOpacity key={tab} onPress={() => setActiveTab(tab as any)}>
@@ -302,7 +302,11 @@ const UserProfile: React.FC = () => {
                 </View>
               )
             ) : activeTab === 'POSTS' ? (
-              <View className="flex-1 justify-center items-center mt-20">
+              <View className="flex-1 justify-center items-center mt-20 mb-20">
+                <ProfilePreview 
+                  previewPictures={targetUser.previewPictures || []} 
+                  isOwnProfile={userData?._id === userId}
+                />
                 <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain"/>
                 <Text className="text-white mt-6 font-poppins-semibold text-[13px]">
                   Follow {targetUser.username}'s account to see their posts.
@@ -331,7 +335,11 @@ const UserProfile: React.FC = () => {
             )}
           </>
         ) : (
-          <View className="flex-1 justify-center items-center mt-20">
+          <View className="flex-1 justify-center items-center mt-20 mb-20">
+            <ProfilePreview 
+                  previewPictures={targetUser.previewPictures || []} 
+                  isOwnProfile={userData?._id === userId}
+                />
             <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain"/>
             <Text className="text-white mt-6 font-poppins-semibold text-[13px]">
               Follow {targetUser.username}'s account to see their posts.

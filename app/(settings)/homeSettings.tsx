@@ -1,4 +1,4 @@
-import {View, Text, Image, TouchableOpacity, ActivityIndicator, Alert} from 'react-native';
+import {View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView} from 'react-native';
 import images from "@/constants/images";
 import icons from "@/constants/icons";
 import React, {useState} from 'react';
@@ -126,7 +126,7 @@ const HomeSettings = () => {
       : undefined;
 
   return (
-    <View className="bg-black h-full px-6">
+    <ScrollView className="bg-black h-full px-6">
       <View className="mt-16">
         <TouchableOpacity onPress={() => router.back()}>
           <Text className="text-white font-poppins-semibold text-[18px]">Back</Text>
@@ -162,6 +162,9 @@ const HomeSettings = () => {
           <Text className="text-white font-poppins-semibold text-[27px]">{userData?.username || "User"}</Text>
         </View>
       </View>
+      <TouchableOpacity className="mt-10" onPress={() => router.push("/ChangePreview")}>
+        <Text className="text-white font-poppins-medium text-[19px]">Edit your preview</Text>
+      </TouchableOpacity>
 
       <View className="mt-20">
         <Text className="text-white font-poppins-semibold text-[24px]">App settings</Text>
@@ -176,7 +179,7 @@ const HomeSettings = () => {
           <Image source={icons.logOut} className="w-8 h-8" />
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
