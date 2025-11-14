@@ -73,7 +73,7 @@ const Home = () => {
 
             // 3. Only accepted friends (requestStatus === true)
             const acceptedFriends = friendsList
-                .filter((u: { requestStatus: boolean }) => u.requestStatus === true)
+                .filter((u: { requestStatus: string }) => u.requestStatus == "Accepted")
                 .map((u: { id: string }) => u.id);
 
             // 4. Also include the current user's ID to show their own posts

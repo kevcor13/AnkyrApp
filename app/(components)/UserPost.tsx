@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import * as Notifications from "expo-notifications"; // <== IMPORT BlurView
 
 interface UserImage {
+    
     _id: string;
     image: string;
     url: string;

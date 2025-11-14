@@ -1,4 +1,4 @@
-import {View, Text, Image, TouchableOpacity, ActivityIndicator, Alert} from 'react-native';
+import {View, Text, Image, TouchableOpacity, ActivityIndicator, Alert, ScrollView} from 'react-native';
 import images from "@/constants/images";
 import icons from "@/constants/icons";
 import React, {useState} from 'react';
@@ -6,6 +6,7 @@ import {useGlobal} from "@/context/GlobalProvider";
 import {router} from "expo-router";
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
+import { uploadImage } from '@/lib/appwrite';
 
 const HomeSettings = () => {
   const {userData, logoutUser, setUserData, ngrokAPI} = useGlobal();
@@ -53,10 +54,14 @@ const HomeSettings = () => {
         type,
       } as any);
 
-      // keep same endpoint to avoid big changes; backend should accept multipart and return {status:'success', url: 'https://...'} (or updatedUser)
-      const res = await axios.post(`${ngrokAPI}/api/user/updateProfile`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+
+
+      const uploadResult = await uploadImage(imageUri, userData._id);
+      console.log('Upload result:', uploadResult.fileUrl);
+      const UserID = userData._id;
+      const imageUrl = uploadResult.fileUrl;
+
+      const res = await axios.post(`${ngrokAPI}/api/user/updateProfile`, {imageUrl, UserID});
 
       if (res.data?.status === 'success') {
         const newUrl: string | undefined = res.data?.url || res.data?.updatedUser?.profileImage;
@@ -126,7 +131,7 @@ const HomeSettings = () => {
       : undefined;
 
   return (
-    <View className="bg-black h-full px-6">
+    <ScrollView className="bg-black h-full px-6">
       <View className="mt-16">
         <TouchableOpacity onPress={() => router.back()}>
           <Text className="text-white font-poppins-semibold text-[18px]">Back</Text>
@@ -162,6 +167,9 @@ const HomeSettings = () => {
           <Text className="text-white font-poppins-semibold text-[27px]">{userData?.username || "User"}</Text>
         </View>
       </View>
+      <TouchableOpacity className="mt-10" onPress={() => router.push("/ChangePreview")}>
+        <Text className="text-white font-poppins-medium text-[19px]">Edit your preview</Text>
+      </TouchableOpacity>
 
       <View className="mt-20">
         <Text className="text-white font-poppins-semibold text-[24px]">App settings</Text>
@@ -176,7 +184,7 @@ const HomeSettings = () => {
           <Image source={icons.logOut} className="w-8 h-8" />
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 

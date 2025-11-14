@@ -17,10 +17,10 @@ interface FriendEntry {
   id: string;
   username: string;
   avatar: string;
-  requestStatus: boolean | null; // true = accepted, null/false = pending
+  requestStatus: string; // true = accepted, null/false = pending
 }
 
-type FollowState = "following" | "requested" | "follow";
+type FollowState = "Friends" | "requested" | "follow";
 
 const SearchScreen = () => {
   // Normalize query (can be string or string[])
@@ -81,14 +81,14 @@ const SearchScreen = () => {
     for (const u of users) {
       if (u._id === userData?._id) {
         // don't show a button for yourself; mark as following to disable button
-        statusObj[u._id] = "following";
+        statusObj[u._id] = "Friends";
         continue;
       }
       const entry = friendsList.find((f) => f.id === u._id);
       if (!entry) {
         statusObj[u._id] = "follow";
-      } else if (entry.requestStatus === true) {
-        statusObj[u._id] = "following";
+      } else if (entry.requestStatus == "Accepted") {
+        statusObj[u._id] = "Friends";
       } else {
         statusObj[u._id] = "requested";
       }
@@ -216,9 +216,9 @@ const SearchScreen = () => {
           )}
           renderItem={({ item }) => {
             const status: FollowState = followStatus[item._id] ?? "follow";
-            const label = status === "following" ? "Following" : status === "requested" ? "Requested" : "Follow";
+            const label = status === "Friends" ? "Friends" : status === "requested" ? "Requested" : "Follow";
             const bgClass =
-              status === "following" ? "bg-gray-700" : status === "requested" ? "bg-yellow-600" : "bg-blue-600";
+              status === "Friends" ? "bg-gray-700" : status === "requested" ? "bg-yellow-600" : "bg-blue-600";
 
             return (
               <TouchableOpacity

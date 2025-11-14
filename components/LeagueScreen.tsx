@@ -18,7 +18,7 @@ const leagues: LeagueBadge[] = [
 
 interface LeagueScreenProps {
   userXP: number;
-  League: string;
+  League: any;
 }
 
 const LeagueScreen: React.FC<LeagueScreenProps> = ({ userXP, League }) => {
