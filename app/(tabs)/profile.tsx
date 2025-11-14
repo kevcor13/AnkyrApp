@@ -164,7 +164,7 @@ const Profile: React.FC = () => {
 
     const renderHeader = () => (
         <>
-            <View className="flex-row items-center justify-between mt-20">
+            <View className="flex-row items-center justify-between mt-10 px-6">
                 <Image
                     source={userData?.profileImage ? { uri: userData.profileImage } : images.profile}
                     className="w-28 h-28 rounded-full"
@@ -177,7 +177,7 @@ const Profile: React.FC = () => {
                     : <Text className="text-gray-500">Loading badge...</Text>
                 }
             </View>
-            <View className="flex-row items-center justify-between mt-6 px-4">
+            <View className="flex-row justify-between mt-6 px-10">
                 <Text className="text-3xl font-poppins font-bold text-white">
                     {userData.username}
                 </Text>
@@ -220,7 +220,8 @@ const Profile: React.FC = () => {
     );
 
     return (
-        <ScrollView className="px-6 mb-20 bg-black h-full" showsVerticalScrollIndicator={false}>
+        <SafeAreaView className=" bg-black flex-1">
+            <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
                 {renderHeader()}
 
                 {/* POSTS tab */}
@@ -266,7 +267,8 @@ const Profile: React.FC = () => {
                         }
                     </View>
                 )}
-        </ScrollView>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 

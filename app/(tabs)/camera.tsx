@@ -7,14 +7,18 @@ import {
     TouchableOpacity,
     View,
     SafeAreaView,
-    Image
+    Image,
+    Alert
 } from 'react-native';
 import images from "@/constants/images";
 import icons from "@/constants/icons";
+import { uploadImage } from '@/lib/appwrite';
 import { router } from "expo-router";
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+
+
 
 export default function App() {
     const [facing, setFacing] = useState<CameraType>('back');
@@ -78,7 +82,6 @@ export default function App() {
                 formData.append('UserID', userData._id);
                 formData.append('token', token);
 
-                // Configure axios headers for FormData
                 const config = {
                     headers: {
                         'Content-Type': 'multipart/form-data',
@@ -86,8 +89,15 @@ export default function App() {
                     }
                 };
 
-                // Upload the image
-                const response = await axios.post(`${ngrokAPI}/upload`,{image, UserID});
+                const uploadResult = await uploadImage(photo.uri, userData._id);
+
+                if (!uploadResult.success) {
+                    Alert.alert('Upload Failed', 'Could not upload image to storage');
+                    return;
+                  }
+                console.log('Image uploaded to storage:', uploadResult.fileUrl);
+                const imageUrl = uploadResult.fileUrl;
+                const response = await axios.post(`${ngrokAPI}/upload`,{imageUrl, UserID});
 
                 if (response.data.status === 'success') {
                     console.log("Upload successful. Image URL:", response.data.data.url);

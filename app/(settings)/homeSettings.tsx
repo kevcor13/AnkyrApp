@@ -6,6 +6,7 @@ import {useGlobal} from "@/context/GlobalProvider";
 import {router} from "expo-router";
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
+import { uploadImage } from '@/lib/appwrite';
 
 const HomeSettings = () => {
   const {userData, logoutUser, setUserData, ngrokAPI} = useGlobal();
@@ -53,10 +54,14 @@ const HomeSettings = () => {
         type,
       } as any);
 
-      // keep same endpoint to avoid big changes; backend should accept multipart and return {status:'success', url: 'https://...'} (or updatedUser)
-      const res = await axios.post(`${ngrokAPI}/api/user/updateProfile`, form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+
+
+      const uploadResult = await uploadImage(imageUri, userData._id);
+      console.log('Upload result:', uploadResult.fileUrl);
+      const UserID = userData._id;
+      const imageUrl = uploadResult.fileUrl;
+
+      const res = await axios.post(`${ngrokAPI}/api/user/updateProfile`, {imageUrl, UserID});
 
       if (res.data?.status === 'success') {
         const newUrl: string | undefined = res.data?.url || res.data?.updatedUser?.profileImage;

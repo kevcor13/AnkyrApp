@@ -30,7 +30,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://7c5c6597ac9e.ngrok-free.app'
+    const ngrokAPI = 'https://d7f58f8a805f.ngrok-free.app'
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       

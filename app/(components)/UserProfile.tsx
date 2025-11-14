@@ -335,15 +335,39 @@ const UserProfile: React.FC = () => {
             )}
           </>
         ) : (
-          <View className="flex-1 justify-center items-center mt-20 mb-20">
-            <ProfilePreview 
+          <View>
+            {activeTab === 'POSTS' ? (
+              <View className="flex-1 justify-center items-center mt-20 mb-20">
+                <ProfilePreview 
                   previewPictures={targetUser.previewPictures || []} 
                   isOwnProfile={userData?._id === userId}
                 />
-            <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain"/>
-            <Text className="text-white mt-6 font-poppins-semibold text-[13px]">
-              Follow {targetUser.username}'s account to see their posts.
-            </Text>
+                <Image source={icons.privateIcon} className="h-10 w-10" resizeMode="contain"/>
+                <Text className="text-white mt-6 font-poppins-semibold text-[13px]">
+                  Follow {targetUser.username}'s account to see their posts.
+                </Text>
+              </View>
+            ) : null}
+
+            {activeTab === 'PLAYLISTS' && (
+              <View className="flex-1 justify-center items-center mt-8">
+                <Text className="text-gray-500 italic">
+                  No playlists created.
+                </Text>
+              </View>
+            )}
+
+            {activeTab === 'LEAGUE' && (
+              <View className="flex-1 mt-4">
+                {gameData?.points != null ? (
+                  <LeagueScreen userXP={gameData.points} League={league} />
+                ) : (
+                  <Text className="text-gray-500 text-center">
+                    Loading League...
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
