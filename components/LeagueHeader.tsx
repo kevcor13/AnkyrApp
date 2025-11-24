@@ -68,8 +68,6 @@ const LeagueHeader: React.FC<LeagueHeaderProps> = ({ league }) => {
           {lvl}
         </Text>
       </View>
-
-      <LeagueMembers />
     </View>
   );
 };
@@ -77,8 +75,18 @@ const LeagueHeader: React.FC<LeagueHeaderProps> = ({ league }) => {
 export default LeagueHeader;
 
 const styles = StyleSheet.create({
-  wrap: { backgroundColor: '#000', width: '100%', paddingBottom: 12 },
-  header: { alignItems: 'center' },
+  wrap: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',     
+  
+  },
+  header: { 
+    alignItems: 'center'
+ },
   badge: { width: 320, height: 320 },
   leagueText: {
     fontFamily: 'Poppins-ExtraBold',

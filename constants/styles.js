@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
     },
     nextButtonText: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
     nextButtonTextWorkout: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
-    streakContainer: { alignItems: 'center', marginTop: 20 },
+    streakContainer: { alignItems: 'center', marginTop: 120 },
     endButton: {
         backgroundColor: '#C0C0C0', // A neutral color to differentiate from 'Start'
         paddingHorizontal: 40,

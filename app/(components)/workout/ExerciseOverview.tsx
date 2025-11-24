@@ -1,11 +1,10 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   Image,
-  Animated,
-  Dimensions,
+  Dimensions, // No longer needed, but leaving in case styles use it
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "@/constants/styles"; // Import styles
@@ -35,71 +34,32 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
   currentExerciseIndex,
   totalExercises,
 }) => {
-  const screenWidth = Dimensions.get("window").width;
-  const {userData} = useGlobal();
+  const { userData } = useGlobal();
   const theme = userData.defaultTheme;
   console.log(theme);
-  
 
-  const isWarmup = exercise.phase === 'warmup';
-  // Animation values
-  const slideAnim1 = useRef(new Animated.Value(-screenWidth)).current;
-  const slideAnim2 = useRef(new Animated.Value(-screenWidth)).current;
-  const slideAnim3 = useRef(new Animated.Value(-screenWidth)).current;
-  const slideAnim4 = useRef(new Animated.Value(-screenWidth)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current; // Animation for the progress bar
+  const isWarmup = exercise.phase === "warmup";
 
   // Calculate progress
   const progress =
     totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
 
-  // Trigger animation when the component mounts or exercise changes
-  useEffect(() => {
-    // Animate the progress bar
-    Animated.timing(progressAnim, {
-      toValue: progress,
-      duration: 700,
-      useNativeDriver: false, // width animation not supported by native driver
-    }).start();
-
-    // Stagger animation for the text and buttons
-    Animated.stagger(400, [
-      Animated.timing(slideAnim1, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim2, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim3, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim4, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [exercise, currentExerciseIndex]); // Re-run animation when the exercise changes
-
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", "100%"],
-  });
+  // Convert progress (0 to 1) to a percentage string (e.g., "50%")
+  const progressWidth = `${progress * 100}%`;
 
   return (
     <LinearGradient
-      colors={isWarmup ? ['#FF0509', '#E89750'] : theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]}
+      colors={
+        isWarmup
+          ? ["#FF0509", "#E89750"]
+          : theme
+          ? ["#FF0509", "#271293"]
+          : ["#000000", "#272727"]
+      }
       style={styles.overviewContainer}
     >
       {/* Progress Bar */}
-
-      <View style={{ flexDirection: "row", marginTop: 70, margin: 30}}>
+      <View style={{ flexDirection: "row", marginTop: 70, margin: 30 }}>
         <TouchableOpacity
           style={{
             //marginLeft: 40,
@@ -116,9 +76,8 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
           <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
         </TouchableOpacity>
         <View style={styles.progressBarContainer}>
-          <Animated.View
-            style={[styles.progressBar, { width: progressWidth }]}
-          />
+          {/* Changed from Animated.View to View */}
+          <View style={[styles.progressBar, { width: progressWidth }]} />
         </View>
         <TouchableOpacity
           style={{
@@ -135,27 +94,24 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
         </TouchableOpacity>
       </View>
       <View style={{ justifyContent: "center", marginTop: 100 }}>
-        <Animated.View style={{ transform: [{ translateX: slideAnim1 }] }}>
-          <Text style={styles.overviewTitle}>{exercise.exerciseName}</Text>
-        </Animated.View>
+        {/* Removed Animated.View wrapper */}
+        <Text style={styles.overviewTitle}>{exercise.exerciseName}</Text>
 
-        <Animated.View style={{ transform: [{ translateX: slideAnim2 }] }}>
-          <Text style={styles.repsText}>{exercise.reps} reps</Text>
-        </Animated.View>
+        {/* Removed Animated.View wrapper */}
+        <Text style={styles.repsText}>{exercise.reps} reps</Text>
 
-        <Animated.View style={{ transform: [{ translateX: slideAnim3 }] }}>
-          <TouchableOpacity
-            style={styles.nextButtonOverview}
-            onPress={() => {
-              setTimeout(() => onStart(), 600);
-            }}
-          >
-            <Text style={styles.nextButtonText}>Start</Text>
-          </TouchableOpacity>
-        </Animated.View>
+        {/* Removed Animated.View wrapper */}
+        <TouchableOpacity
+          style={styles.nextButtonOverview}
+          onPress={() => {
+            setTimeout(() => onStart(), 600);
+          }}
+        >
+          <Text style={styles.nextButtonText}>Start</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.streakContainer}>
-        <Image style={{ height:74, width:75 }} source={icons.blueStreak} />
+        <Image style={{ height: 74, width: 75 }} source={icons.blueStreak} />
       </View>
     </LinearGradient>
   );

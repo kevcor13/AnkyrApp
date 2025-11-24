@@ -6,7 +6,8 @@ import axios from "axios";
 import LeagueHeader from "@/components/LeagueHeader";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { use, useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Platform } from "react-native";
+import { BlurView } from 'expo-blur';
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 import GraphView from "@/components/GraphView";
@@ -14,20 +15,16 @@ import WorkoutLogDetail, { IWorkoutLog } from '@/components/WorkoutLogDetail'
 import NextDayWorkout from "@/components/NextDayWorkout";
 import LeagueMembers from "@/components/LeagueMembers";
 
-// --- 1. Define an interface for your challenge object for type safety ---
-// This is based on how you use the 'challenge' object in your component.
 interface IChallenge {
     exercise: string;
     duration: string;
     xp: number;
-    // Add any other properties that a challenge object might have.
     [key: string]: any; 
 }
 
-
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI,  userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, updateGameData, fetchGameData} = useGlobal();
+    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, updateGameData, fetchGameData} = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
@@ -42,7 +39,6 @@ const ChallengesPage: React.FC = () => {
     const [isNotCompleted, setIsNotCompleted] = useState(false);
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
 
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -53,21 +49,17 @@ const ChallengesPage: React.FC = () => {
                     fetchGameData(token, userData._id);
                     setTimeEstimate(userWorkoutData.timeEstimate);
                     setFocus(userWorkoutData.focus);
-                    //updateGameData(userData._id, userGameData.points);
-                    //console.log(challenges);
                 }
             } catch (error) {
                 console.error("Error fetching workout data:", error);
             }
         };
-
         fetchData();
     }, [userData, userWorkoutData]);
 
     useEffect(() => {
         if (userData) {
             const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionData, new Date());
-            console.log(alreadyDoneToday);
             const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, new Date()));
             if(alreadyDoneToday){
                 setIsWorkoutAllowed(alreadyDoneToday);
@@ -79,7 +71,6 @@ const ChallengesPage: React.FC = () => {
         }
     }, [userData]);
 
-
     const isSameDay = (date1: string | number | Date, date2: string | number | Date) => {
         if (!date1 || !date2) return false;
         const d1 = new Date(date1);
@@ -88,11 +79,12 @@ const ChallengesPage: React.FC = () => {
             d1.getMonth() === d2.getMonth() &&
             d1.getDate() === d2.getDate();
     };
+
     const getStatusForDate = (date: Date) => {
         const today = new Date();
         if (isSameDay(date, today)) {
             return loggedWorkouts.some((log: { date: string | number | Date; }) => isSameDay(log.date, today)) ? "completed" : "today";
-        } else if ( date < today) {
+        } else if (date < today) {
             return "upcoming";
         } else {
             return loggedWorkouts.some((log: { date: string | number | Date; }) => isSameDay(log.date, date)) ? "completed" : "missed";
@@ -100,7 +92,6 @@ const ChallengesPage: React.FC = () => {
     }
 
     const handleDateSelect = async (selectedDate: Date) => {
-        console.log("Selected date:", selectedDate);
         setSelectedDate(selectedDate);
         const today = new Date();
 
@@ -110,13 +101,12 @@ const ChallengesPage: React.FC = () => {
                 setSelectedWorkout(workoutForDay);
                 setNextDayWorkout(null);
                 setIsWorkoutAllowed(true);
-        } else {
-            setSelectedWorkout(null);
-            setNextDayWorkout(null);
-            setIsWorkoutAllowed(false);
-            setIsNotCompleted(false);
-        }
-
+            } else {
+                setSelectedWorkout(null);
+                setNextDayWorkout(null);
+                setIsWorkoutAllowed(false);
+                setIsNotCompleted(false);
+            }
         } else if (selectedDate > today) {
             const token = await AsyncStorage.getItem("token");
             const UserID = userData._id;
@@ -131,8 +121,6 @@ const ChallengesPage: React.FC = () => {
             setShowNextDayWorkout(true);
             setIsWorkoutAllowed(false);
         } else {
-            console.log("else");
-            
             const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
             if(workoutForDay){
                 setSelectedWorkout(workoutForDay || null);
@@ -146,16 +134,13 @@ const ChallengesPage: React.FC = () => {
             }
         }
     };
-    // --- 3. FIX: Update the handler to use 'exercise' for comparison ---
+
     const handleChallengeSelection = (challengeToToggle: IChallenge) => {
         setLocallySelectedChallenges(prev => {
-            // Check if the challenge is already in the selection based on its 'exercise' property
             const isAlreadySelected = prev.some(c => c.exercise === challengeToToggle.exercise);
             if (isAlreadySelected) {
-                // If selected, filter it out to de-select it
                 return prev.filter(c => c.exercise !== challengeToToggle.exercise);
             } else {
-                // If not selected, add it to the array
                 return [...prev, challengeToToggle];
             }
         });
@@ -164,210 +149,214 @@ const ChallengesPage: React.FC = () => {
     const handleAddSelectedChallenges = () => {
         addChallengesToWorkout(locallySelectedChallenges);
         setShowChallanges(false);
-        setLocallySelectedChallenges([]); // Reset for next time
+        setLocallySelectedChallenges([]);
     };
+
     const handleNextDay = () => {
         router.navigate("/(workout)/WorkoutOverview")
     }
 
     return (
-        
         <LinearGradient
             colors={['#FF0509', '#271293']}
-            style={{ flex: 1 }}
+            style={styles.mainContainer}
         >
-                <View style={styles.headerContainer}>
-                    <View style={{ flexDirection: 'row' }}>
-                        <Text style={styles.title}>YOUR{'\n'}{currentDay}{'\n'}WORKOUT</Text>
-                    </View>
-                    {isWorkoutAllowed ? (
-                        <View>
-                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
-                                COMPLETED
-                            </Text>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Header Card */}
+                <View style={styles.headerCard}>
+                    <Text style={styles.dayLabel}>YOUR</Text>
+                    <Text style={styles.dayText}>{currentDay}</Text>
+                    <Text style={styles.workoutLabel}>WORKOUT</Text>
+                    
+                    {isWorkoutAllowed || selectedWorkout ? (
+                        <View style={styles.statusBadge}>
+                            <Text style={styles.statusText}>✓ COMPLETED</Text>
                         </View>
-                    ):   selectedWorkout ? (
-                        <View>
-                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
-                                COMPLETED
-                            </Text>
+                    ) : selectedDate && selectedDate > new Date() ? (
+                        <View style={styles.statusBadge}>
+                            <Text style={styles.statusText}>UPCOMING</Text>
                         </View>
-                    ): selectedDate && selectedDate > new Date() ?(
-                        <View>
-                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
-                                NEXT DAY WORKOUT
-                            </Text>
-                    </View>
-                    ): isNotCompleted? (
-                        <View>
-                            <Text style={{ color: '#38FFF5', fontFamily: 'raleway-light', fontSize: 40, marginTop: 20 }}>
-                                NOT COMPLETED
-                            </Text>
+                    ) : isNotCompleted ? (
+                        <View style={[styles.statusBadge, styles.missedBadge]}>
+                            <Text style={styles.statusText}>MISSED</Text>
                         </View>
                     ) : (
-                        <>
-                            <Text style={styles.subtitle}>{focus}</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                <Text style={styles.timeIndicator}>{timeEstimate} mins</Text>
-                                <Image source={icons.blueStreak} style={styles.zapImage} />
+                        <View style={styles.workoutInfoContainer}>
+                            <Text style={styles.focusText}>{focus}</Text>
+                            <View style={styles.timeRow}>
+                                <Image source={icons.blueStreak} style={styles.timeIcon} />
+                                <Text style={styles.timeText}>{timeEstimate} min</Text>
                             </View>
-                            <CustomButton
-                                title="My workout"
-                                handlePress={() => router.navigate("/(workout)/WorkoutOverview")}
-                                buttonStyle={{
-                                    backgroundColor: 'rgba(217, 217, 217, 0.5)',
-                                    borderRadius: 20,
-                                    paddingVertical: 16,
-                                    paddingHorizontal: 32,
-                                    marginTop: 10,
-                                    justifyContent: "center"
-                                }}
-                                textStyle={{
-                                    color: '#FFFFFF',
-                                    fontSize: 16,
-                                    fontFamily: 'poppins-semiBold'
-                                }} 
-                            />
-                        </>
-                    )}
-                    </View>
-                <CalendarSelector onSelect={handleDateSelect} getStatusForDate={getStatusForDate} />
-                
-                
-                {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
-
-                {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
-                <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
-                <View style={styles.container}>
-                    <View style={styles.block}>
-                        <Text style={styles.header}>My streak:</Text>
-                        <View style={styles.valueRow}>
-                            <Image source={icons.whiteZap} style={styles.icon} />
-                            <Text style={{ color: '#78F5D8', fontFamily: 'raleway-semibold', fontWeight: '600', fontSize: 32 }}>{userGameData.streak}</Text>
-                            <Text style={{ color: '#78F5D8', fontFamily: 'raleway-semibold', fontWeight: '600', fontSize: 18, marginLeft: 5 }}>days</Text>
-                        </View>
-                        <Text style={styles.caption}>
-                            Woah. How long are you gonna keep this going?
-                        </Text>
-                    </View>
-                    <View style={styles.block}>
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.header}>My xp:</Text>
-                            <TouchableOpacity onPress={() => setShowInfoModal(true)} style={{ marginLeft: 80, height: 20, width: 20 }}>
-                                <Image source={icons.infoIcon} />
+                            <TouchableOpacity 
+                                style={styles.iosButton}
+                                onPress={() => router.navigate("/(workout)/WorkoutOverview")}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.iosButtonText}>Start Workout</Text>
                             </TouchableOpacity>
                         </View>
-                        <View style={[styles.valueRow, { marginBottom: 4 }]}>
-                            <Text style={{ color: '#78F5D8', fontFamily: 'raleway-semibold', fontWeight: '600', fontSize: 32 }}>{userGameData.points}</Text>
-                            <Text style={{ color: '#78F5D8', fontFamily: 'raleway-semibold', fontWeight: '600', fontSize: 18, marginLeft: 5 }}> XP</Text>
+                    )}
+                </View>
+
+                {/* Calendar */}
+                <View style={styles.calendarContainer}>
+                    <CalendarSelector onSelect={handleDateSelect} getStatusForDate={getStatusForDate} />
+                </View>
+
+                {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
+                {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
+
+                {/* Stats Cards */}
+                <View style={styles.statsContainer}>
+                    <View style={styles.statCard}>
+                        <View style={styles.statHeader}>
+                            <Image source={icons.whiteZap} style={styles.statIcon} />
+                            <Text style={styles.statLabel}>Streak</Text>
                         </View>
-                        <Text style={styles.caption}>Hm. That’s kind of a lot of xp.</Text>
+                        <Text style={styles.statValue}>{userGameData.streak}</Text>
+                        <Text style={styles.statUnit}>days</Text>
+                        <Text style={styles.statCaption}>Keep it going!</Text>
+                    </View>
+
+                    <View style={styles.statCard}>
+                        <View style={styles.statHeader}>
+                            <Text style={styles.statLabel}>XP</Text>
+                            <TouchableOpacity 
+                                onPress={() => setShowInfoModal(true)}
+                                style={styles.infoButton}
+                            >
+                                <Image source={icons.infoIcon} style={styles.infoIcon} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.statValue}>{userGameData.points}</Text>
+                        <Text style={styles.statUnit}>points</Text>
+                        <Text style={styles.statCaption}>Impressive progress</Text>
                     </View>
                 </View>
-                {/*<GraphView  weeklyData={weeklyData} />*/}
-                <View style={{backgroundColor:'#000000'}}>
-                </View>
-                <View style={styles.container2}>
-                <TouchableOpacity style={styles.buttonContainer} onPress={() => setShowChallanges(true)}>
-                    <View>
-                        <View style={styles.contentView}>
-                            <Text style={styles.buttonText1}>WEEKLY</Text>
-                            <Text style={styles.buttonText2}>CHALLENGES</Text>
-                        </View>
-                    </View>
+
+                {/* Challenges Button */}
+                <TouchableOpacity 
+                    style={styles.challengesButton}
+                    onPress={() => setShowChallanges(true)}
+                    activeOpacity={0.8}
+                >
+                    <LinearGradient
+                        colors={['rgba(56, 255, 245, 0.2)', 'rgba(56, 255, 245, 0.05)']}
+                        style={styles.challengesGradient}
+                    >
+                        <Text style={styles.challengesTitle}>WEEKLY</Text>
+                        <Text style={styles.challengesSubtitle}>CHALLENGES</Text>
+                        <Image source={icons.whiteZap} style={styles.challengesIcon} />
+                    </LinearGradient>
                 </TouchableOpacity>
-                    <View style={{ flexDirection: 'row' }}>
-                        <Text style={{ fontFamily: 'poppins-semibold', color: '#FFFFFF', fontSize: 24, marginLeft: 20 }}>MY LEAGUE</Text>
-                    </View>
+
+                {/* League Section */}
+                <View style={styles.leagueSection}>
+                    <Text style={styles.leagueTitle}>MY LEAGUE</Text>
                     <LeagueHeader league={userGameData.league} />
+                    <LeagueMembers />
                 </View>
             </ScrollView>
 
-
-
+            {/* Challenges Modal */}
             <Modal
-                animationType='fade'
+                animationType='slide'
                 transparent={true}
                 visible={showChallanges}
                 onRequestClose={() => setShowChallanges(false)}
+                presentationStyle="pageSheet"
             >
-                <View style={{flex:1, justifyContent:'center', alignItems:'center', backgroundColor:'rgba(0,0,0,0.7)'}}>
-                    <LinearGradient
-                        colors={['#FF0509', '#271293']}
-                        style={{width:'90%',borderRadius:90,padding:30,paddingTop:50, alignItems:'center'}}
-                    >
-                        <TouchableOpacity style={{position:'absolute', top:30, left:30, backgroundColor:'rgba(255,255,255,0.2)', padding:8, borderRadius:20}} onPress={() => setShowChallanges(false)}>
-                            <Image source={icons.x} style={{width:20, height:20, tintColor:'white'}} />
-                        </TouchableOpacity>
-                        <View style={{flexDirection:'row', alignItems:'center', justifyContent:'space-between', margin:10, marginTop:20}}>
-                            <Text style={{fontFamily:'poppins-semibold', fontSize:40, color:'#3AFFDE', letterSpacing:-1, lineHeight:30, paddingTop:30}}>Daily Challenges</Text>
-                            <Image source={icons.whiteZap} style={{width:30, height: 30, tintColor:'#00FFBF'}} />
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        {/* Modal Header */}
+                        <View style={styles.modalHeader}>
+                            <View style={styles.modalHandle} />
+                            <View style={styles.modalTitleContainer}>
+                                <Text style={styles.modalTitle}>Daily Challenges</Text>
+                                <Image source={icons.whiteZap} style={styles.modalTitleIcon} />
+                            </View>
+                            <TouchableOpacity 
+                                style={styles.modalCloseButton}
+                                onPress={() => setShowChallanges(false)}
+                            >
+                                <Text style={styles.modalCloseText}>Done</Text>
+                            </TouchableOpacity>
                         </View>
-                        <Text style={{fontFamily: 'poppins-semibold',fontSize: 20,color: '#FFFFFF',alignSelf: 'flex-start',marginBottom: 25,}}>GET AHEAD:</Text>
-                        
-                        <View style={{width: '100%', marginBottom: 30,}}>
+
+                        <ScrollView style={styles.modalScroll}>
+                            <Text style={styles.modalSubtitle}>GET AHEAD</Text>
+                            
                             {challenges.map((challenge: IChallenge, index: number) => {
-                                // This logic now correctly checks against a state of the proper type.
                                 const isSelected = locallySelectedChallenges.some(c => c.exercise === challenge.exercise);
                                 return (
-                                <View key={index} style={{flexDirection: 'row', alignItems: 'center', marginBottom: 20,}}>
                                     <TouchableOpacity
-                                        // The conditional styling is correct.
-                                        style={[{width: 45,height: 44, borderRadius:90 ,backgroundColor: 'rgba(255, 255, 255, 0.2)',justifyContent: 'center',alignItems: 'center',marginRight: 15,}, isSelected && {backgroundColor: '#38FFF5'}]}
-                                        // The handler is now correctly defined to handle this.
+                                        key={index}
+                                        style={[styles.challengeCard, isSelected && styles.challengeCardSelected]}
                                         onPress={() => handleChallengeSelection(challenge)}
+                                        activeOpacity={0.7}
                                     >
-                                        <Text style={{color: 'white',fontSize: 24,fontWeight: 'bold', alignItems:'center'}}>
-                                            {isSelected ? '✓' : '+'}
-                                        </Text>
+                                        <View style={styles.challengeCheckbox}>
+                                            {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                                        </View>
+                                        
+                                        <View style={styles.challengeInfo}>
+                                            <Text style={styles.challengeName}>{challenge.exercise}</Text>
+                                            <Text style={styles.challengeDuration}>{challenge.duration}</Text>
+                                        </View>
+                                        
+                                        <View style={styles.challengeXp}>
+                                            <Text style={styles.xpLabel}>+{challenge.xp}</Text>
+                                            <Text style={styles.xpUnit}>XP</Text>
+                                        </View>
                                     </TouchableOpacity>
-                                    
-                                    <View style={{flex:1, marginTop:10}}>
-                                        <Text style={{fontFamily: 'Poppins-SemiBold',fontSize: 16,color: '#FFFFFF', marginTop:5}}>{challenge.exercise}</Text>
-                                        <Text style={{fontFamily: 'raleway-light',fontSize: 14,color: '#E0E0E0',}}>{challenge.duration}</Text>
-                                    </View>
-                                    <View style={{alignItems:'flex-end'}}>
-                                        <Text style={{fontFamily: 'Poppins-Regular',fontSize: 12,color: '#E0E0E0',}}>AVAILABLE:</Text>
-                                        <Text style={{fontFamily: 'Poppins-Bold',fontSize: 16,color: '#38FFF5'}}>{challenge.xp} XP</Text>
-                                    </View>
-                                </View>
-                            )})}
+                                );
+                            })}
+                        </ScrollView>
+
+                        <View style={styles.modalFooter}>
+                            <TouchableOpacity 
+                                onPress={handleAddSelectedChallenges}
+                                style={styles.addButton}
+                                disabled={locallySelectedChallenges.length === 0}
+                            >
+                                <Text style={styles.addButtonText}>
+                                    Add {locallySelectedChallenges.length > 0 ? `(${locallySelectedChallenges.length})` : ''}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity 
-                            onPress={handleAddSelectedChallenges}
-                            style={{backgroundColor: 'rgba(217,217,217,0.27)',borderRadius: 15,paddingVertical: 15, width:178,alignItems: 'center', shadowColor: "#000",shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5,}}>
-                            <Text style={{color: '#FFFFFF', fontSize: 18, fontFamily: 'Poppins-Bold',}}>
-                                Add
-                            </Text>
-                        </TouchableOpacity>
-                    </LinearGradient>
+                    </View>
                 </View>
             </Modal>
-            {/* ... other modal and styles are unchanged ... */}
-             <Modal
+
+            {/* Info Modal */}
+            <Modal
                 animationType="fade"
                 transparent={true}
                 visible={showInfoModal}
                 onRequestClose={() => setShowInfoModal(false)}
             >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
-                    <View style={{ backgroundColor: '#D9D9D9', padding: 40, borderRadius: 10, width: '80%', shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 10 }}>
-                        <TouchableOpacity style={{ position: 'absolute', top: 10, right: 10 }} onPress={() => setShowInfoModal(false)}>
-                            <Image source={icons.x} style={{width: 24, height: 24}} />
+                <View style={styles.infoModalOverlay}>
+                    <View style={styles.infoModalContainer}>
+                        <Text style={styles.infoTitle}>How XP Works</Text>
+                        <Text style={styles.infoText}>
+                            Earn XP by completing workouts and maintaining streaks to climb league ranks and unlock rewards.
+                        </Text>
+                        <Text style={styles.infoText}>
+                            Complete daily challenges and join events for bonus XP!
+                        </Text>
+                        <TouchableOpacity 
+                            style={styles.infoButton}
+                            onPress={() => setShowInfoModal(false)}
+                        >
+                            <Text style={styles.infoButtonText}>Got it</Text>
                         </TouchableOpacity>
-                        <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'black', marginBottom: 10, fontFamily: 'poppins-semibold' }}>
-                            How do I gain XP and what does it do?
-                        </Text>
-                        <Text style={{ color: 'black', fontFamily: 'poppins-medium' }}>
-                            You earn xp by doing your workouts and streaks to go up league ranks and earn rewards.(And to flex on you friends.)
-                        </Text>
-                        <Text style={{ color: 'black', fontFamily: 'poppins-medium', marginTop: 10 }}>
-                            You can also earn xp by completing challenges and participating in events.
-                        </Text>
-                        <Text style={{ color: '#5D9A97', fontFamily: 'poppins-bold', marginTop: 10, paddingTop: 20, textAlign: 'center', fontSize: 18 }}>GO GET MORE XP!</Text>
                     </View>
                 </View>
             </Modal>
+
         </LinearGradient>
     );
 };
@@ -375,111 +364,372 @@ const ChallengesPage: React.FC = () => {
 export default ChallengesPage;
 
 const styles = StyleSheet.create({
-    popupHeader:{
-        
-    },
-    buttonContainer: {
-        borderRadius: 15,
-        backgroundColor: '#000000',
-        marginBottom: 30,
-        borderColor: 'white',   // teal
-        borderWidth: 2,           // <-- required to show the border
-        marginHorizontal: 30,
-      },
-    gradient: {
-        borderRadius: 15,
-    },
-    contentView: {
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 25,
-    },
-    buttonText1: {
-        color: 'white',
-        fontSize: 45,
-        fontWeight: 'bold',
-        fontFamily: 'Poppins',
-        letterSpacing: 15,
-    },
-    buttonText2: {
-        color: 'white',
-        fontSize: 45,
-        letterSpacing: -2,
-        lineHeight: 30,
-        paddingTop: 15,
-        fontFamily: 'saira-bold',
-        fontWeight: 'bold',
-    },
-    headerContainer: {
-        marginTop: 60,
-        padding: 10,
-        marginRight: 20,
-        borderRadius: 10,
-        margin: 10,
-    },
-    subtitle: {
-        fontFamily: 'raleway-light',
-        color: '#8B8BEA',
-        fontWeight: 'bold',
-        fontStyle: 'italic',
-        fontSize: 32,
-    },
-    title: {
-        fontSize: 55,
-        fontFamily: 'Poppins-semiBold',
-        color: '#FFFFFF',
-        lineHeight: 35,
-        letterSpacing: -2,
-        textTransform: 'uppercase',
-        paddingTop: 30
-    },
-    zapImage: {
-        width: 54,
-        height: 54,
-        marginTop: 10,
-    },
-    timeIndicator: {
-        textAlign: 'right',
-        fontFamily: 'poppins-semiBold',
-        fontSize: 24,
-        color: '#38FFF5',
-    },
-    container: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        backgroundColor: "black",
-        minHeight: 200,
-        paddingHorizontal: 20,
-        //marginTop: 30,
-        paddingTop: 30,
-        paddingBottom: 20,
-    },
-    container2: {
-        backgroundColor: "black",
-        paddingVertical: 20,
-    },
-    block: {
+    mainContainer: {
         flex: 1,
     },
-    header: {
-        fontFamily: "Poppins-SemiBold",
-        fontSize: 18,
-        color: "#FFF",
-        marginBottom: 8,
+    scrollContent: {
+        paddingBottom: 120,
     },
-    valueRow: {
-        flexDirection: "row",
-        alignItems: "flex-end",
+    headerCard: {
+        marginTop: Platform.OS === 'ios' ? 60 : 40,
+        marginHorizontal: 20,
+        padding: 24,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 24,
+        backdropFilter: 'blur(10px)',
     },
-    icon: {
+    dayLabel: {
+        fontSize: 46,
+        fontFamily:'quicksand-bold',
+        color: 'white',
+        letterSpacing: -2,
+        fontWeight: '700',
+        marginBottom: -20,
+    },
+    dayText: {
+        fontSize: 46,
+        fontFamily: 'quicksand-bold',
+        color: '#FFFFFF',
+        textTransform: 'uppercase',
+        fontWeight: '700',
+        marginBottom: -20,
+    },
+    workoutLabel: {
+        fontSize: 46,
+        fontFamily: 'quicksand-bold',
+        color: '#FFFFFF',
+        fontWeight: '700',
+        letterSpacing: -2,
+    },
+    statusBadge: {
+        backgroundColor: 'rgba(56, 255, 245, 0.2)',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        alignSelf: 'flex-start',
+        marginTop: 8,
+    },
+    missedBadge: {
+        backgroundColor: 'rgba(255, 59, 48, 0.2)',
+    },
+    statusText: {
+        color: '#38FFF5',
+        fontSize: 16,
+        fontWeight: '600',
+        letterSpacing: 1,
+    },
+    workoutInfoContainer: {
+        marginTop: -10,
+    },
+    focusText: {
+        fontSize: 32,
+        color: '#8B8BEA',
+        fontWeight: '600',
+        fontFamily:'raleway-light',
+        fontStyle: 'italic',
+        marginBottom: 12,
+    },
+    timeRow: {
+        flexDirection: 'row-reverse',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    timeIcon: {
+        width: 20,
+        height: 20,
+        marginRight: 8,
+    },
+    timeText: {
+        fontSize: 17,
+        color: '#38FFF5',
+        fontWeight: '600',
+    },
+    iosButton: {
+        backgroundColor: '#38FFF5',
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#38FFF5',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    iosButtonText: {
+        color: '#000',
+        fontSize: 17,
+        fontWeight: '600',
+    },
+    calendarContainer: {
+        marginTop: 20,
+        marginHorizontal: 20,
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        marginHorizontal: 20,
+        marginTop: 20,
+        gap: 12,
+    },
+    statCard: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    statHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
+    },
+    statIcon: {
+        width: 20,
+        height: 20,
+        tintColor: '#78F5D8',
+    },
+    statLabel: {
+        fontSize: 15,
+        color: 'rgba(255, 255, 255, 0.7)',
+        fontWeight: '600',
+    },
+    statValue: {
+        fontSize: 36,
+        color: '#78F5D8',
+        fontWeight: '700',
+        letterSpacing: -1,
+    },
+    statUnit: {
+        fontSize: 15,
+        color: '#78F5D8',
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    statCaption: {
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.5)',
+        marginTop: 8,
+        fontStyle: 'italic',
+    },
+    infoButton: {
+        padding: 4,
+    },
+    infoIcon: {
+        width: 20,
+        height: 20,
+        tintColor: 'rgba(255, 255, 255, 0.5)',
+    },
+    challengesButton: {
+        marginHorizontal: 20,
+        marginTop: 20,
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: '#38FFF5',
+    },
+    challengesGradient: {
+        padding: 24,
+        alignItems: 'center',
+    },
+    challengesTitle: {
+        fontSize: 32,
+        color: '#FFFFFF',
+        fontWeight: '700',
+        letterSpacing: 8,
+    },
+    challengesSubtitle: {
+        fontSize: 32,
+        color: '#38FFF5',
+        fontWeight: '700',
+        letterSpacing: -1,
+        marginTop: -8,
+    },
+    challengesIcon: {
         width: 24,
         height: 24,
-        marginRight: 6,
+        tintColor: '#38FFF5',
+        position: 'absolute',
+        top: 24,
+        right: 24,
     },
-    caption: {
-        fontFamily: "Poppins-Italic",
-        fontSize: 14,
-        color: "#666",
-        marginTop: 6,
+    leagueSection: {
+        marginTop: 20,
+        paddingHorizontal: 20,
+    },
+    leagueTitle: {
+        fontSize: 20,
+        color: '#FFFFFF',
+        fontWeight: '700',
+        marginBottom: 12,
+        letterSpacing: 1,
+    },
+    // Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContainer: {
+        backgroundColor: '#1C1C1E',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        maxHeight: '90%',
+        paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    },
+    modalHeader: {
+        paddingTop: 12,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        borderBottomWidth: 0.5,
+        borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    modalHandle: {
+        width: 36,
+        height: 5,
+        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        borderRadius: 3,
+        alignSelf: 'center',
+        marginBottom: 16,
+    },
+    modalTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalTitle: {
+        fontSize: 20,
+        color: '#38FFF5',
+        fontWeight: '700',
+        marginRight: 8,
+    },
+    modalTitleIcon: {
+        width: 24,
+        height: 24,
+        tintColor: '#38FFF5',
+    },
+    modalCloseButton: {
+        position: 'absolute',
+        right: 20,
+        top: 20,
+    },
+    modalCloseText: {
+        fontSize: 17,
+        color: '#38FFF5',
+        fontWeight: '600',
+    },
+    modalScroll: {
+        paddingHorizontal: 20,
+    },
+    modalSubtitle: {
+        fontSize: 15,
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontWeight: '600',
+        letterSpacing: 2,
+        marginTop: 20,
+        marginBottom: 16,
+    },
+    challengeCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    challengeCardSelected: {
+        backgroundColor: 'rgba(56, 255, 245, 0.1)',
+        borderColor: '#38FFF5',
+    },
+    challengeCheckbox: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        borderWidth: 2,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    checkmark: {
+        color: '#38FFF5',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    challengeInfo: {
+        flex: 1,
+    },
+    challengeName: {
+        fontSize: 17,
+        color: '#FFFFFF',
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    challengeDuration: {
+        fontSize: 15,
+        color: 'rgba(255, 255, 255, 0.6)',
+    },
+    challengeXp: {
+        alignItems: 'flex-end',
+    },
+    xpLabel: {
+        fontSize: 20,
+        color: '#38FFF5',
+        fontWeight: '700',
+    },
+    xpUnit: {
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontWeight: '600',
+    },
+    modalFooter: {
+        paddingHorizontal: 20,
+        paddingTop: 20,
+    },
+    addButton: {
+        backgroundColor: '#38FFF5',
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    addButtonText: {
+        color: '#000',
+        fontSize: 17,
+        fontWeight: '700',
+    },
+    // Info Modal
+    infoModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    infoModalContainer: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 24,
+        width: '100%',
+        maxWidth: 340,
+    },
+    infoTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#000',
+        marginBottom: 16,
+    },
+    infoText: {
+        fontSize: 15,
+        color: '#666',
+        lineHeight: 22,
+        marginBottom: 12,
+    },
+    infoButtonText: {
+        color: '#007AFF',
+        fontSize: 17,
+        fontWeight: '600',
+        textAlign: 'center',
+        paddingVertical: 12,
     },
 });
