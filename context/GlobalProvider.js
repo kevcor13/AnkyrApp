@@ -30,7 +30,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://d7f58f8a805f.ngrok-free.app'
+    const ngrokAPI = 'https://a7d9bef5a46b.ngrok-free.app'
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       
@@ -48,16 +48,14 @@ const GlobalProvider = ({ children }) => {
         console.log(profile);
         try{
             const response = await axios.post(`${ngrokAPI}/api/auth/register`, {name, username, email, password, profile});
-            const data = response.data;
-            console.log(data)
-            if (data.status === "succes") {
-                await AsyncStorage.setItem("token", data.data); // Save the JWT token
+            if (response.data.status === "success") {
+                await AsyncStorage.setItem("token", response.data.data); // Save the JWT token
                 await AsyncStorage.setItem("isLoggedIn", "true");
                 setIsLoggedIn(true);
-                fetchUserData(data.data);
+                fetchUserData(response.data.data);
                 return { status: "success"};
             } else {
-                return {success: false, message: data.message};
+                return {success: false, message: response.data.message};
             }
         } catch (error) {
             console.error("Login Error:", error);
@@ -180,6 +178,7 @@ const GlobalProvider = ({ children }) => {
     const fetchUserData = async (token) => {
         try {
             const response = await axios.post(`${ngrokAPI}/api/user/getUserData`, { token });
+            console.log("Fetched user data response:", response.data.status);
             if (response.data.status === "success") {
                 setUserData(response.data.data);
             } else {

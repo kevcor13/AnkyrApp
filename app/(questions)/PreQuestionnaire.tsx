@@ -5,79 +5,88 @@ import { router } from "expo-router";
 import images from "@/constants/images";
 
 const PreQuestionnaire = () => {
+
   const screenWidth = Dimensions.get("window").width;
 
-  // fade-from-black overlay
-  const overlayOpacity = useRef(new Animated.Value(1)).current;
-  const overlayOpacity2 = useRef(new Animated.Value(1)).current;
-  const overlayOpacity3 = useRef(new Animated.Value(1)).current;
+  console.log("[PreQuestionnaire] screenWidth =", screenWidth);
+  const [isAnimationComplete, setIsAnimationComplete] = React.useState(false);
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
+    console.log("[PreQuestionnaire] starting overlay opacity animation");
+  
+    const id = overlayOpacity.addListener(({ value }) => {
+      console.log("[PreQuestionnaire] overlayOpacity =", value);
+    });
+  
     Animated.timing(overlayOpacity, {
-      toValue: 0,
-      duration: 900,
-      delay: 200,
+      toValue: 1,
+      duration: 4000,      // slow so you can see it
+      delay: 500,
       useNativeDriver: true,
-    }).start();
-    Animated.timing(overlayOpacity2, {
-        toValue: 0,
-        duration: 900,
-        delay: 800,
-        useNativeDriver: true,
-      }).start();
-      Animated.timing(overlayOpacity3, {
-        toValue: 0,
-        duration: 900,
-        delay: 2200,
-        useNativeDriver: true,
-      }).start();
-  }, []);
+    }).start(() => {
+      setIsAnimationComplete(true);
+    });
+  }, [overlayOpacity]);
 
   return (
     <View style={styles.bg}>
-      <View style={styles.container}>
-        <Text className="font-poppins-semibold text-[27px] text-white">
+      <Animated.View
+        style={[
+          styles.container,
+          isAnimationComplete ? { opacity: 1 } : { opacity: overlayOpacity }
+        ]}
+      >
+        <Text style={styles.text}>
           The more honest you are with your info, the more accurate your app is-- the better your results.
         </Text>
-        <Animated.View
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: "#000", opacity: overlayOpacity }]}
-        />
+  
         <View className="mt-10 flex justify-center items-center">
           <Text className="font-poppins-semibold text-3xl text-white">
             So let us get you to where you want to be.
           </Text>
-          <Animated.View
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: "#000", opacity: overlayOpacity2 }]}
-        />
         </View>
-      </View>
+      </Animated.View>
+  
       <View className="px-[120px]">
         <CustomButton
           title="Lets go."
-          handlePress={() => router.push("/questionnaire")}
-          buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
+          handlePress={() => {
+            console.log("[PreQuestionnaire] Lets go button pressed, navigating to /questionnaire");
+            router.push("/questionnaire");
+          }}
+          buttonStyle={{
+            backgroundColor: "white",
+            borderRadius: 11,
+            paddingVertical: 11,
+            paddingHorizontal: 32,
+            marginTop: 28,
+            justifyContent: "center",
+          }}
           textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
         />
-        <Animated.View
-            pointerEvents="none"
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: "#000", opacity: overlayOpacity3 }]}
-        />
       </View>
+  
       <View className="mt-16 items-center">
         <Image source={images.ankyrIcon} className="h-[55px] w-[50px]" />
       </View>
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: "#000" },
+  text :{
+    fontFamily: "poppins-semibold",
+    color: "#FFFFFF",
+    fontSize: 27,
+  },
   container: {
-    flex: .9,
+    flex: 0.9,
     justifyContent: "center",
     alignItems: "center",
-
-    paddingHorizontal: 40, 
+    paddingHorizontal: 40,
+    backgroundColor:"red"
   },
 });
 
