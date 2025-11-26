@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Image, Animated, Dimensions } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Exercise } from '@/app/(workout)/ActiveWorkoutScreen';
 import icons from '@/constants/icons';
@@ -23,7 +23,6 @@ interface UpNextScreenProps {
   currentExerciseIndex: number;
   totalExercises: number;
 }
-const screenWidth = Dimensions.get("window").width;
 
 const UpNextScreen: React.FC<UpNextScreenProps> = ({
   nextExercise,
@@ -33,100 +32,57 @@ const UpNextScreen: React.FC<UpNextScreenProps> = ({
   currentExerciseIndex,
   totalExercises,
 }) => {
-  const {userData} = useGlobal()
-  // Animation for the progress bar
-  const progressAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim1 = useRef(new Animated.Value(-screenWidth)).current;
-  const slideAnim2 = useRef(new Animated.Value(-screenWidth)).current;
-  const slideAnim3 = useRef(new Animated.Value(-screenWidth)).current;
-  const slideAnim4 = useRef(new Animated.Value(-screenWidth)).current;
-  const theme = userData.defaultTheme
+  const { userData } = useGlobal();
+  const theme = userData.defaultTheme;
+
   // Calculate progress percentage
   const progress = totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
 
-  useEffect(() => {
-    // Animate the progress bar to its new value
-    Animated.timing(progressAnim, {
-      toValue: progress,
-      duration: 700,
-      useNativeDriver: false, // 'width' is not supported by the native driver
-    }).start();
-    Animated.stagger(400, [
-          Animated.timing(slideAnim1, {
-            toValue: 0,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim2, {
-            toValue: 0,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim3, {
-            toValue: 0,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-          Animated.timing(slideAnim4, {
-            toValue: 0,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-        ]).start();
-
-
-  }, [currentExerciseIndex, totalExercises]); // Rerun animation if the index changes
-
   // Interpolate the animated value to a percentage string
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
+  const progressWidth = `${progress * 100}%`;
 
   return (
-    <LinearGradient colors={ theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]} style={styles.container}>
+    <LinearGradient colors={theme ? ['#FF0509', '#271293'] : ["#000000", "#272727"]} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         {/* Top Section with Progress Bar */}
         <View style={styles.header}>
-            <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
-                 <Image source={icons.halfArrow} style={styles.iconImage} />
-            </TouchableOpacity>
-            <View style={styles.progressBarContainer}>
-                <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
-            </View>
-            <TouchableOpacity style={styles.iconButton} onPress={() => onEnd}>
-                <Image source={icons.stopButton} style={{ height: 24, width: 24 }}/>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
+            <Image source={icons.halfArrow} style={styles.iconImage} />
+          </TouchableOpacity>
+          <View style={styles.progressBarContainer}>
+            {/* Changed from Animated.View to View */}
+            <View style={[styles.progressBar, { width: progressWidth }]} />
+          </View>
+          <TouchableOpacity style={styles.iconButton} onPress={() => onEnd}>
+            <Image source={icons.stopButton} style={{ height: 24, width: 24 }} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.screen}>
-            <View style={styles.topContent}>
-              <Animated.View style={{ transform: [{ translateX: slideAnim1 }] }}>
-                <Text style={styles.nicelyDoneText}>Nicely Done.</Text>
-              </Animated.View>
-                <View style={{flexDirection:'row', flex:1}}>
-                    <Text style={styles.xpNumber}>+ {xpEarned}</Text>
-                    <Text style={styles.xpText}>XP</Text>
-                </View>
+          <View style={styles.topContent}>
+            {/* Removed Animated.View wrapper */}
+            <Text style={styles.nicelyDoneText}>Nicely Done.</Text>
+            <View style={{ flexDirection: 'row', flex: 1 }}>
+              <Text style={styles.xpNumber}>+ {xpEarned}</Text>
+              <Text style={styles.xpText}>XP</Text>
             </View>
+          </View>
         </View>
 
         {/* Middle Section */}
         <View style={styles.middleSection}>
-          <Animated.View style={{ transform: [{ translateX: slideAnim2 }] }}>
-            <Text style={styles.upNextLabel}>Up next:</Text>
-          </Animated.View>
-          <Animated.View style={{ transform: [{ translateX: slideAnim3 }] }}>
+          {/* Removed Animated.View wrapper */}
+          <Text style={styles.upNextLabel}>Up next:</Text>
+          
+          {/* Removed Animated.View wrapper */}
           <Text style={styles.exerciseName}>
             {nextExercise.exerciseName.toUpperCase()}
           </Text>
-          </Animated.View>
-
-          <Animated.View style={{ transform: [{ translateX: slideAnim3 }] }}>
+          
+          {/* Removed Animated.View wrapper */}
           <TouchableOpacity style={styles.startButton} onPress={onStart}>
             <Text style={styles.startButtonText}>Start</Text>
           </TouchableOpacity>
-          </Animated.View>
         </View>
 
         {/* Bottom Section */}

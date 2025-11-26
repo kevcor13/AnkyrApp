@@ -98,11 +98,13 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
           <Text style={styles.title}>REST</Text>
           <View style={{ flexDirection: "row" }}>
             {/* show like 30.0 seconds */}
+            <View className="flex-1">
             <Text style={styles.timer}>{secondsDisplay}</Text>
+            </View>
             <Text
               style={{
                 fontFamily: "poppins-semibold",
-                fontSize: 24,
+                fontSize: 18,
                 color: "#8AFFF9",
                 marginTop: 80,
               }}
@@ -113,11 +115,11 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
         </View>
 
         {isRestFinished ? (
-          <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+          <View>
             <TouchableOpacity style={styles.nextButton} onPress={onRestComplete}>
               <Text style={styles.nextButtonText}>NEXT EXERCISE</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         ) : (
           <View style={{ alignItems: "center", marginTop: 40 }}>
             <TouchableOpacity style={styles.skipButton} onPress={onRestComplete}>

@@ -58,83 +58,207 @@ const Questionnaire = () => {
     return selectedDayNames;
   };
 
-  // ---- Animations: slide + fade-to-black (content-only)
   const slideX = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const run = (anim: Animated.CompositeAnimation) => new Promise<void>(res => anim.start(() => res()));
+
+  // --- DEBUG HOOKS -------------------------------------------------
+  useEffect(() => {
+    console.log("[Questionnaire] mounted");
+    console.log("[Questionnaire] SCREEN_WIDTH =", SCREEN_WIDTH);
+
+    const slideListenerId = slideX.addListener(({ value }) => {
+      console.log("[Animated] slideX value:", value);
+    });
+
+    const overlayListenerId = overlayOpacity.addListener(({ value }) => {
+      console.log("[Animated] overlayOpacity value:", value);
+    });
+
+    return () => {
+      console.log("[Questionnaire] unmounted");
+      slideX.removeListener(slideListenerId);
+      overlayOpacity.removeListener(overlayListenerId);
+    };
+  }, [SCREEN_WIDTH, slideX, overlayOpacity]);
+
+  useEffect(() => {
+    console.log("[State] questionIndex changed:", questionIndex);
+  }, [questionIndex]);
+
+  useEffect(() => {
+    console.log("[State] isTransitioning changed:", isTransitioning);
+  }, [isTransitioning]);
+
+  // ----------------------------------------------------------------
+
+  const run = (anim: Animated.CompositeAnimation) =>
+    new Promise<void>(resolve => {
+      console.log("[run] starting animation");
+      anim.start(({ finished }) => {
+        console.log("[run] animation finished, finished =", finished);
+        resolve();
+      });
+    });
 
   const transitionToNext = async () => {
-    if (isTransitioning || questionIndex >= questions.length - 1) return;
+    console.log("[transitionToNext] called, questionIndex =", questionIndex, "isTransitioning =", isTransitioning);
+
+    if (isTransitioning) {
+      console.log("[transitionToNext] blocked: already transitioning");
+      return;
+    }
+    // questions.length is defined later but hoisted; logs to verify bound
+    // @ts-ignore
+    if (questionIndex >= questions.length - 1) {
+      console.log("[transitionToNext] blocked: at last question");
+      return;
+    }
+
     setIsTransitioning(true);
-    await run(Animated.timing(overlayOpacity, { toValue: 1, duration: 250, useNativeDriver: true }));
-    setQuestionIndex(i => i + 1);
-    slideX.setValue(SCREEN_WIDTH);
-    await run(Animated.parallel([
-      Animated.timing(slideX, { toValue: 0, duration: 450, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(overlayOpacity, { toValue: 0, duration: 350, useNativeDriver: true }),
-    ]));
-    setIsTransitioning(false);
+    try {
+      console.log("[transitionToNext] fade overlay to black, overlayOpacity from", (overlayOpacity as any).__getValue?.() ?? "n/a");
+      await run(
+        Animated.timing(overlayOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: false,
+        })
+      );
+
+      console.log("[transitionToNext] incrementing questionIndex");
+      setQuestionIndex(i => {
+        const next = i + 1;
+        console.log("[transitionToNext] questionIndex updater: old =", i, "new =", next);
+        return next;
+      });
+
+      slideX.setValue(SCREEN_WIDTH);
+      console.log("[transitionToNext] slideX reset to SCREEN_WIDTH =", SCREEN_WIDTH);
+
+      console.log("[transitionToNext] sliding in new question & fading overlay out");
+      await run(
+        Animated.parallel([
+          Animated.timing(slideX, {
+            toValue: 0,
+            duration: 450,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(overlayOpacity, {
+            toValue: 0,
+            duration: 350,
+            useNativeDriver: false,
+          }),
+        ])
+      );
+      console.log("[transitionToNext] transition complete");
+    } catch (err) {
+      console.log("[transitionToNext] error:", err);
+    } finally {
+      setIsTransitioning(false);
+    }
   };
+
   // -------------------------------------------------------------
 
   const handleSubmit = () => {
+    console.log("[handleSubmit] called");
     setLoading(true);
     try {
+
+      const getSplitForDays = (days: number) => {
+        if (days === 3) return "Push/Pull/Legs";
+        if (days === 4) return "Upper/Lower/Upper/Lower";
+        if (days === 5) return "Push/Pull/Legs/Upper/Full Body";
+        if (days >= 6) return "Push/Pull/Legs/Push/Pull/Legs";
+        // fallback for 1–2 days
+        return "Full Body";
+      };
+
       const fitnessData = { UserID: userData._id, gender, age, weight, fitnessLevel: fitness, workoutDays, fitnessGoal: goal };
       const points = { UserID: userData._id, streak: 0, points: 10, league: "NOVICE" };
       const daysList = getSelectedDayNames().join(", ");
+      const split = getSplitForDays(workoutDays);
+
+      console.log("[handleSubmit] fitnessData:", fitnessData);
+      console.log("[handleSubmit] selected days:", daysList);
+      console.log("[handleSubmit] split:", split);
+
+      const splitRules = `
+      Program design rules:
+      - Use a ${split} split.
+      - "focus" must be assigned to each day in the split (e.g., Push = chest/shoulders/triceps, Pull = back/biceps, Legs = quads/hamstrings/glutes/calves)
+      - for the "focus" you must assign which ever muscle groups are relevant to that day. the push/pull/legs split is for reference only.
+      - Map the selected workout days in order to the split days in order.
+      - Choose exercises whose "category" matches that day's focus (e.g., Push = chest/shoulders/triceps, Pull = back/biceps, Legs = quads/hamstrings/glutes/calves).`.trim();
+
       const Gmessage = `
 User profile:
 - Sex at birth: ${gender || 'unspecified'}
 - Age: ${age}
 - Weight_lbs: ${weight}
 - Fitness level: ${fitness}
+
 Goal: ${goal}
 
 Workout days: ${daysList} (total ${workoutDays})
-Equipment: ${equipmentAvailable}
 Health: ${medicalCondition ? `Condition: ${injuryType}` : 'None reported'}
 Sleep: ${sleepQuality}; Stress: ${stressLevel}
 
-Output rules:
-- Return ONLY JSON (no markdown, no commentary).
-- Use ONLY exercises from the provided "Available Exercises" list (exact "name" values).
-- Schema: { "routine": [ { "day": string, "focus": string, "timeEstimate": number,
-    "warmup": [ { "exerciseName": string, "sets": number, "reps": string } ],
-    "workoutRoutine": [ { "exerciseName": string, "sets": number, "reps": string, "difficulty": string, "recommendedWeight": number } ],
-    "cooldown": [ { "exerciseName": string, "sets": number, "reps": string } ] } ] }
-- If an exercise is bodyweight or a stretch, OMIT "recommendedWeight".
-- If reps are time-based, keep "reps" as a string like "30 seconds".
-- "recommendedWeight" MUST be a pure number (no units).
+${splitRules}
 `.trim();
       const UserID = userData._id;
 
-      axios.post(`${ngrokAPI}/fitnessInfo`,   fitnessData)
-        .then(() => axios.post(`${ngrokAPI}/userSettings`, { UserID }))
-        .then(() => axios.post(`${ngrokAPI}/api/user/createGameSystem`, points))
-        .then(() => axios.post(`${ngrokAPI}/api/GenAI/ai`, { Gmessage, UserID }))
-        .then(() => router.replace('/LoadingScreen'))
-        .catch(e => console.log(e));
-    } catch (error) { console.log(error); }
+      axios.post(`${ngrokAPI}/fitnessInfo`, fitnessData)
+        .then(() => {
+          console.log("[handleSubmit] /fitnessInfo success");
+          return axios.post(`${ngrokAPI}/userSettings`, { UserID });
+        })
+        .then(() => {
+          console.log("[handleSubmit] /userSettings success");
+          return axios.post(`${ngrokAPI}/api/user/createGameSystem`, points);
+        })
+        .then(() => {
+          console.log("[handleSubmit] /createGameSystem success");
+          return axios.post(`${ngrokAPI}/api/GenAI/ai`, { Gmessage, UserID });
+        })
+        .then(() => {
+          console.log("[handleSubmit] /api/GenAI/ai success, navigating to /LoadingScreen");
+          router.replace('/LoadingScreen');
+        })
+        .catch(e => {
+          console.log("[handleSubmit] axios error:", e);
+        });
+    } catch (error) {
+      console.log("[handleSubmit] try/catch error:", error);
+    }
   };
 
   const handleNext = () => {
+    console.log("[handleNext] called at questionIndex =", questionIndex);
+    // @ts-ignore
     if (questionIndex < questions.length - 1) transitionToNext();
     else handleSubmit();
   };
-  const handleSelection = (setter: any, value: any) => { setter(value); handleNext(); };
+
+  const handleSelection = (setter: any, value: any) => {
+    console.log("[handleSelection] value:", value);
+    setter(value);
+    handleNext();
+  };
 
   // ✅ Cap selections to 6: allow unselect anytime, block new selects if already 6
   const toggleDaySelection = (day: keyof typeof selectedDays) => {
+    console.log("[toggleDaySelection] toggling day:", day);
     setSelectedDays(prev => {
       const alreadySelected = prev[day];
+      const selectedCount = Object.values(prev).filter(Boolean).length;
+      console.log("[toggleDaySelection] before toggle, selectedCount =", selectedCount, "alreadySelected =", alreadySelected);
       if (alreadySelected) {
-        // unselect is always allowed
         return { ...prev, [day]: false };
       }
-      const selectedCount = Object.values(prev).filter(Boolean).length;
       if (selectedCount >= 6) {
-        // block selecting more than 6
+        console.log("[toggleDaySelection] blocked: already 6 days selected");
         return prev;
       }
       return { ...prev, [day]: true };
@@ -143,6 +267,7 @@ Output rules:
 
   const handleDaysConfirm = () => {
     const cnt = Object.values(selectedDays).filter(Boolean).length;
+    console.log("[handleDaysConfirm] count =", cnt);
     if (cnt > 0) { setWorkoutDays(cnt); handleNext(); }
   };
 
@@ -171,7 +296,10 @@ Output rules:
                   keyboardType="numeric"
                   placeholder="Enter your age"
                   placeholderTextColor="#888"
-                  onChangeText={(text) => setAge(parseFloat(text))}
+                  onChangeText={(text) => {
+                    console.log("[Age Input] text =", text);
+                    setAge(parseFloat(text));
+                  }}
                 />
               </View>
 
@@ -230,7 +358,10 @@ Output rules:
                   keyboardType="numeric"
                   placeholder="Enter your weight in lbs"
                   placeholderTextColor="#888"
-                  onChangeText={(text) => setWeight(parseFloat(text))}
+                  onChangeText={(text) => {
+                    console.log("[Weight Input] text =", text);
+                    setWeight(parseFloat(text));
+                  }}
                 />
               </View>
 
@@ -275,7 +406,7 @@ Output rules:
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 7)}>
               <Text className="text-center text-[14px] font-poppins-semibold text-black">Everyday</Text>
             </TouchableOpacity>
-          </View> 
+          </View>
         </View>
       ),
     },
@@ -424,13 +555,13 @@ Output rules:
             <Text className="mt-20 text-white text-center text-3xl font-bold">You selected a {Object.values(selectedDays).filter(Boolean).length} day workout plan.</Text>
           </View>
           <View className="mt-[-10px] px-[100px]">
-                  <CustomButton
-                    title="Next"
-                    handlePress={handleNext}
-                    buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
-                    textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
-                  />
-                </View>
+            <CustomButton
+              title="Next"
+              handlePress={handleNext}
+              buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
+              textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
+            />
+          </View>
         </View>
       ),
     },

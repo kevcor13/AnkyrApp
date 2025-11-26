@@ -51,7 +51,7 @@ const LeagueMembers: React.FC = () => {
   }
 
   return (
-    <View style={{ backgroundColor: "black", paddingVertical: 8, paddingHorizontal: 16 }}>
+    <View style={styles.card}>
       <Text style={styles.heading}>League members:</Text>
       <FlatList
         data={rows}
@@ -85,6 +85,15 @@ const LeagueMembers: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  card:{
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    marginTop: 30,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
   heading: {
     color: "#FFFFFF",
     fontFamily: "poppins-semibold",

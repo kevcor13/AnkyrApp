@@ -48,7 +48,7 @@ const WorkoutOverview = () => {
 
     return (
         <LinearGradient
-            colors={theme? ['#FF0509', '#271293'] : ["#000000", "#272727"]} // Gradient colors
+            colors={theme? ['#FF2225', '#2C1796', '#2C1796', '#9E0844'] : ["#000000", "#272727"]} // Gradient colors
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{ flex: 1 }}
@@ -107,7 +107,6 @@ const WorkoutOverview = () => {
                 <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up'/>
                 <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title='Main Workout'/>
                 <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title='Cool Down'/>
-                {selectedChallenges && <WorkoutCard workoutRoutine={selectedChallenges} title='Challanges'/> }
                 <View style={styles.bottomStreak}>
                     <Image source={icons.blueStreak} style={{height: 75, width: 74,}}/>
                 </View>

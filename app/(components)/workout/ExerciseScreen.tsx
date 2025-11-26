@@ -173,10 +173,14 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           <View style={globalStyles.repsContainer}>
             {isTimed ? (
               <>
+              <View className="flex-1">
                 <Text style={globalStyles.repsSetsMain}>
                   {((secondsLeftMs ?? 0) / 1000).toFixed(1)}
                 </Text>
+              </View>
+              <View>
                 <Text style={globalStyles.repsLabel}>seconds</Text>
+              </View>
               </>
             ) : isPer ? (
               <>
