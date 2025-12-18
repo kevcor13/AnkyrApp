@@ -195,7 +195,6 @@ const EndWorkoutScreen = () => {
         </View>
         <WorkoutCard workoutRoutine={userWorkoutData.warmup} title="Warm-Up" />
         <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title="Main Workout" />
-        <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title="Cool Down" />
       </ScrollView>
     </LinearGradient>
   );

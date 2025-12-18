@@ -5,9 +5,7 @@ import axios from "axios";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
   Dimensions,
-  Easing,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +17,14 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+  Easing,
+  runOnJS
+} from 'react-native-reanimated';
 
 const Questionnaire = () => {
   const { userData, logoutUser, markQuestionnaireCompleted, ngrokAPI } = useGlobal();
@@ -58,107 +64,38 @@ const Questionnaire = () => {
     return selectedDayNames;
   };
 
-  const slideX = useRef(new Animated.Value(0)).current;
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
-
-  // --- DEBUG HOOKS -------------------------------------------------
-  useEffect(() => {
-    console.log("[Questionnaire] mounted");
-    console.log("[Questionnaire] SCREEN_WIDTH =", SCREEN_WIDTH);
-
-    const slideListenerId = slideX.addListener(({ value }) => {
-      console.log("[Animated] slideX value:", value);
-    });
-
-    const overlayListenerId = overlayOpacity.addListener(({ value }) => {
-      console.log("[Animated] overlayOpacity value:", value);
-    });
-
-    return () => {
-      console.log("[Questionnaire] unmounted");
-      slideX.removeListener(slideListenerId);
-      overlayOpacity.removeListener(overlayListenerId);
-    };
-  }, [SCREEN_WIDTH, slideX, overlayOpacity]);
-
-  useEffect(() => {
-    console.log("[State] questionIndex changed:", questionIndex);
-  }, [questionIndex]);
-
-  useEffect(() => {
-    console.log("[State] isTransitioning changed:", isTransitioning);
-  }, [isTransitioning]);
+  const slideX = useSharedValue(0);
+  const overlayOpacity = useSharedValue(0);
 
   // ----------------------------------------------------------------
 
-  const run = (anim: Animated.CompositeAnimation) =>
-    new Promise<void>(resolve => {
-      console.log("[run] starting animation");
-      anim.start(({ finished }) => {
-        console.log("[run] animation finished, finished =", finished);
-        resolve();
-      });
-    });
-
-  const transitionToNext = async () => {
-    console.log("[transitionToNext] called, questionIndex =", questionIndex, "isTransitioning =", isTransitioning);
-
-    if (isTransitioning) {
-      console.log("[transitionToNext] blocked: already transitioning");
-      return;
-    }
-    // questions.length is defined later but hoisted; logs to verify bound
-    // @ts-ignore
-    if (questionIndex >= questions.length - 1) {
-      console.log("[transitionToNext] blocked: at last question");
-      return;
-    }
+  const transitionToNext = () => {
+    if (isTransitioning) return;
+    if (questionIndex >= questions.length - 1) return;
 
     setIsTransitioning(true);
-    try {
-      console.log("[transitionToNext] fade overlay to black, overlayOpacity from", (overlayOpacity as any).__getValue?.() ?? "n/a");
-      await run(
-        Animated.timing(overlayOpacity, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: false,
-        })
-      );
 
-      console.log("[transitionToNext] incrementing questionIndex");
-      setQuestionIndex(i => {
-        const next = i + 1;
-        console.log("[transitionToNext] questionIndex updater: old =", i, "new =", next);
-        return next;
+    // Fade to black
+    overlayOpacity.value = withTiming(1, { duration: 250 }, () => {
+      // This callback runs on UI thread, use runOnJS to update React state
+      runOnJS(setQuestionIndex)(questionIndex + 1);
+      slideX.value = SCREEN_WIDTH;
+
+      // Slide in and fade out
+      slideX.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
+      overlayOpacity.value = withTiming(0, { duration: 350 }, () => {
+        runOnJS(setIsTransitioning)(false);
       });
-
-      slideX.setValue(SCREEN_WIDTH);
-      console.log("[transitionToNext] slideX reset to SCREEN_WIDTH =", SCREEN_WIDTH);
-
-      console.log("[transitionToNext] sliding in new question & fading overlay out");
-      await run(
-        Animated.parallel([
-          Animated.timing(slideX, {
-            toValue: 0,
-            duration: 450,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: false,
-          }),
-          Animated.timing(overlayOpacity, {
-            toValue: 0,
-            duration: 350,
-            useNativeDriver: false,
-          }),
-        ])
-      );
-      console.log("[transitionToNext] transition complete");
-    } catch (err) {
-      console.log("[transitionToNext] error:", err);
-    } finally {
-      setIsTransitioning(false);
-    }
+    });
   };
 
+  const animatedContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: slideX.value }]
+  }));
+
+  const animatedOverlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayOpacity.value
+  }));
   // -------------------------------------------------------------
 
   const handleSubmit = () => {
@@ -275,8 +212,8 @@ ${splitRules}
     questionIndex === 0
       ? "Let's start off simple."
       : questionIndex <= 6
-      ? "A thing or two about you."
-      : "Set your goals.";
+        ? "A thing or two about you."
+        : "Set your goals.";
 
   // simple validity checks for “show Next” on age/weight
   const ageReady = Number.isFinite(age) && age > 0;
@@ -603,14 +540,14 @@ ${splitRules}
 
           {/* CONTENT (slides & fades under the fixed header) */}
           <View style={{ flex: 1, paddingTop: 8 }}>
-            <Animated.View style={{ flex: 1, transform: [{ translateX: slideX }] }}>
+            <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
               {questions[questionIndex].question}
             </Animated.View>
 
             {/* Fade-to-black overlay (content-only) */}
             <Animated.View
               pointerEvents={isTransitioning ? "auto" : "none"}
-              style={[StyleSheet.absoluteFillObject, { backgroundColor: "black", opacity: overlayOpacity }]}
+              style={[StyleSheet.absoluteFillObject, { backgroundColor: "black" }, animatedOverlayStyle]}
             />
           </View>
           <View className="mt-[71px] items-center">

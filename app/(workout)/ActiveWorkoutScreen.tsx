@@ -21,10 +21,12 @@ export interface Exercise {
   reps: string;
   sets: number;
   videoUrl: string;
-  phase: "warmup" | "workout" | "cooldown" | "challanges";
+  phase: "warmup" | "workout" | "challanges";
   restBetweenSeconds: number;
   recommendedWeight: number;
   performedSets: PerformedSet[];
+  isTimeBased: boolean;
+  time?: number;
 }
 
 type FlowState =
@@ -44,7 +46,6 @@ const ActiveWorkoutScreen = () => {
     selectedChallenges,
   } = useGlobal();
 
-  // ---- State ----
   const [liveWorkout, setLiveWorkout] = useState<Exercise[] | null>(null);
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
@@ -54,116 +55,107 @@ const ActiveWorkoutScreen = () => {
   const [firstWorkoutIndex, setFirstWorkoutIndex] = useState<number | null>(null);
   const [hasShownThemePrompt, setHasShownThemePrompt] = useState(false);
   
-  // Track initialization
   const hasInitialized = useRef(false);
 
-  // Debug: Log context data
   useEffect(() => {
-    console.log("=== CONTEXT DATA ===");
-    console.log("userWorkoutData:", JSON.stringify(userWorkoutData, null, 2));
-    console.log("selectedChallenges:", JSON.stringify(selectedChallenges, null, 2));
-    console.log("userData:", userData ? "exists" : "null");
-    console.log("userGameData:", userGameData ? "exists" : "null");
-    console.log("====================");
-  }, [userWorkoutData, selectedChallenges, userData, userGameData]);
+    if (hasInitialized.current || !userWorkoutData) return;
 
-  // Initialize workout - runs ONCE
-  useEffect(() => {
-    if (hasInitialized.current) {
-      console.log("⏭️ Skipping initialization - already initialized");
-      return;
-    }
+    console.log("🏋️ Initializing workout...");
 
-    if (!userWorkoutData) {
-      console.log("⏸️ Waiting for userWorkoutData...");
-      return;
-    }
-
-    console.log("🚀 === INITIALIZING WORKOUT ===");
-    
-    // Tag exercises by phase
-    const taggedWarmup = (userWorkoutData.warmup || []).map((ex: any, idx: number) => {
-      console.log(`Warmup ${idx}:`, ex.exerciseName || ex.name);
+    // Process WARMUP exercises (time-based, no sets/reps/weight)
+    const taggedWarmup = (userWorkoutData.warmup || []).map((ex: any) => {
+      const timeValue = ex.time || 60;
+      
+      console.log(`Warmup: ${ex.exerciseName} - ${timeValue} seconds`);
+      
       return {
-        ...ex,
-        exerciseName: ex.exerciseName || ex.name || "Unknown Exercise",
+        _id: ex._id,
+        exerciseName: ex.exerciseName || "Unknown Warmup",
+        difficulty: "easy",
+        reps: `${timeValue} seconds`,
+        sets: 1,
+        videoUrl: ex.videoUrl || "",
         phase: "warmup" as const,
+        recommendedWeight: 0,
+        restBetweenSeconds: 0,
+        isTimeBased: true,
+        time: timeValue,
+        performedSets: [{
+          reps: timeValue,
+          weight: 0
+        }]
       };
     });
-    
-    const taggedWorkout = (userWorkoutData.workoutRoutine || []).map((ex: any, idx: number) => {
-      console.log(`Workout ${idx}:`, ex.exerciseName || ex.name);
+
+    // Process WORKOUT exercises (set/rep-based with weight)
+    const taggedWorkout = (userWorkoutData.workoutRoutine || []).map((ex: any) => {
+      const sets = ex.sets || 3;
+      const reps = ex.reps || 10;
+      const recommendedWeight = ex.recommendedWeight || 0;
+      
+      console.log(`Workout: ${ex.exerciseName} - ${sets} sets × ${reps} reps @ ${recommendedWeight} lbs`);
+      
       return {
-        ...ex,
-        exerciseName: ex.exerciseName || ex.name || "Unknown Exercise",
+        _id: ex._id,
+        exerciseName: ex.exerciseName || "Unknown Exercise",
+        difficulty: ex.difficulty || "medium",
+        reps: String(reps),
+        sets: sets,
+        videoUrl: ex.videoUrl || "",
         phase: "workout" as const,
+        recommendedWeight: recommendedWeight,
+        restBetweenSeconds: ex.restBetweenSeconds || 60,
+        isTimeBased: false,
+        performedSets: Array(sets).fill(null).map(() => ({
+          reps: reps,
+          weight: recommendedWeight
+        }))
       };
     });
     
-    const taggedCoolDown = (userWorkoutData.cooldown || []).map((ex: any, idx: number) => {
-      console.log(`Cooldown ${idx}:`, ex.exerciseName || ex.name);
+    // Process CHALLENGES (could be either time or rep-based)
+    const taggedChallenges = (selectedChallenges || []).map((ex: any) => {
+      const hasTime = ex.time !== undefined && ex.time !== null;
+      const timeValue = ex.time || 60;
+      const reps = ex.reps || 10;
+      const sets = ex.sets || 1;
+      const recommendedWeight = ex.recommendedWeight || 0;
+      
+      console.log(`Challenge: ${ex.exercise || ex.exerciseName} - ${hasTime ? `${timeValue} seconds` : `${sets} sets × ${reps} reps`}`);
+      
       return {
-        ...ex,
-        exerciseName: ex.exerciseName || ex.name || "Unknown Exercise",
-        phase: "cooldown" as const,
-      };
-    });
-    
-    const taggedChallenges = (selectedChallenges || []).map((ex: any, idx: number) => {
-      console.log(`Challenge ${idx}:`, ex.exercise || ex.exerciseName || ex.name);
-      return {
-        ...ex,
+        _id: ex._id,
         exerciseName: ex.exercise || ex.exerciseName || ex.name || "Unknown Challenge",
+        difficulty: ex.difficulty || "hard",
+        reps: hasTime ? `${timeValue} seconds` : String(reps),
+        sets: sets,
+        videoUrl: ex.videoUrl || "",
         phase: "challanges" as const,
+        recommendedWeight: recommendedWeight,
+        restBetweenSeconds: ex.restBetweenSeconds || 60,
+        isTimeBased: hasTime,
+        time: hasTime ? timeValue : undefined,
+        performedSets: Array(sets).fill(null).map(() => ({
+          reps: hasTime ? timeValue : reps,
+          weight: hasTime ? 0 : recommendedWeight
+        }))
       };
     });
 
     const combined = [
       ...taggedWarmup,
       ...taggedWorkout,
-      ...taggedCoolDown,
       ...taggedChallenges,
     ];
 
-    console.log(`📋 Total exercises combined: ${combined.length}`);
+    console.log(`📋 Total exercises: ${combined.length} (${taggedWarmup.length} warmup, ${taggedWorkout.length} workout, ${taggedChallenges.length} challenges)`);
 
     if (!combined.length) {
-      console.error("❌ No exercises found! Cannot start workout.");
       Alert.alert("Error", "No exercises found in your workout plan.");
       return;
     }
 
-    // Build workout session with all required data
-    const workoutSession: Exercise[] = combined.map((exercise, idx) => {
-      const sets = exercise.sets || 3;
-      const repsString = String(exercise.reps || "8-12");
-      const repsValue = parseInt(repsString.split("-")[0], 10) || 8;
-      
-      const processed: Exercise = {
-        ...exercise,
-        exerciseName: exercise.exerciseName,
-        difficulty: exercise.difficulty || "medium",
-        reps: repsString,
-        sets: sets,
-        videoUrl: exercise.videoUrl || "",
-        phase: exercise.phase,
-        recommendedWeight: exercise.recommendedWeight || 0,
-        restBetweenSeconds: exercise.restBetweenSeconds || (exercise.phase === "warmup" ? 30 : 60),
-        performedSets: Array(sets).fill(null).map(() => ({
-          reps: repsValue,
-          weight: 0,
-        })),
-      };
-
-      console.log(`✅ Exercise ${idx + 1}: ${processed.exerciseName} (${processed.phase}) - ${processed.sets} sets`);
-      return processed;
-    });
-
-    console.log("🎯 First workout phase starts at index:", taggedWarmup.length);
-    console.log("📊 Workout session created:", workoutSession.length, "exercises");
-
-    // Set state
-    setLiveWorkout(workoutSession);
+    setLiveWorkout(combined);
     setExerciseIndex(0);
     setCurrentSetIndex(0);
     setFlowState("OVERVIEW");
@@ -171,23 +163,12 @@ const ActiveWorkoutScreen = () => {
     setHasShownThemePrompt(Boolean(userData?.askedThemeQuestion));
     
     hasInitialized.current = true;
-    console.log("✅ === INITIALIZATION COMPLETE ===\n");
+    console.log("✅ Initialization complete");
   }, [userWorkoutData, selectedChallenges, userData]);
 
-  // Debug: Log state changes
-  useEffect(() => {
-    if (liveWorkout) {
-      console.log(`📍 STATE: ${flowState} | Exercise ${exerciseIndex + 1}/${liveWorkout.length} | Set ${currentSetIndex + 1}/${liveWorkout[exerciseIndex]?.sets || 0}`);
-    }
-  }, [flowState, exerciseIndex, currentSetIndex, liveWorkout]);
-
-  // ---- Handlers ----
   const handleSetUpdate = (exIndex: number, setIdx: number, weight: number) => {
-    console.log(`💪 Set update: Exercise ${exIndex}, Set ${setIdx}, Weight ${weight}kg`);
-    
     setLiveWorkout((curr) => {
       if (!curr) return null;
-      
       const updated = [...curr];
       updated[exIndex] = {
         ...updated[exIndex],
@@ -195,43 +176,28 @@ const ActiveWorkoutScreen = () => {
           idx === setIdx ? { ...set, weight } : set
         ),
       };
-      
       return updated;
     });
   };
 
   const handleSetLogged = () => {
-    if (!liveWorkout) {
-      console.error("❌ handleSetLogged: No liveWorkout");
-      return;
-    }
+    if (!liveWorkout) return;
     
     const currentExercise = liveWorkout[exerciseIndex];
     const totalSets = currentExercise.sets;
-    
-    console.log(`\n✅ SET LOGGED: Set ${currentSetIndex + 1}/${totalSets} complete`);
-    console.log(`Current exercise: ${currentExercise.exerciseName} (${exerciseIndex + 1}/${liveWorkout.length})`);
 
-    // Check if this was the last set of the exercise
     if (currentSetIndex >= totalSets - 1) {
-      console.log("🏁 Last set of exercise complete!");
-      
-      // Check if this was the last exercise
       if (exerciseIndex >= liveWorkout.length - 1) {
-        console.log("🎉 WORKOUT COMPLETE! Starting finish sequence...");
         handleFinishWorkout();
       } else {
-        console.log("➡️ Moving to POST_EXERCISE_REST");
         setFlowState("POST_EXERCISE_REST");
       }
     } else {
-      console.log("⏸️ Moving to INTER_SET_REST");
       setFlowState("INTER_SET_REST");
     }
   };
 
   const handleInterSetRestComplete = () => {
-    console.log(`\n⏭️ Inter-set rest complete. Moving to set ${currentSetIndex + 2}`);
     setCurrentSetIndex((prev) => prev + 1);
     setFlowState("EXERCISE");
   };
@@ -240,69 +206,53 @@ const ActiveWorkoutScreen = () => {
     const prevIndex = exerciseIndex;
     const nextIndex = prevIndex + 1;
 
-    console.log(`\n⏭️ Post-exercise rest complete. Moving from exercise ${prevIndex + 1} to ${nextIndex + 1}`);
-
     setExerciseIndex(nextIndex);
     setCurrentSetIndex(0);
 
-    // Check if we should show theme prompt
     const askedBefore = Boolean(userData?.askedThemeQuestion);
-    const shouldShowTheme = firstWorkoutIndex !== null 
-      && prevIndex === firstWorkoutIndex 
-      && !askedBefore 
-      && !hasShownThemePrompt;
-
-    console.log(`Theme check: firstWorkoutIndex=${firstWorkoutIndex}, prevIndex=${prevIndex}, askedBefore=${askedBefore}, hasShown=${hasShownThemePrompt}`);
+    const shouldShowTheme =
+      firstWorkoutIndex !== null &&
+      prevIndex === firstWorkoutIndex &&
+      !askedBefore &&
+      !hasShownThemePrompt;
 
     if (shouldShowTheme) {
-      console.log("🎨 Showing CHANGE_THEME screen");
       setHasShownThemePrompt(true);
       setFlowState("CHANGE_THEME");
       return;
     }
 
-    // Show OVERVIEW for first 2 exercises, then UP_NEXT
-    if (nextIndex <= 1) {
-      console.log("📋 Showing OVERVIEW screen");
+    if (firstWorkoutIndex !== null && nextIndex <= firstWorkoutIndex) {
       setFlowState("OVERVIEW");
     } else {
-      console.log("⏭️ Showing UP_NEXT screen");
       setFlowState("UP_NEXT");
     }
   };
 
   const handleChangeTheme = () => {
-    console.log("🎨 Theme change confirmed, continuing to UP_NEXT");
     setFlowState("UP_NEXT");
   };
 
   const handleFinishWorkout = async () => {
-    if (!liveWorkout || isFinishing) {
-      console.log("⚠️ Already finishing or no workout data");
-      return;
-    }
-    
-    console.log("\n🏁 === FINISHING WORKOUT ===");
+    if (!liveWorkout || isFinishing) return;
     setIsFinishing(true);
     
     const UserID = userData?._id;
     if (!UserID) {
-      console.error("❌ No UserID found");
-      Alert.alert("Error", "Could not identify user. Please log in again.");
+      Alert.alert("Error", "Could not identify user.");
       setIsFinishing(false);
       return;
     }
 
     try {
-      // Prepare workout log
-      const exercises = liveWorkout.map((ex) => ({
-        name: ex.exerciseName,
-        sets: ex.performedSets
-          .filter((set) => set.weight >= 0)
-          .map((s) => ({ reps: s.reps, weight: s.weight })),
-      })).filter((ex) => ex.sets.length > 0);
-
-      console.log("📤 Logging workout with", exercises.length, "exercises");
+      const exercises = liveWorkout
+        .map((ex) => ({
+          name: ex.exerciseName,
+          sets: ex.performedSets
+            .filter((set) => set.weight >= 0)
+            .map((s) => ({ reps: s.reps, weight: s.weight })),
+        }))
+        .filter((ex) => ex.sets.length > 0);
 
       const workoutLogPayload = {
         userId: UserID,
@@ -312,12 +262,8 @@ const ActiveWorkoutScreen = () => {
         points: liveWorkout.length * 5,
       };
 
-      console.log("Workout log payload:", JSON.stringify(workoutLogPayload, null, 2));
-
       await axios.post(`${ngrokAPI}/api/update/logWorkout`, workoutLogPayload);
-      console.log("✅ Workout logged successfully");
 
-      // Calculate new points and streak
       const points = (userGameData?.points || 0) + liveWorkout.length * 5;
       const streak = (userGameData?.streak || 0) + 1;
 
@@ -328,92 +274,49 @@ const ActiveWorkoutScreen = () => {
       else if (points >= 5000) league = "PILOT";
       else if (points >= 1000) league = "PRIVATE";
 
-      console.log(`📊 New stats: ${points} XP, ${streak} day streak, ${league} league`);
-
-      // Update points and streak
       await axios.post(`${ngrokAPI}/api/update/updatePointsAndStreak`, {
         UserID,
         points,
         streak,
         league,
       });
-      console.log("✅ Points and streak updated");
 
-      // Record completion
-      await axios.post(`${ngrokAPI}/api/update/recordWorkoutCompletion`, {
-        UserID,
-      });
-      console.log("✅ Workout completion recorded");
-
-      console.log("🎉 === WORKOUT SAVED SUCCESSFULLY ===\n");
+      await axios.post(`${ngrokAPI}/api/update/recordWorkoutCompletion`, { UserID });
 
       Alert.alert("Workout Complete!", "Great job! Your progress has been saved.");
       router.replace("/(workout)/EndWorkoutScreen");
     } catch (error) {
-      console.error("❌ Failed to save workout:", error);
-      if (axios.isAxiosError(error)) {
-        console.error("Response:", error.response?.data);
-        console.error("Status:", error.response?.status);
-      }
       Alert.alert("Error", "There was a problem saving your workout.");
     } finally {
       setIsFinishing(false);
     }
   };
 
-  const handleStartExercise = () => {
-    console.log("▶️ Starting exercise");
-    setFlowState("EXERCISE");
-  };
+  const handleStartExercise = () => setFlowState("EXERCISE");
 
   const handleEnd = () => {
-    console.log("🚪 User requested to end workout early");
     Alert.alert(
       "End Workout?",
       "Are you sure you want to end your workout early? Your progress will not be saved.",
       [
-        { 
-          text: "Cancel", 
-          style: "cancel",
-          onPress: () => console.log("End workout cancelled")
-        },
-        { 
-          text: "End Workout", 
-          style: "destructive",
-          onPress: () => {
-            console.log("🚪 Ending workout early - navigating to home");
-            router.push("/(tabs)/home");
-          }
-        }
+        { text: "Cancel", style: "cancel" },
+        { text: "End Workout", style: "destructive", onPress: () => router.push("/(tabs)/home") }
       ]
     );
   };
 
-  // ---- Render ----
   if (!liveWorkout) {
     return (
       <LinearGradient colors={["#FF0509", "#271293"]} style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>
-          {hasInitialized.current ? "Loading workout..." : "Preparing your workout..."}
-        </Text>
+        <Text style={styles.loadingText}>Preparing your workout...</Text>
       </LinearGradient>
     );
   }
 
   const currentExercise = liveWorkout[exerciseIndex];
-
-  if (!currentExercise) {
-    console.error("❌ No current exercise at index", exerciseIndex);
-    return (
-      <LinearGradient colors={["#FF0509", "#271293"]} style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Error: Exercise not found</Text>
-      </LinearGradient>
-    );
-  }
+  if (!currentExercise) return null;
 
   const renderContent = () => {
-    console.log(`🖼️ Rendering: ${flowState}`);
-
     switch (flowState) {
       case "OVERVIEW":
         return (
@@ -453,6 +356,8 @@ const ActiveWorkoutScreen = () => {
           <RestScreen
             duration={currentExercise.restBetweenSeconds}
             onRestComplete={handleInterSetRestComplete}
+            currentExerciseIndex={exerciseIndex}
+            totalExercises={liveWorkout.length}
           />
         );
       case "POST_EXERCISE_REST":
@@ -460,15 +365,12 @@ const ActiveWorkoutScreen = () => {
           <RestScreen
             duration={currentExercise.restBetweenSeconds + 20}
             onRestComplete={handlePostExerciseRestComplete}
+            currentExerciseIndex={exerciseIndex}
+            totalExercises={liveWorkout.length}
           />
         );
       default:
-        console.error("❌ Unknown flow state:", flowState);
-        return (
-          <LinearGradient colors={["#FF0509", "#271293"]} style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Unknown state: {flowState}</Text>
-          </LinearGradient>
-        );
+        return null;
     }
   };
 

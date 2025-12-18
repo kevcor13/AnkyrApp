@@ -1,30 +1,31 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   Image,
-  Dimensions, // No longer needed, but leaving in case styles use it
+  Modal,
+  Text,
+  StyleSheet,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { styles } from "@/constants/styles"; // Import styles
+import { styles } from "@/constants/styles";
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 import { useGlobal } from "@/context/GlobalProvider";
+import Animated, { SlideInLeft } from "react-native-reanimated";
 
 interface Exercise {
   exerciseName: string;
-  reps: String;
+  reps: string; // <-- now string to match ActiveWorkoutScreen / new schema
   phase: "warmup" | "workout" | "cooldown" | "challanges";
-  // Add other properties if needed
 }
 
 interface ExerciseOverviewProps {
   exercise: Exercise;
   onStart: () => void;
   onEnd: () => void;
-  currentExerciseIndex: number; // The index of the current exercise (e.g., 0, 1, 2...)
-  totalExercises: number; // The total number of exercises in the workout
+  currentExerciseIndex: number;
+  totalExercises: number;
 }
 
 const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
@@ -36,7 +37,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
 }) => {
   const { userData } = useGlobal();
   const theme = userData.defaultTheme;
-  console.log(theme);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const isWarmup = exercise.phase === "warmup";
 
@@ -44,8 +45,14 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
   const progress =
     totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
 
-  // Convert progress (0 to 1) to a percentage string (e.g., "50%")
   const progressWidth = `${progress * 100}%`;
+
+  const repsIsTimed = /\bseconds?\b/i.test(exercise.reps);
+  const repsDisplay = repsIsTimed ? exercise.reps : `${exercise.reps} reps`;
+
+  const handleLeaveWorkout = () => {
+    setShowLeaveModal(true);
+  };
 
   return (
     <LinearGradient
@@ -62,12 +69,10 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
       <View style={{ flexDirection: "row", marginTop: 70, margin: 30 }}>
         <TouchableOpacity
           style={{
-            //marginLeft: 40,
-            //marginTop: 30,
             backgroundColor: "rgba(217,217, 217, 0.27)",
             justifyContent: "center",
             alignItems: "center",
-            borderRadius: "100%",
+            borderRadius: 100,
             height: 45,
             width: 45,
           }}
@@ -76,7 +81,6 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
           <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
         </TouchableOpacity>
         <View style={styles.progressBarContainer}>
-          {/* Changed from Animated.View to View */}
           <View style={[styles.progressBar, { width: progressWidth }]} />
         </View>
         <TouchableOpacity
@@ -84,37 +88,157 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
             backgroundColor: "rgba(217,217, 217, 0.27)",
             justifyContent: "center",
             alignItems: "center",
-            borderRadius: "100%",
+            borderRadius: 100,
             height: 45,
             width: 45,
           }}
-          onPress={onEnd}
+          onPress={handleLeaveWorkout}
         >
           <Image source={icons.stopButton} style={{ height: 24, width: 24 }} />
         </TouchableOpacity>
       </View>
+
       <View style={{ justifyContent: "center", marginTop: 100 }}>
-        {/* Removed Animated.View wrapper */}
-        <Text style={styles.overviewTitle}>{exercise.exerciseName}</Text>
+        {/* Exercise name sliding in */}
+        <Animated.Text
+          entering={SlideInLeft.duration(500)}
+          style={styles.overviewTitle}
+        >
+          {exercise.exerciseName}
+        </Animated.Text>
 
-        {/* Removed Animated.View wrapper */}
-        <Text style={styles.repsText}>{exercise.reps} reps</Text>
+        {/* Reps / time sliding in */}
+        <Animated.Text
+          entering={SlideInLeft.duration(500).delay(150)}
+          style={styles.repsText}
+        >
+          {repsDisplay}
+        </Animated.Text>
 
-        {/* Removed Animated.View wrapper */}
+        {/* Start button text sliding in */}
         <TouchableOpacity
           style={styles.nextButtonOverview}
           onPress={() => {
             setTimeout(() => onStart(), 600);
           }}
         >
-          <Text style={styles.nextButtonText}>Start</Text>
+          <Animated.Text
+            entering={SlideInLeft.duration(500).delay(300)}
+            style={styles.nextButtonText}
+          >
+            Start
+          </Animated.Text>
         </TouchableOpacity>
       </View>
+
       <View style={styles.streakContainer}>
-        <Image style={{ height: 74, width: 75 }} source={icons.blueStreak} />
+        <Image style={{ height: 100, width: 100 }} source={icons.blueStreak} />
       </View>
+
+      {/* Leave Workout Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showLeaveModal}
+        onRequestClose={() => setShowLeaveModal(false)}
+      >
+        <View style={localStyles.modalOverlay}>
+          <View style={localStyles.modalContainer}>
+            <Text style={localStyles.modalTitle}>Leave Workout?</Text>
+            <Text style={localStyles.modalText}>
+              Are you sure you want to leave the workout? Your progress will not be saved.
+            </Text>
+            <View style={localStyles.modalButtons}>
+              <TouchableOpacity 
+                style={localStyles.leaveButton} 
+                onPress={() => {
+                  setShowLeaveModal(false);
+                  onEnd();
+                }}
+              >
+                <Text style={localStyles.leaveButtonText}>Yes, Leave</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={localStyles.cancelButton} 
+                onPress={() => setShowLeaveModal(false)}
+              >
+                <Text style={localStyles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
+
+const localStyles = StyleSheet.create({
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#000",
+    marginBottom: 12,
+    fontFamily: "poppins-bold",
+  },
+  modalText: {
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 22,
+    marginBottom: 24,
+    fontFamily: "poppins-regular",
+  },
+  modalButtons: {
+    gap: 12,
+  },
+  leaveButton: {
+    backgroundColor: "#E74C3C",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  leaveButtonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "poppins-bold",
+  },
+  cancelButton: {
+    backgroundColor: "rgba(46, 204, 113, 0.1)",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#2ECC71",
+  },
+  cancelButtonText: {
+    color: "#2ECC71",
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: "poppins-semibold",
+  },
+});
 
 export default ExerciseOverview;

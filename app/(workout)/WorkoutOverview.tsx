@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, Touchable, TouchableOpacity, Image} from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image} from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
 import icons from "@/constants/icons";
@@ -20,12 +20,10 @@ const WorkoutOverview = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Ensure the workout data exists and has the correct structure
-                //const routineArray = userWorkoutData?.routine || [];
-                setPoints((userWorkoutData.warmup.length + userWorkoutData.workoutRoutine.length + userWorkoutData.cooldown.length) * 5);
-                console.log(selectedChallenges);
+                setPoints((userWorkoutData.warmup.length + userWorkoutData.workoutRoutine.length) * 5);
                 setTimeEstimate(userWorkoutData.timeEstimate);
                 setFocus(userWorkoutData.focus);
+                console.log("User Workout Data:", userWorkoutData.warmup);
             } catch (error) {
                 console.error("Error fetching workout data:", error);
             }
@@ -48,67 +46,85 @@ const WorkoutOverview = () => {
 
     return (
         <LinearGradient
-            colors={theme? ['#FF2225', '#2C1796', '#2C1796', '#9E0844'] : ["#000000", "#272727"]} // Gradient colors
+            colors={theme? ['#FF2225', '#2C1796', '#2C1796', '#9E0844'] : ["#000000", "#272727"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{ flex: 1 }}
         >
-            <ScrollView>
-                <View style={{flexDirection: 'row'}}>
-                    <View style={styles.backButton}>
-                        <TouchableOpacity onPress={() => router.back()}>
-                            <Image
-                                source={icons.x} style={{width:24, height:24}}/>
-                        </TouchableOpacity>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Close Button */}
+                <View style={styles.closeButtonContainer}>
+                    <TouchableOpacity 
+                        onPress={() => router.back()}
+                        style={styles.closeButton}
+                        activeOpacity={0.7}
+                    >
+                        <Image
+                            source={icons.x} 
+                            style={{width: 20, height: 20, tintColor: '#FFFFFF'}}
+                        />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Header */}
+                <View style={styles.headerContainer}>
+                    <Text style={styles.workoutTitle}>{focus}</Text>
+                </View>
+
+                {/* Stats Card */}
+                <View style={styles.statsCard}>
+                    <View style={styles.timeContainer}>
+                        <Text style={styles.timeNumber}>{timeEstimate}</Text>
+                        <Text style={styles.timeUnit}>mins</Text>
                     </View>
-                </View>
-                <View style={styles.header}>
-                    <Text style={styles.textHeader}>{focus}</Text>
-                </View>
-                    {/* the workout time and xp details */}
-                <View style={{flexDirection:'row', flex:1, marginLeft:38, marginRight:38, marginTop:20}}>
-                    <Text style={{fontFamily:'poppins-semibold', fontSize:64, color:'#8AFFF9'}}>{timeEstimate}</Text>
-                    <Text style={{fontFamily:'poppins-semibold', fontSize:24, color:'#8AFFF9', marginTop:40, marginLeft:5}}>mins</Text>
-                    <View style={{alignItems:'flex-end', flex:1}}>
-                        <Text style={{fontFamily:'raleway-semibold', color:'white', fontSize:16}}>TOTAL XP:</Text>
-                        <View style={{flexDirection:'row',  marginTop: 10}}>
-                            <Text style={{fontFamily:'raleway-semibold', color:'#8AFFF9', fontSize:24}}>+ {points}</Text>
-                            <Text style={{fontFamily:'raleway-semibold', color:'#8AFFF9', fontSize:13, marginTop: 10}}>  xp</Text>
+                    
+                    <View style={styles.divider} />
+                    
+                    <View style={styles.xpContainer}>
+                        <Text style={styles.xpLabel}>TOTAL XP</Text>
+                        <View style={styles.xpValueContainer}>
+                            <Text style={styles.xpNumber}>+{points}</Text>
+                            <Text style={styles.xpUnit}>xp</Text>
                         </View>
                     </View>
                 </View>
-                <CustomButton
-                        title="Okay let's go!"
-                        handlePress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
-                        buttonStyle={{
-                            backgroundColor: 'rgba(217, 217, 217, 0.26)',
-                            borderRadius: 20,
-                            paddingVertical: 16,
-                            marginHorizontal: 38,
-                            marginTop: 10,
-                            justifyContent: "center"
-                        }}
-                        textStyle={{
-                            color: '#FFFFFF',
-                            fontSize: 16,
-                            fontFamily: 'poppins-semiBold'
-                        }}
 
-                    />
-                <View style={{flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 38, marginTop: 60}}>
-                        <Text style={{fontFamily:'poppins-semibold', fontSize:20, color:'white'}}>Overview: </Text>
-                        <TouchableOpacity 
-                            style={{alignItems:'center', justifyContent: 'flex-end'}}
-                            onPress={() => handleEdit()}
-                        >
-                            <Text>EDIT</Text>
-                        </TouchableOpacity>
+                {/* Primary CTA Button */}
+                <CustomButton
+                    title="Let's Go!"
+                    handlePress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
+                    buttonStyle={styles.primaryButton}
+                    textStyle={styles.primaryButtonText}
+                />
+
+                {/* Overview Section */}
+                <View style={styles.overviewHeader}>
+                    <Text style={styles.overviewTitle}>Workout Plan</Text>
+                    <TouchableOpacity 
+                        style={styles.editButton}
+                        onPress={() => handleEdit()}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
                 </View>
-                <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up'/>
-                <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title='Main Workout'/>
-                <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title='Cool Down'/>
-                <View style={styles.bottomStreak}>
-                    <Image source={icons.blueStreak} style={{height: 75, width: 74,}}/>
+
+                {/* Workout Cards */}
+                <View style={styles.workoutCardsContainer}>
+                    <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up'/>
+                    <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title='Main Workout'/>
+                    {/* <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title='Cool Down'/> */}
+                </View>
+
+                {/* Bottom Decoration */}
+                <View style={styles.bottomDecoration}>
+                    <Image 
+                        source={icons.blueStreak} 
+                        style={{height: 60, width: 60, opacity: 0.8}}
+                    />
                 </View>
             </ScrollView>
         </LinearGradient>
@@ -116,49 +132,157 @@ const WorkoutOverview = () => {
 };
 
 const styles = StyleSheet.create({
-
-    backButton:{
-        backgroundColor: 'rgba(217, 217, 217, 0.26)',
-        marginTop: 60,
-        marginLeft: 38,
-        borderRadius: 50,
-        padding: 10,
-    }, 
-    header:{
-        marginLeft: 38,
-        marginTop: 40,
-    },
-    textHeader: {
-        fontSize: 43,
-        textTransform: 'uppercase',
-        color: '#FFFFFF',
-        fontFamily: 'raleway-light',
-    },
-    bottomStreak: {
-        alignItems: 'center',
-        justifyContent: 'center', 
-        marginTop: 20,
+    scrollContent: {
         paddingBottom: 40,
     },
-    buttonContainer: {
+    closeButtonContainer: {
+        marginTop: 60,
         marginHorizontal: 20,
-        marginTop: 20, // Add space from the league section
-        borderRadius: 15,
     },
-    gradient: {
-        borderRadius: 15,
+    closeButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: 'flex-start',
     },
-    contentView: {
+    headerContainer: {
+        marginHorizontal: 20,
+        marginTop: 32,
+        marginBottom: 24,
+    },
+    workoutTitle: {
+        fontSize: 40,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        fontFamily: 'raleway-light',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    statsCard: {
+        marginHorizontal: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: 20,
+        padding: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+    },
+    timeContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'baseline',
+    },
+    timeNumber: {
+        fontFamily: 'poppins-semibold',
+        fontSize: 56,
+        fontWeight: '700',
+        color: '#8AFFF9',
+        lineHeight: 64,
+    },
+    timeUnit: {
+        fontFamily: 'poppins-semibold',
+        fontSize: 20,
+        fontWeight: '600',
+        color: '#8AFFF9',
+        marginLeft: 4,
+        opacity: 0.8,
+    },
+    divider: {
+        width: 1,
+        height: 60,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        marginHorizontal: 20,
+    },
+    xpContainer: {
+        alignItems: 'flex-end',
+    },
+    xpLabel: {
+        fontFamily: 'raleway-semibold',
+        fontSize: 12,
+        fontWeight: '600',
+        color: 'rgba(255, 255, 255, 0.7)',
+        letterSpacing: 1.2,
+        marginBottom: 4,
+    },
+    xpValueContainer: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+    },
+    xpNumber: {
+        fontFamily: 'raleway-semibold',
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#8AFFF9',
+    },
+    xpUnit: {
+        fontFamily: 'raleway-semibold',
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#8AFFF9',
+        marginLeft: 4,
+        opacity: 0.8,
+    },
+    primaryButton: {
+        backgroundColor: 'rgba(138, 255, 249, 0.2)',
+        borderRadius: 16,
+        paddingVertical: 18,
+        marginHorizontal: 20,
+        marginBottom: 40,
+        borderWidth: 1,
+        borderColor: 'rgba(138, 255, 249, 0.3)',
+        shadowColor: '#8AFFF9',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+    },
+    primaryButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '700',
+        fontFamily: 'poppins-semiBold',
+        letterSpacing: 0.3,
+    },
+    overviewHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 20,
-        paddingHorizontal: 25,
+        marginHorizontal: 20,
+        marginBottom: 16,
     },
-    buttonText: {
-        color: '#00FFBF',
-        fontSize: 20,
-        fontFamily: 'Poppins-Bold', // Use specific font family if available
+    overviewTitle: {
+        fontFamily: 'poppins-semibold',
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFFFFF',
+    },
+    editButton: {
+        paddingHorizontal: 20,
+        paddingVertical: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        borderRadius: 12,
+    },
+    editButtonText: {
+        fontFamily: 'poppins-semibold',
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#8AFFF9',
+        letterSpacing: 0.5,
+    },
+    workoutCardsContainer: {
+        marginTop: 8,
+    },
+    bottomDecoration: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 40,
+        opacity: 0.6,
     },
 })
 

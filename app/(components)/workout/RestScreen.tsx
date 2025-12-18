@@ -7,6 +7,7 @@ import {
   Dimensions,
   StyleSheet,
   Image,
+  Modal,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
@@ -19,16 +20,22 @@ const screenWidth = Dimensions.get("window").width;
 type RestScreenProps = {
   duration: number;              // seconds
   onRestComplete: () => void;
+  currentExerciseIndex: number;
+  totalExercises: number;
 };
 
-const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => {
+const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, totalExercises, currentExerciseIndex,}) => {
   // keep public state simple; show one decimal
   const [countdownMs, setCountdownMs] = useState(Math.max(0, Math.round(duration * 1000)));
   const [isRestFinished, setIsRestFinished] = useState(duration <= 0);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
+  const progress = totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
+
+  const progressWidth = `${progress * 100}%`;
   // progress bar anim (fill from 0% to 100% over the whole rest)
   useEffect(() => {
     progressAnim.setValue(0);
@@ -39,7 +46,7 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
     }).start();
   }, [duration]);
 
-  // countdown ticker (updates every 0.1s so we can render "30.0")
+
   useEffect(() => {
     if (countdownMs <= 0) {
       setIsRestFinished(true);
@@ -66,12 +73,11 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
     }
   }, [isRestFinished]);
 
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0%", "100%"],
-  });
-
   const secondsDisplay = (countdownMs / 1000).toFixed(1);
+
+  const handleLeaveWorkout = () => {
+    setShowLeaveModal(true);
+  };
 
   return (
     <LinearGradient colors={["#7BCFC7", "#271293"]} style={styles.container}>
@@ -84,12 +90,14 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
           <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
             <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
           </TouchableOpacity>
-
           <View style={styles.progressBarContainer}>
-            <Animated.View style={[styles.progressBar, { width: progressWidth }]} />
+            <Animated.View style={[styles.progressBar, { width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, screenWidth],
+              }) }]} />
           </View>
 
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={handleLeaveWorkout}>
             <Image source={icons.stopButton} style={{ height: 24, width: 24 }} />
           </TouchableOpacity>
         </View>
@@ -137,6 +145,37 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete }) => 
           resizeMode="contain"
         />
       </View>
+
+      {/* Leave Workout Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showLeaveModal}
+        onRequestClose={() => setShowLeaveModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Leave Workout?</Text>
+            <Text style={styles.modalText}>
+              Are you sure you want to leave the workout? Your progress will not be saved.
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.leaveButton} 
+                onPress={() => router.back()}
+              >
+                <Text style={styles.leaveButtonText}>Yes, Leave</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={() => setShowLeaveModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -167,7 +206,7 @@ const styles = StyleSheet.create({
   },
   timer: {
     fontFamily: "poppins-semibold",
-    fontSize: 120,
+    fontSize: 100,
     color: "#8AFFF9",
   },
   nextButton: {
@@ -218,8 +257,75 @@ const styles = StyleSheet.create({
     paddingBottom: 24, // pseudo safe-area; tweak if you use insets
   },
   streakImage: {
-    width: "75%",
-    height: 36,
+    width: 100,
+    height: 100,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 340,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#000",
+    marginBottom: 12,
+    fontFamily: "poppins-bold",
+  },
+  modalText: {
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 22,
+    marginBottom: 24,
+    fontFamily: "poppins-regular",
+  },
+  modalButtons: {
+    gap: 12,
+  },
+  leaveButton: {
+    backgroundColor: "#E74C3C",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  leaveButtonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "poppins-bold",
+  },
+  cancelButton: {
+    backgroundColor: "rgba(46, 204, 113, 0.1)",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#2ECC71",
+  },
+  cancelButtonText: {
+    color: "#2ECC71",
+    fontSize: 17,
+    fontWeight: "600",
+    fontFamily: "poppins-semibold",
   },
 });
 
