@@ -19,6 +19,7 @@ type Exercise = {
   name?: string;
   recommendedSets?: string;   // e.g. "4"
   recommendedReps?: string;   // e.g. "10" or "10 per leg"
+  recommendedTime?: string;   // e.g. "30 seconds" for warm-ups
   isWarmupExercise?: boolean;
   isCooldownExercise?: boolean;
   isMainWorkoutExercise?: boolean;
@@ -27,6 +28,7 @@ type Exercise = {
   exerciseName?: string;      // what the rest of the app expects
   sets?: number | string;
   reps?: string;
+  time?: string;              // for timed exercises
   restBetweenSeconds?: number;
   recommendedWeight?: number;
 
@@ -129,19 +131,79 @@ const EditWorkout: React.FC = () => {
     });
   }, [userWorkoutData]);
 
-  // Group focus workouts by phase for a tidy catalog
+  // Group focus workouts by phase, filtering out duplicates and adding sets/reps
   const focusByPhase = useMemo(() => {
     const groups: Record<"warmup" | "workoutRoutine" | "cooldown", Exercise[]> = {
       warmup: [],
       workoutRoutine: [],
       cooldown: [],
     };
-    (focusWorkouts ?? []).forEach((raw: Exercise) => {
-      const ex = { ...raw, name: raw.name ?? raw.exerciseName };
-      groups[phaseFromFlags(ex)].push(ex);
+
+    // Get existing exercise names from current plan (for filtering duplicates)
+    const existingMainWorkoutNames = new Set(
+      (plan.workoutRoutine ?? []).map((ex) => getName(ex).toLowerCase())
+    );
+    const existingWarmupNames = new Set(
+      (plan.warmup ?? []).map((ex) => getName(ex).toLowerCase())
+    );
+
+    // Handle the new format: focusWorkouts.exercises and focusWorkouts.warmUps
+    const mainExercises = focusWorkouts?.exercises ?? focusWorkouts?.data?.exercises ?? [];
+    const warmUpExercises = focusWorkouts?.warmUps ?? focusWorkouts?.data?.warmUps ?? [];
+
+    // Process warm-up exercises
+    warmUpExercises.forEach((raw: Exercise) => {
+      const exerciseName = getName(raw).toLowerCase();
+      // Skip if already in warm-up plan
+      if (existingWarmupNames.has(exerciseName)) return;
+
+      const ex = { 
+        ...raw, 
+        name: raw.name ?? raw.exerciseName,
+        recommendedTime: raw.recommendedTime ?? "30 seconds",
+        isWarmupExercise: true
+      };
+      groups.warmup.push(ex);
     });
+
+    // Process main workout exercises
+    mainExercises.forEach((raw: Exercise) => {
+      const exerciseName = getName(raw).toLowerCase();
+      // Skip if already in main workout plan
+      if (existingMainWorkoutNames.has(exerciseName)) return;
+
+      const ex = { 
+        ...raw, 
+        name: raw.name ?? raw.exerciseName,
+        recommendedSets: raw.recommendedSets ?? "4",
+        recommendedReps: raw.recommendedReps ?? "12",
+        isMainWorkoutExercise: true
+      };
+      groups.workoutRoutine.push(ex);
+    });
+
+    // If focusWorkouts is in old format (array), handle it as before
+    if (Array.isArray(focusWorkouts)) {
+      focusWorkouts.forEach((raw: Exercise) => {
+        const exerciseName = getName(raw).toLowerCase();
+        const phase = phaseFromFlags(raw);
+        
+        // Check appropriate list based on phase
+        if (phase === "warmup" && existingWarmupNames.has(exerciseName)) return;
+        if (phase === "workoutRoutine" && existingMainWorkoutNames.has(exerciseName)) return;
+
+        const ex = { 
+          ...raw, 
+          name: raw.name ?? raw.exerciseName,
+          recommendedSets: raw.recommendedSets ?? (phase === "warmup" ? "3" : "4"),
+          recommendedReps: raw.recommendedReps ?? (phase === "warmup" ? "10" : "12")
+        };
+        groups[phase].push(ex);
+      });
+    }
+
     return groups;
-  }, [focusWorkouts]);
+  }, [focusWorkouts, plan.workoutRoutine, plan.warmup]);
 
   const addToPlan = (ex: Exercise) => {
     const item = { ...ex, name: getName(ex) };
@@ -196,6 +258,8 @@ const EditWorkout: React.FC = () => {
 
   const Section = ({ title, phaseKey }: { title: string; phaseKey: keyof DayPlan }) => {
     const items: Exercise[] = (plan[phaseKey] as Exercise[]) ?? [];
+    const isWarmup = phaseKey === "warmup";
+    
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{title}</Text>
@@ -207,8 +271,14 @@ const EditWorkout: React.FC = () => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{getName(ex)}</Text>
                 <Text style={styles.cardMeta}>
-                  {ex.recommendedSets || ex.sets ? `${ex.recommendedSets ?? ex.sets} sets` : ""}
-                  {ex.recommendedReps || ex.reps ? ` • ${ex.recommendedReps ?? ex.reps}` : ""}
+                  {isWarmup ? (
+                    ex.recommendedTime || ex.time || "30 seconds"
+                  ) : (
+                    <>
+                      {ex.recommendedSets || ex.sets ? `${ex.recommendedSets ?? ex.sets} sets` : ""}
+                      {ex.recommendedReps || ex.reps ? ` • ${ex.recommendedReps ?? ex.reps} reps` : ""}
+                    </>
+                  )}
                 </Text>
               </View>
               <View style={styles.cardActions}>
@@ -240,6 +310,8 @@ const EditWorkout: React.FC = () => {
 
   const FocusSection = ({ title, items }: { title: string; items: Exercise[] }) => {
     if (!items?.length) return null;
+    const isWarmup = title.toLowerCase().includes("warm-up");
+    
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{title}</Text>
@@ -259,8 +331,14 @@ const EditWorkout: React.FC = () => {
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{getName(ex)}</Text>
               <Text style={styles.cardMeta}>
-                {ex.recommendedSets ? `${ex.recommendedSets} sets` : ""}
-                {ex.recommendedReps ? ` • ${ex.recommendedReps}` : ""}
+                {isWarmup ? (
+                  ex.recommendedTime || "30 seconds"
+                ) : (
+                  <>
+                    {ex.recommendedSets ? `${ex.recommendedSets} sets` : ""}
+                    {ex.recommendedReps ? ` • ${ex.recommendedReps} reps` : ""}
+                  </>
+                )}
               </Text>
             </View>
             <TouchableOpacity style={[styles.actionBtn, styles.addBtn]} onPress={() => addToPlan(ex)}>
@@ -286,15 +364,15 @@ const EditWorkout: React.FC = () => {
         {/* Current plan */}
         <Section title="WARM-UP" phaseKey="warmup" />
         <Section title="MAIN WORKOUT" phaseKey="workoutRoutine" />
-        <Section title="COOL DOWN" phaseKey="cooldown" />
+        {/*<Section title="COOL DOWN" phaseKey="cooldown" />*/} 
         {/* <Section title="CHALLENGES" phaseKey="challanges" /> */}
 
         {/* Focus catalog */}
         <View style={styles.divider} />
-        <Text style={styles.catalogTitle}>Available Exercises (Focus)</Text>
-        <FocusSection title="Warm-Up" items={focusByPhase.warmup} />
-        <FocusSection title="Main Workout" items={focusByPhase.workoutRoutine} />
-        <FocusSection title="Cool Down" items={focusByPhase.cooldown} />
+        <Text style={styles.catalogTitle}>Available Exercises</Text>
+        <FocusSection title="Warm-Up Exercises" items={focusByPhase.warmup} />
+        <FocusSection title="Main Workout Exercises" items={focusByPhase.workoutRoutine} />
+        <FocusSection title="Cool Down Exercises" items={focusByPhase.cooldown} />
 
         {/* Save */}
         <View style={styles.saveBar}>

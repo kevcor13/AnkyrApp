@@ -47,25 +47,31 @@ const NextDayWorkout: React.FC<Props> = ({ workout }) => {
   }) => {
     if (!data || data.length === 0) return null;
     return (
-      <View style={{ marginTop: 20 }}>
+      <View style={{ marginTop: 24 }}>
         <Text style={styles.sectionTitle}>{title}</Text>
         {data.map((ex, idx) => (
           <View key={`${title}-${idx}-${ex.exerciseName}`} style={styles.exerciseCard}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
               <Text style={styles.exerciseName}>{ex.exerciseName}</Text>
 
               {!!ex.videoUrl && (
-                <TouchableOpacity onPress={() => openVideo(ex.videoUrl)} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-                  <Text style={styles.watchText}>watch ▶︎</Text>
+                <TouchableOpacity 
+                  onPress={() => openVideo(ex.videoUrl)} 
+                  hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+                  style={styles.videoButton}
+                >
+                  <Text style={styles.watchText}>Watch</Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={styles.setText}>
-                {`${ex.reps} x ${ex.sets} ${ex.sets === 1 ? 'set' : 'sets'}`}
+                {`${ex.sets} ${ex.sets === 1 ? 'set' : 'sets'} • ${ex.reps}`}
               </Text>
-              <Text style={styles.difficultyText}>{ex.difficulty}</Text>
+              <View style={styles.difficultyBadge}>
+                <Text style={styles.difficultyText}>{ex.difficulty}</Text>
+              </View>
             </View>
           </View>
         ))}
@@ -76,104 +82,167 @@ const NextDayWorkout: React.FC<Props> = ({ workout }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={{ marginBottom: 6 }}>
+      <View style={styles.headerContainer}>
         <Text style={styles.headerKicker}>Next Workout</Text>
-        <Text style={styles.workoutName}>{`${workout.day} — ${workout.focus}`}</Text>
+        <Text style={styles.workoutName}>{workout.focus}</Text>
+        <Text style={styles.dayText}>{workout.day}</Text>
       </View>
 
-      {/* Details Row: Time estimate and flair */}
-      <View style={styles.detailsRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-          <Text style={styles.detailText}>{workout.timeEstimate}</Text>
-          <Text style={styles.detailTextMins}>mins</Text>
+      {/* Stats Card */}
+      <View style={styles.statsCard}>
+        <View style={styles.timeContainer}>
+          <Text style={styles.timeNumber}>{workout.timeEstimate}</Text>
+          <Text style={styles.timeUnit}>mins</Text>
         </View>
-        <Image source={icons.blueStreak} style={{ width: 105, height: 106, marginLeft: 60 }} />
+        <Image 
+          source={icons.blueStreak} 
+          style={styles.streakImage}
+          resizeMode="contain"
+        />
       </View>
 
       {/* Sections */}
-      <Section title="Warm-up" data={workout.warmup} />
-      <Section title="Workout" data={workout.workoutRoutine} />
-      <Section title="Cooldown" data={workout.cooldown} />
+      <Section title="Warm-Up" data={workout.warmup} />
+      <Section title="Main Workout" data={workout.workoutRoutine} />
+      <Section title="Cool Down" data={workout.cooldown} />
     </View>
   );
 };
 
 export default NextDayWorkout;
 
-// ----- Styles (kept close to your WorkoutLogDetail for consistency) ----- //
+// ----- Styles (iOS 18 inspired with modern glassmorphism) ----- //
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000000',
-    padding: 20,
-    marginTop: 25,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  headerContainer: {
+    marginBottom: 20,
   },
   headerKicker: {
-    color: '#78F5D8',
-    fontFamily: 'poppins-semibold',
-    fontSize: 12,
+    color: '#8AFFF9',
+    fontFamily: 'raleway-semibold',
+    fontSize: 11,
     textTransform: 'uppercase',
+    letterSpacing: 1.5,
     opacity: 0.9,
+    marginBottom: 8,
   },
   workoutName: {
     color: '#FFFFFF',
-    fontSize: 28,
-    fontFamily: 'Poppins-Bold',
-    marginTop: 4,
+    fontSize: 36,
+    fontFamily: 'raleway-light',
+    fontWeight: '700',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    lineHeight: 40,
   },
-  detailsRow: {
+  dayText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 16,
+    fontFamily: 'poppins-medium',
+    marginTop: 4,
+  },
+  statsCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 20,
+    padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: 10,
-    marginTop: 8,
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
   },
-  detailText: {
-    color: '#38FFF5',
-    fontFamily: 'poppins-semiBold',
-    fontSize: 64,
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  timeNumber: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 56,
+    fontWeight: '700',
+    color: '#8AFFF9',
     lineHeight: 64,
   },
-  detailTextMins: {
-    color: '#38FFF5',
-    fontFamily: 'poppins-semiBold',
-    fontSize: 24,
+  timeUnit: {
+    fontFamily: 'poppins-semibold',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#8AFFF9',
     marginLeft: 6,
-    marginBottom: 6,
+    opacity: 0.8,
+  },
+  streakImage: {
+    width: 80,
+    height: 80,
+    opacity: 0.7,
   },
   sectionTitle: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: 'poppins-semibold',
+    fontWeight: '700',
     marginBottom: 12,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   exerciseCard: {
-    backgroundColor: '#1C1C20',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   exerciseName: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontFamily: 'poppins-medium',
+    fontFamily: 'poppins-semibold',
+    fontWeight: '600',
+    flex: 1,
+    marginRight: 12,
+    lineHeight: 22,
   },
-  setText: {
-    color: '#DDDDDD',
-    fontSize: 14,
-    fontFamily: 'poppins-regular',
-  },
-  difficultyText: {
-    color: '#8AFFF9',
-    fontSize: 12,
-    fontFamily: 'raleway-semibold',
-    textTransform: 'uppercase',
+  videoButton: {
+    backgroundColor: 'rgba(138, 255, 249, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(138, 255, 249, 0.3)',
   },
   watchText: {
     color: '#8AFFF9',
-    fontSize: 12,
+    fontSize: 11,
+    fontFamily: 'poppins-semibold',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  setText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontFamily: 'poppins-regular',
+    fontWeight: '500',
+  },
+  difficultyBadge: {
+    backgroundColor: 'rgba(138, 255, 249, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  difficultyText: {
+    color: '#8AFFF9',
+    fontSize: 11,
     fontFamily: 'raleway-semibold',
+    fontWeight: '600',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
 });

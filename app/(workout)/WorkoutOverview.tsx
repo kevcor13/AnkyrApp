@@ -11,19 +11,27 @@ import axios from 'axios';
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData, selectedChallenges, fetchWorkoutFocus} = useGlobal();
+    const {userWorkoutData, userData, selectedChallenges,fetchFitnessData,fetchWorkoutFocus} = useGlobal();
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
+    const [userFitnessData, setUserFitnessData] = useState('');
+    const [userFitnessLevel, setUserFitnessLevel] = useState('');
     const [points, setPoints] = useState(Number);
+
     const theme = userData.defaultTheme;
 
     useEffect(() => {
         const fetchData = async () => {
+            
             try {
                 setPoints((userWorkoutData.warmup.length + userWorkoutData.workoutRoutine.length) * 5);
                 setTimeEstimate(userWorkoutData.timeEstimate);
                 setFocus(userWorkoutData.focus);
-                console.log("User Workout Data:", userWorkoutData.warmup);
+                const response = await fetchFitnessData(userData._id);
+                setUserFitnessData(response);
+                setUserFitnessLevel(response.fitnessLevel);
+                console.log("Fetched fitness data:", response);
+
             } catch (error) {
                 console.error("Error fetching workout data:", error);
             }
@@ -35,7 +43,9 @@ const WorkoutOverview = () => {
     
 
     async function handleEdit() {
-        const res = await fetchWorkoutFocus(focus);
+        
+        console.log("Fetching workout focus for:", focus, "at level:", userFitnessLevel);
+        const res = await fetchWorkoutFocus(focus, userFitnessLevel);
         if (res) {
             router.push('/(components)/workout/EditWorkout');
         } else{

@@ -21,6 +21,7 @@ const GlobalProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [questionStatus, setQuestionStatus] = useState(false);
     const [userGameData, setUserGameData] = useState('');
+    const [userFitnessData, setUserFitnessData] = useState('');
     const [userWorkoutData, setUserWorkoutData] = useState([])
     const [TodayWorkout, setTodayWorkout] = useState('')
     const [weeklyData, setWeeklyData] = useState([]);
@@ -447,14 +448,31 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
-    const fetchWorkoutFocus = async (focus) => {
+    const fetchWorkoutFocus = async (focus,userFitnessLevel ) => {
         try {
-            const response = await axios.post(`${ngrokAPI}/api/workout/getFocusExercise`, { focus });
+            const response = await axios.post(`${ngrokAPI}/api/workout/getFocusExercise`, { focus, userFitnessLevel });
             if (response.data.status === "success") {
                 setFocusWorkouts(response.data.data);
                 return response
             } else {
                 console.error("Failed to fetch workout focus:", response.data.message);
+                return [];
+            }
+        } catch (error) {
+            console.error("Error fetching workout focus:", error);
+            return [];
+        }
+    }
+    
+    const fetchFitnessData = async (UserID) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            const response = await axios.post(`${ngrokAPI}/api/user/getFitnessData`, { UserID, token});
+            if (response.data.status === "success") {
+                setUserFitnessData(response.data.data);
+                return response.data.data
+            } else {
+                console.error("Failed to fetch fitness data:", response.data.message);
                 return [];
             }
         } catch (error) {
@@ -500,6 +518,7 @@ const GlobalProvider = ({ children }) => {
                 addChallengesToWorkout,
                 fetchUserData, // Expose fetchUserData if needed elsewhere
                 fetchGameData,
+                fetchFitnessData,
                 fetchWorkout,
                 fetchFriends,
                 updateGameData,
