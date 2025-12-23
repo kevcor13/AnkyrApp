@@ -2,17 +2,22 @@ import icons from '@/constants/icons';
 import images from '@/constants/images';
 import { Tabs } from "expo-router";
 import React from 'react';
+import {Icon} from '../../assets/icons/index';
 import { Image, Text, View } from 'react-native';
+
+
 const TabsLayout = () => {
 
 
-    const TabIcon = ({focused, icon, title} : {focused: boolean, icon: any, title: string}) => (
+    const TabIcon = ({focused, iconName, title} : {focused: boolean, iconName: string, title: string}) => (
         <View className="flex-1 mt-3 items-center">
-            <Image
-                source={icon}
-                tintColor={focused ? 'white' : 'gray'}
+            <Icon
+                name={iconName}
+                color={focused ? 'white' : 'gray'}
+                size={60}
+                //tintColor={focused ? 'white' : 'gray'}
                 //tintColor={focused ? "#0061FF" : "#666876"}
-                className="size-9"
+                //className="size-9"
             />
             <Text
                 className={`${
@@ -33,31 +38,28 @@ const TabsLayout = () => {
                     backgroundColor: 'black',
                     position: 'absolute',
                     borderTopColor: 'black',
-                    borderTopWidth: 1,
-                    minHeight: 70,
+                    borderTopWidth: 0,
+                    minHeight: 40,
                 },
             }}
         >
-
-            
             <Tabs.Screen
                 name="nutrition"
                 options={{
                     title: 'nutrition',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={images.meals} title="" />
+                        <TabIcon focused={focused} iconName="meals" title="" />
                     )
                 }}
             />
-            
             <Tabs.Screen
                 name="challanges"
                 options={{
                     title: 'challanges',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.whiteZap} title="" />
+                        <TabIcon focused={focused} iconName="whiteStreak" title="" />
                     )
                 }}
             />
@@ -67,7 +69,7 @@ const TabsLayout = () => {
                     title: 'home',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={images.ankyrIcon} title="" />
+                        <TabIcon focused={focused} iconName="home" title="" />
                     )
                 }}
             />
@@ -78,7 +80,7 @@ const TabsLayout = () => {
                     headerShown: false,
                     tabBarStyle: { display: "none" },
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={images.WheelIcon} title={''}/>
+                        <TabIcon focused={focused} iconName="camera" title={''}/>
                     )
                 }}
             />
@@ -88,7 +90,7 @@ const TabsLayout = () => {
                     title: 'profile',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={images.profile} title={''} />
+                        <TabIcon focused={focused} iconName="profile" title={''} />
                     )
                 }}
             />
