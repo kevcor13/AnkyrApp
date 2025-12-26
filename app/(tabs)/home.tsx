@@ -8,6 +8,8 @@ import {router} from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import PostCard from '@/components/PostCard';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Icon } from '@/assets/icons/mealPageIcons';
 
 const Home = () => {
     const { userData, fetchWorkout, fetchGameData, fetchFriends, ngrokAPI, userGameData, fetchUserData } = useGlobal();
@@ -154,15 +156,35 @@ const Home = () => {
         </>
     );
 
-    const renderEmptyComponent = () => (
-        <View className="flex-1 justify-center items-center py-10">
-            {loadingPosts ? (
-                <ActivityIndicator size="large" color="#FFFFFF" />
-            ) : (
-                <Text className="text-white text-center px-4">
-                    No posts found. Add friends to see their posts here!
-                </Text>
-            )}
+    const renderScrollContentHeader = () => (
+        <View style={{ marginTop: 145 }}>
+            <View style={styles.iconsContainer}>
+                <View className="items-center">
+                    <TouchableOpacity className="p-6 rounded-full bg-white" onPress={() => router.navigate("/(components)/Playlist")}>
+                        <Image source={icons.headphonesIcon} className="w-8 h-8"/>
+                    </TouchableOpacity>
+                    <Text className="text-white font-poppins-semibold mt-4 text-center text-lg">Playlist</Text>
+                </View>
+                <View className="items-center px-10">
+                    <TouchableOpacity className="p-6 rounded-full bg-white">
+                        <Image source={icons.libraryIcon} className="w-8 h-8"/>
+                    </TouchableOpacity>
+                    <Text className="text-white font-poppins-semibold mt-4 text-center text-lg">Your library</Text>
+                </View>
+                <View className="items-center">
+                    <TouchableOpacity
+                        className="p-6 rounded-full bg-white"
+                        onPress={() => router.push("/(components)/SearchScreen?query=")}
+                    >
+                        <Image source={icons.searchIcon} className="w-8 h-8" />
+                    </TouchableOpacity>
+                    <Text className="text-white font-poppins-semibold mt-4 text-center text-lg">Search</Text>
+                </View>
+            </View>
+
+            <View className="mt-8 px-4">
+                <Text className="text-white font-poppins-semibold text-xl mb-2">Your Feed</Text>
+            </View>
         </View>
     );
 
@@ -170,48 +192,67 @@ const Home = () => {
         return (
             <SafeAreaView className="bg-black h-full justify-center items-center">
                 <ActivityIndicator size="large" color="#FFFFFF" />
-                <Text className="text-white mt-4">Loading your data...</Text>
             </SafeAreaView>
         );
     }
 
-    if (!userData) return null;
-
     return (
-        <SafeAreaView className="bg-black h-full">
+        <View className="flex-1 bg-black">
+            {/* 1. STATIONARY GRADIENT */}
+            <LinearGradient
+                colors={['#000000', '#000000', 'transparent']}
+                locations={[0, 0.43, 1]}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 180, zIndex: 10 }}
+            />    
+
+            {/* 2. STATIONARY HEADER */}
+            <SafeAreaView style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }}>
+                <View style={{ paddingHorizontal: 25, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={styles.headerContainer}>
+                        <Text style={styles.welcomeText}>Welcome Back</Text>
+                        <Text style={styles.usernameText}>{userData?.username || "User"}</Text>
+                    </View>
+                    <View style={styles.imageContainer}>
+                    <Icon name="home" color="#FFF" size={70} />
+                    </View>
+                </View>
+            </SafeAreaView>
+
+            {/* 3. SCROLLING CONTENT */}
             <FlatList
                 data={posts}
                 renderItem={({item}) => <PostCard post={item} />}
-                ListHeaderComponent={renderHeader}
-                ListEmptyComponent={renderEmptyComponent}
+                ListHeaderComponent={renderScrollContentHeader}
+                ListEmptyComponent={() => (
+                    <View className="flex-1 justify-center items-center py-10">
+                        <Text className="text-white">No posts found.</Text>
+                    </View>
+                )}
                 contentContainerStyle={{ paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
                 onRefresh={loadFriendsAndPosts}
                 refreshing={loadingPosts}
             />
-        </SafeAreaView>
+        </View>
     )
 }
 
 const styles = StyleSheet.create({
   headerContainer: {
-    marginVertical: 20,
+    marginVertical: 10,
   },
   imageContainer: {
-    marginVertical:15,
-    paddingLeft: 20,
+    marginVertical: 10,
   },
   welcomeText: {
     fontFamily: 'Poppins',
     fontSize: 14,
     color: '#CDCDE0',
-    paddingLeft: 20,
   },
   usernameText: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 24,
     color: '#DAEEED',
-    paddingLeft: 20,
   },
   iconsContainer:{
     flexDirection: 'row',
@@ -220,4 +261,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default Home
+export default Home;

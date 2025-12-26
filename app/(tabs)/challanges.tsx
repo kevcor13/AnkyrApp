@@ -47,6 +47,7 @@ const ChallengesPage: React.FC = () => {
                     setCurrentDay(today);
                     const token = await AsyncStorage.getItem("token");
                     fetchGameData(token, userData._id);
+                    console.log("Fetched workout data:", userWorkoutData);
                     setTimeEstimate(userWorkoutData.timeEstimate);
                     setFocus(userWorkoutData.focus);
                 }

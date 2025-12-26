@@ -1,11 +1,12 @@
-import { View, Text, SafeAreaView, Image, TouchableOpacity, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, SafeAreaView, Image, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import axios from 'axios';
 import { useGlobal } from '@/context/GlobalProvider';
 import icons from '@/constants/icons';
+import { Icon } from '@/assets/icons/mealPageIcons'; 
+import { LinearGradient } from 'expo-linear-gradient';
 
-// Define the structure of a Meal object based on your schema
 interface Meal {
   _id: string;
   title: string;
@@ -18,20 +19,17 @@ function ensureString(param: string | string[] | undefined): string | undefined 
 }
 
 const FilteredMeals = () => {
-  // Get filter parameters from the navigation route (normalize in case router passes arrays)
   const params = useLocalSearchParams<{ filterType?: string | string[]; filterValue?: string | string[] }>();
   const filterType = ensureString(params.filterType);
   const filterValue = ensureString(params.filterValue);
 
   const { ngrokAPI } = useGlobal();
-
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Capitalize the first letter of the filter value for the header
   const headerTitle = useMemo(() => {
-    if (!filterValue) return 'Filtered Meals';
+    if (!filterValue) return 'Filtered';
     return filterValue.charAt(0).toUpperCase() + filterValue.slice(1);
   }, [filterValue]);
 
@@ -67,146 +65,99 @@ const FilteredMeals = () => {
     fetchFilteredMeals();
   }, [filterType, filterValue, ngrokAPI]);
 
+  // --- iOS 26 Styled Meal Card ---
   const renderMealCard = ({ item }: { item: Meal }) => (
     <TouchableOpacity
-      style={styles.cardContainer}
-      // Uncomment when the MealDetail route is ready:
+      activeOpacity={0.9}
       onPress={() => router.push({ pathname: '/MealDetail', params: { mealId: item._id } })}
+      className="relative w-full h-80 rounded-[48px] overflow-hidden mb-10 border border-white/5 bg-zinc-900 shadow-2xl"
     >
       <Image
         source={{ uri: item.imageUrl || 'https://placehold.co/600x400/cccccc/ffffff?text=Image+Not+Available' }}
-        style={styles.cardImage}
+        className="absolute w-full h-full"
         resizeMode="cover"
       />
-      <View style={styles.overlay} />
-      <Text style={styles.cardTitle}>{item.title}</Text>
-      <View style={styles.viewButton}>
-        <Text style={styles.viewButtonText}>View</Text>
+      
+      {/* Dark tint for text clarity */}
+      <View className="absolute inset-0 bg-black/10" />
+
+      {/* Futuristic Bottom Glass Panel */}
+      <View className="absolute bottom-4 left-4 right-4 bg-black/30 backdrop-blur-2xl rounded-[35px] border border-white/20 p-5 flex-row justify-between items-center">
+        <View className="flex-1 mr-4">
+          <Text className="text-white font-poppins-bold text-xl tracking-tight" numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text className="text-white/60 font-poppins-medium text-[10px] uppercase tracking-[3px] mt-1">
+            View Recipe
+          </Text>
+        </View>
+        
+        <View className="bg-white w-12 h-12 rounded-full items-center justify-center">
+          <Icon name="rightArrow" size={20} color="#000" />
+        </View>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Image source={icons.arrow} style={styles.backIcon} resizeMode="contain" />
-        </TouchableOpacity>
+    <View className="flex-1 bg-[#050505]">
+      {/* 1. TOP SHADOWY LAYER (Hides the Island) */}
+      <LinearGradient
+        colors={['#000000', '#000000', 'transparent']}
+        locations={[0, 0.43, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 150, zIndex: 40 }}
+      />
 
-        <Text style={styles.headerText}>{headerTitle}</Text>
+      {/* 2. FLOATING HEADER */}
+      <SafeAreaView className="absolute top-0 left-0 right-0 z-50">
+        <View className="px-6 py-4 flex-row items-center justify-between">
+          <TouchableOpacity 
+            onPress={() => router.back()} 
+            className="w-12 h-12 rounded-full bg-white/10 border border-white/10 items-center justify-center backdrop-blur-xl"
+          >
+            <Icon name="backArrow" size={20} color="#FFF" />
+          </TouchableOpacity>
 
-        {/* Spacer to keep title centered */}
-        <View style={{ width: 40 }} />
-      </View>
+          <View className="items-center">
+            <Text className="text-zinc-500 font-poppins-medium text-[9px] uppercase tracking-[4px] mb-1">Catalog</Text>
+            <Text className="text-white font-poppins-bold text-2xl tracking-tighter">{headerTitle}</Text>
+          </View>
 
+          <TouchableOpacity className="w-12 h-12 rounded-full bg-white/10 border border-white/10 items-center justify-center backdrop-blur-xl">
+            <Image source={icons.searchIcon} className="w-5 h-5" style={{ tintColor: 'white' }} />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+
+      {/* 3. CONTENT AREA */}
       {loading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#A1FF00" />
+          <Text className="text-zinc-500 font-poppins-medium mt-4 tracking-widest text-xs uppercase">Curating Vault...</Text>
         </View>
       ) : error ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : meals.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>No meals found for this filter.</Text>
+        <View className="flex-1 justify-center items-center px-10">
+          <View className="bg-red-500/10 p-8 rounded-[40px] border border-red-500/20 items-center">
+            <Text className="text-red-400 font-poppins-semibold text-center leading-6">{error}</Text>
+          </View>
         </View>
       ) : (
         <FlatList
           data={meals}
           renderItem={renderMealCard}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.listContainer}
+          // Added large paddingTop (130) so the first item isn't hidden by the floating header
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 130, paddingBottom: 60 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View className="flex-1 justify-center items-center mt-20">
+              <Text className="text-zinc-500 font-poppins-medium text-lg text-center">The vault is currently empty.</Text>
+            </View>
+          }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  backButton: {
-    padding: 8,
-  },
-  backIcon: {
-    width: 24,
-    height: 24,
-    tintColor: 'white',
-  },
-  headerText: {
-    color: 'white',
-    fontSize: 22,
-    fontWeight: '600',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  errorText: {
-    color: 'white',
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  listContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 24,
-  },
-  cardContainer: {
-    width: '100%',
-    height: 250,
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#333',
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  cardTitle: {
-    color: 'white',
-    fontSize: 32,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
-  },
-  viewButton: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    backgroundColor: 'white',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  viewButtonText: {
-    color: 'black',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-});
 
 export default FilteredMeals;

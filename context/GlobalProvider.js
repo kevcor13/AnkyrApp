@@ -31,7 +31,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://712b715fc486.ngrok-free.app'
+    const ngrokAPI = 'https://593c8bd2020e.ngrok-free.app'
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       
@@ -235,7 +235,8 @@ const GlobalProvider = ({ children }) => {
         try{
             const date = new Date();
             const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, date, UserID});
-            if (response.data.status === "success") {;
+            if (response.data.status === "success") {
+                console.log("Fetched workout data responsess:", response.data.data);
                 setUserWorkoutData(response.data.data)
                 //await seperateWorkouts(response.data.data)
                 //await fetchXpHistory(UserID);

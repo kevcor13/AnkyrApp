@@ -4,188 +4,157 @@ import images from "@/constants/images";
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 import axios from 'axios';
+import { Icon } from '../../assets/icons/mealPageIcons';
 import { useGlobal } from '@/context/GlobalProvider';
 
 const Nutrition = () => {
-    const {ngrokAPI} = useGlobal();
+    const { ngrokAPI } = useGlobal();
     const [featuredMeals, setFeaturedMeals] = useState([]);
     const [loading, setLoading] = useState(true);
-    // FIX: Set error state to null initially, and handle string-based errors.
     const [error, setError] = useState<string | null>(null);
 
-    // --- Data Fetching with useEffect ---
     useEffect(() => {
         const fetchRecipes = async () => {
             try {
                 const response = await axios.post(`${ngrokAPI}/api/meals/getFeaturedRecipes`);
-                
                 if (response.data && Array.isArray(response.data.data)) {
                     setFeaturedMeals(response.data.data);
                 } else {
-                    console.log("Unexpected data format:", response.data);
-                    throw new Error("Received an unexpected data format from the server.");
+                    throw new Error("Unexpected format");
                 }
             } catch (err: any) {
-                console.error("Failed to fetch recipes:", err);
-                // FIX: Set a user-friendly error message to the state
-                setError(err.message || "An error occurred while fetching recipes.");
+                setError(err.message || "Error fetching recipes.");
             } finally {
-                // This runs whether the fetch succeeded or failed
                 setLoading(false);
             }
         };
-
         fetchRecipes();
-    }, []); // The empty array [] ensures this effect runs only once when the component mounts.
+    }, []);
 
-    // --- Mock Data for other sections (can be replaced with API calls too) ---
     const goalOptions = [
         { id: '1', title: 'Build Muscle' },
         { id: '2', title: 'Weight Loss' },
         { id: '3', title: 'Energy' },
     ];
-    const ingredientOptions = [
-        { id: '1', title: 'Poultry' },
-        { id: '2', title: 'Beef' },
-        { id: '3', title: 'Seafood' },
-    ];
-    const dietaryPreferences = [
-        { id: '1', title: 'Dairy-Free' },
-        { id: '2', title: 'Gluten-Free' },
-        { id: '3', title: 'Vegan' },
-    ];
 
-    // --- Render Functions ---
+    // --- Render Functions with iOS 26 Styling ---
+
     const renderFeaturedMeal = ({ item }: { item: { imageUrl?: string; title: string; _id: string } }) => (
-        <View className="relative mr-4 rounded-lg overflow-hidden w-64 h-44 bg-gray-300">
+        <TouchableOpacity 
+            activeOpacity={0.9}
+            onPress={() => router.push({ pathname: '/MealDetail', params: { mealId: item._id }})}
+            className="relative mr-5 rounded-[40px] overflow-hidden w-72 h-52 bg-zinc-900 border border-white/10"
+            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 }}
+        >
             <Image
                 source={{ uri: item.imageUrl || 'https://placehold.co/600x400/cccccc/ffffff?text=Image+Not+Available' }}
                 className="w-full h-full"
                 resizeMode="cover"
             />
-            <View className="absolute top-0 left-0 p-4">
-                <Text className="text-white font-poppins-bold text-2xl" style={{ textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: -1, height: 1}, textShadowRadius: 10 }}>{item.title}</Text>
+            {/* Glass Overlay for Text */}
+            <View className="absolute bottom-0 left-0 right-0 p-5 bg-black/30 backdrop-blur-md">
+                <Text className="text-white font-poppins-bold text-xl tracking-tight">{item.title}</Text>
             </View>
-            <View className="absolute top-2 right-2">
-                <TouchableOpacity>
-                    <Image source={icons.heart} className="w-6 h-6" style={{tintColor: 'white'}} />
-                </TouchableOpacity>
+            
+            {/* Floating Heart Icon */}
+            <View className="absolute top-4 right-4 bg-white/20 backdrop-blur-xl p-3 rounded-full border border-white/20">
+                <Icon name="heart" size={24} color="#FFFFFF" />
             </View>
-            <View className="absolute bottom-2 right-2">
-                {/* FIX: Added onPress handler to navigate to a meal detail page */}
-                <TouchableOpacity 
-                    className="bg-white px-4 py-2 rounded-full"
-                    onPress={() => router.push({ pathname: '/MealDetail', params: { mealId: item._id }})}
-                >
-                    <Text className="font-poppins-medium">View</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+        </TouchableOpacity>
     );
 
-    type CategoryItem = { id: string; title: string };
-
-    // FIX: Modified function to accept 'filterType' to pass correct data
-    const renderCategoryCard = ({
-        item,
-        darkBackground = false,
-        filterType, // Added prop
-    }: {
-        item: CategoryItem;
-        darkBackground?: boolean;
-        filterType: string; // Added type for the new prop
-    }) => (
+    const renderCategoryCard = ({ item, darkBackground = false, filterType }: any) => (
         <TouchableOpacity
-            className={`mr-4 rounded-lg overflow-hidden w-36 h-24 justify-center items-center ${darkBackground ? 'bg-black' : 'bg-white'}`}
-            // FIX: Correctly pass both filterType and filterValue to the next screen
+            activeOpacity={0.8}
+            className={`mr-4 rounded-[30px] w-40 h-28 justify-center items-center border ${darkBackground ? 'bg-zinc-900 border-white/10' : 'bg-white/80 border-black/5'}`}
             onPress={() => router.push({
                 pathname: '/FilteredMeals',
                 params: { filterType: filterType, filterValue: item.title }
             })}
+            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 }}
         >
-            <Text className={`font-poppins-semibold text-lg ${darkBackground ? 'text-white' : 'text-black'}`}>
+            <Text className={`font-poppins-semibold text-lg tracking-tight ${darkBackground ? 'text-white' : 'text-zinc-800'}`}>
                 {item.title}
             </Text>
         </TouchableOpacity>
     );
 
     return (
-        <SafeAreaView className="bg-black flex-1">
+        <SafeAreaView className="bg-[#050505] flex-1">
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-                {/* Header */}
-                <View className="my-6 px-4 flex-row justify-between items-center">
-                    <Text className="font-poppins-semibold text-white text-2xl">Meal plans.</Text>
-                    <Image
-                        source={images.meals}
-                        className="w-10 h-10"
-                        resizeMode="contain"
-                    />
-                </View>
-
-                {/* Quick Action Icons */}
-                <View className="flex-row justify-around px-6 mb-4">
-                    <View className="items-center">
-                        <TouchableOpacity className="p-5 rounded-full bg-white" onPress={() => router.push('/(nutrition)/generateMeal')}>
-                            <Image source={icons.zap} className="w-6 h-6" />
-                        </TouchableOpacity>
-                        <Text className="text-white font-poppins-medium mt-2 text-center">Quick Meal</Text>
+                
+                {/* Header: iOS Ultra-Minimalism */}
+                <View className="mt-8 mb-8 px-6 flex-row justify-between items-end">
+                    <View>
+                        <Text className="text-zinc-500 font-poppins-medium text-xs uppercase tracking-[3px] mb-1">Your Kitchen</Text>
+                        <Text className="font-poppins-bold text-white text-4xl tracking-tighter">Meal plans.</Text>
                     </View>
-                    <View className="items-center">
-                        <TouchableOpacity className="p-5 rounded-full bg-white" onPress={() => router.push('/(nutrition)/SavedMeals')}>
-                            <Image source={icons.heart} className="w-6 h-6" />
-                        </TouchableOpacity>
-                        <Text className="text-white font-poppins-medium mt-2 text-center">Saved meals</Text>
-                    </View>
-                    <View className="items-center">
-                        <TouchableOpacity className="p-5 rounded-full bg-white">
-                            <Image source={icons.searchIcon} className="w-6 h-6" />
-                        </TouchableOpacity>
-                        <Text className="text-white font-poppins-medium mt-2 text-center">Search</Text>
+                    <View className="bg-zinc-800 p-2 rounded-2xl border border-white/10">
+                        <Image source={images.meals} className="w-8 h-8 rounded-xl" resizeMode="contain" />
                     </View>
                 </View>
 
-                {/* Main Content Container */}
-                <View className="bg-gray-200 flex-1 rounded-t-3xl p-4">
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
-                        <TouchableOpacity className="bg-black rounded-lg w-[142] h-[105] mr-4 p-4 justify-center flex-row-reverse">
-                            <Image source={icons.progress} className="w-[34] h-[34]" />
-                            <Text className="text-white font-poppins-semibold text-[20px] mt-4">My progress</Text>
+                {/* Quick Action Icons: Glassmorphism Circles */}
+                <View className="flex-row justify-between px-6 mb-10">
+                    {[
+                        { icon: "whiteLighting", label: 'Quick', route: '/(nutrition)/generateMeal' },
+                        { icon: "heart", label: 'Saved', route: '/(nutrition)/SavedMeals' },
+                        { icon: "search", label: 'Search', route: null },
+                    ].map((action, index) => (
+                        <View key={index} className="items-center">
+                            <TouchableOpacity 
+                                className="w-16 h-16 rounded-[24px] bg-zinc-800/50 border border-white/10 items-center justify-center"
+                                onPress={() => action.route && router.push(action.route as any)}
+                            >
+                                <Icon name={action.icon as any} size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <Text className="text-zinc-400 font-poppins-medium mt-3 text-[12px]">{action.label}</Text>
+                        </View>
+                    ))}
+                </View>
+
+                {/* Main Content: "The Sheet" */}
+                <View className="bg-[#F2F2F7] flex-1 rounded-t-[50px] p-6 shadow-2xl">
+                    
+                    {/* Progress & Calendar: Unified Glass Tiles 
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-10 -mt-2">
+                        <TouchableOpacity className="bg-zinc-900 rounded-[35px] w-40 h-32 mr-4 p-5 justify-between">
+                            <Image source={icons.progress} className="w-8 h-8" style={{ tintColor: '#A1FF00' }} />
+                            <Text className="text-white font-poppins-semibold text-lg leading-tight">My{'\n'}Progress</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity className="bg-black rounded-lg w-[142] h-[105] mr-4 p-4 justify-center flex-row-reverse">
-                            <Image source={icons.calendar} className="w-[34] h-[34]" />
-                            <Text className="text-white font-poppins-semibold text-[20px] mt-4 ">My{'\n'}Meal Plan</Text>
+                        
+                        <TouchableOpacity className="bg-white rounded-[35px] w-40 h-32 mr-4 p-5 justify-between border border-black/5 shadow-sm">
+                            <Image source={icons.calendar} className="w-8 h-8" style={{ tintColor: '#000' }} />
+                            <Text className="text-zinc-900 font-poppins-semibold text-lg leading-tight">Meal{'\n'}Plan</Text>
                         </TouchableOpacity>
                     </ScrollView>
-
+                    */}
                     {/* Featured Meals Section */}
-                    <View className="mb-6">
-                        <Text className="font-poppins-semibold text-xl mb-4">Featured</Text>
+                    <View className="mb-10">
+                        <View className="flex-row justify-between items-center mb-5 px-1">
+                            <Text className="font-poppins-bold text-2xl text-zinc-900 tracking-tight">Featured</Text>
+                            <Text className="text-blue-600 font-poppins-medium">See all</Text>
+                        </View>
                         {loading ? (
-                            <View className="h-44 justify-center items-center">
-                                <ActivityIndicator size="large" color="#000000" />
-                            </View>
-                        ) : error ? (
-                            <View className="h-44 justify-center items-center bg-red-100 p-4 rounded-lg">
-                                <Text className="text-red-700 font-poppins-semibold">Error loading meals:</Text>
-                                <Text className="text-red-600 text-center mt-2">{error}</Text>
-                            </View>
+                            <ActivityIndicator size="large" color="#000" />
                         ) : (
                             <FlatList
                                 data={featuredMeals}
                                 renderItem={renderFeaturedMeal}
-                                keyExtractor={item => item._id}
+                                keyExtractor={(item: any) => item._id}
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
+                                snapToAlignment="start"
+                                decelerationRate="fast"
                             />
                         )}
                     </View>
 
-                    {/* By Goal */}
-                    <View className="mb-6">
-                        <Text className="font-poppins-semibold text-xl mb-4">By Goal</Text>
+                    {/* By Goal Section */}
+                    <View className="mb-10">
+                        <Text className="font-poppins-bold text-2xl text-zinc-900 tracking-tight mb-5 px-1">By Goal</Text>
                         <FlatList
                             data={goalOptions}
-                            // FIX: Pass the filterType 'goal' to the render function
                             renderItem={({item}) => renderCategoryCard({item, filterType: 'goals'})}
                             keyExtractor={item => item.id}
                             horizontal
@@ -193,31 +162,8 @@ const Nutrition = () => {
                         />
                     </View>
 
-                    {/* By Ingredient */}
-                    <View className="mb-6">
-                        <Text className="font-poppins-semibold text-xl mb-4">By ingredient</Text>
-                        <FlatList
-                            data={ingredientOptions}
-                            // FIX: Pass the filterType 'ingredient' to the render function
-                            renderItem={({item}) => renderCategoryCard({item, filterType: 'ingredient', darkBackground: true})}
-                            keyExtractor={item => item.id}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                        />
-                    </View>
-
-                    {/* Dietary Preferences */}
-                    <View className="mb-10">
-                        <Text className="font-poppins-semibold text-xl mb-4">Dietary Preferences</Text>
-                        <FlatList
-                            data={dietaryPreferences}
-                             // FIX: Pass the filterType 'dietary' to the render function
-                            renderItem={({item}) => renderCategoryCard({item, filterType: 'dietary'})}
-                            keyExtractor={item => item.id}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                        />
-                    </View>
+                    {/* Footer Spacing */}
+                    <View className="h-10" />
                 </View>
             </ScrollView>
         </SafeAreaView>
