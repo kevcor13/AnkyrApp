@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import PostCard from '@/components/PostCard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Icon } from '@/assets/icons/mealPageIcons';
+import {Icon} from "../../assets/icons/index"
 
 const Home = () => {
     const { userData, fetchWorkout, fetchGameData, fetchFriends, ngrokAPI, userGameData, fetchUserData } = useGlobal();
@@ -25,7 +25,6 @@ const Home = () => {
                 router.push('/(root)/sign-in');
             } else {
                 loadFriendsAndPosts();
-                
             }
         }, 500);
 

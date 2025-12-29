@@ -7,7 +7,6 @@ import LeagueHeader from "@/components/LeagueHeader";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { use, useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Platform } from "react-native";
-import { BlurView } from 'expo-blur';
 import icons from "@/constants/icons";
 import { router } from "expo-router";
 import GraphView from "@/components/GraphView";
@@ -39,17 +38,23 @@ const ChallengesPage: React.FC = () => {
     const [isNotCompleted, setIsNotCompleted] = useState(false);
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
 
+    const [isRestDay, setIsRestDay] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const token = await AsyncStorage.getItem("token");
+                const today = new Date().toLocaleString("en-US", { weekday: "long" });
+                
+                setCurrentDay(today);
+                fetchGameData(token, userData._id);
+
                 if (userWorkoutData) {
-                    const today = new Date().toLocaleString("en-US", { weekday: "long" });
-                    setCurrentDay(today);
-                    const token = await AsyncStorage.getItem("token");
-                    fetchGameData(token, userData._id);
                     console.log("Fetched workout data:", userWorkoutData);
                     setTimeEstimate(userWorkoutData.timeEstimate);
                     setFocus(userWorkoutData.focus);
+                } else {
+                    setIsRestDay(true);
                 }
             } catch (error) {
                 console.error("Error fetching workout data:", error);
@@ -184,6 +189,10 @@ const ChallengesPage: React.FC = () => {
                         <View style={[styles.statusBadge, styles.missedBadge]}>
                             <Text style={styles.statusText}>MISSED</Text>
                         </View>
+                    ) : isRestDay ? (
+                        <View style={styles.statusBadge}>
+                            <Text style={styles.statusText}>REST DAY</Text>
+                        </View>
                     ) : (
                         <View style={styles.workoutInfoContainer}>
                             <Text style={styles.focusText}>{focus}</Text>
@@ -198,7 +207,7 @@ const ChallengesPage: React.FC = () => {
                             >
                                 <Text style={styles.iosButtonText}>Start Workout</Text>
                             </TouchableOpacity>
-                        </View>
+                        </View>                    
                     )}
                 </View>
 

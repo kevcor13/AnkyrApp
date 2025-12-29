@@ -230,11 +230,13 @@ const GlobalProvider = ({ children }) => {
           console.error("Error updating game data:", error);
         }
       };
+    
     //get the workout data
     const fetchWorkout = async (token, UserID) => {
         try{
             const date = new Date();
             const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, date, UserID});
+            console.log("this is the response" , response.data);
             if (response.data.status === "success") {
                 console.log("Fetched workout data responsess:", response.data.data);
                 setUserWorkoutData(response.data.data)
@@ -244,10 +246,10 @@ const GlobalProvider = ({ children }) => {
                 await fetchLoggedWorkouts(UserID)
                 return response.data.data;
             } else {
-                console.error("Failed to fetch workout data:", response.data.data);
+                console.error("Failed to fetch workout data:", response.data.message);
             }
         } catch (error) {
-            console.error("Login Error:", error);
+            console.error("Fetching workout error", error);
         }
     }
 
