@@ -3,7 +3,7 @@ import React from "react";
 import Svg, { Path } from "react-native-svg";
 
 // 1. Add your other icon names here
-export type IconName = "whiteLighting" | "heart" | "search" | "backArrow";
+export type IconName = "whiteLighting" | "heart" | "search" | "backArrow" | "fowardArrow";
 
 type IconProps = {
   name: IconName | string; // Allow string for flexibility
@@ -29,6 +29,11 @@ export const Icon = ({ name, color = "#FFF", size = 24 }: IconProps) => {
     backArrow:{
         viewBox: "0 0 17 17",
         path: <Path d="M15.25 8.25H1.25M1.25 8.25L8.25 15.25M1.25 8.25L8.25 1.25" stroke={color} strokeWidth="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    },
+    fowardArrow:{
+      viewBox: "0 0 25 25",
+      path: <Path d="M5.25 8.25H19.25M19.25 8.25L12.25 1.25M19.25 8.25L12.25 15.25" stroke={color} stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
 
     }
   };

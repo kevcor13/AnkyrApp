@@ -7,7 +7,7 @@ interface IconProps {
 }
 
 // Single icon component that handles all icons
-export const Icon = ({ 
+export const Tab = ({ 
   name, 
   color = '#9CA3AF', 
   size = 24 

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useGlobal } from '@/context/GlobalProvider';
 import icons from '@/constants/icons';
 import { Icon } from '@/assets/icons/mealPageIcons'; // Using your SVG component
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Meal {
   _id: string;
@@ -82,16 +83,22 @@ const SavedMeals = () => {
           </Text>
         </View>
         
-        <View className="bg-white w-10 h-10 rounded-full items-center justify-center">
-            <Image source={icons.rightArrow} className="w-4 h-4" style={{ tintColor: 'black' }} />
+        <View className="w-15 h-15 rounded-full items-center justify-center">
+          <Icon name="fowardArrow" size={40} color="#FFF" />
         </View>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#050505]">
+    <View className="flex-1 bg-[#050505]">
+      <LinearGradient
+        colors={['#000000', '#000000', 'transparent']}
+        locations={[0, 0.43, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 150, zIndex: 40 }}
+      />
       {/* Futuristic Header */}
+      <SafeAreaView className="absolute top-0 left-0 right-0 z-50">
       <View className="px-6 py-4 flex-row items-center justify-between">
         <TouchableOpacity 
           onPress={() => router.back()} 
@@ -110,7 +117,7 @@ const SavedMeals = () => {
            <Icon name="heart" size={20} color="#FF2D55" />
         </View>
       </View>
-
+      </SafeAreaView>
       {loading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#ffffff" />
@@ -143,11 +150,11 @@ const SavedMeals = () => {
           data={meals}
           renderItem={renderMealCard}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 130, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -2,7 +2,7 @@ import icons from '@/constants/icons';
 import images from '@/constants/images';
 import { Tabs } from "expo-router";
 import React from 'react';
-import {Icon} from '../../assets/icons/index';
+import {Tab} from '../../assets/icons/index';
 import { Image, Text, View } from 'react-native';
 
 
@@ -11,7 +11,7 @@ const TabsLayout = () => {
 
     const TabIcon = ({focused, iconName, title} : {focused: boolean, iconName: string, title: string}) => (
         <View className="flex-1 mt-3 items-center">
-            <Icon
+            <Tab
                 name={iconName}
                 color={focused ? 'white' : 'gray'}
                 size={60}

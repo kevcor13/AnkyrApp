@@ -9,7 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import PostCard from '@/components/PostCard';
 import { LinearGradient } from 'expo-linear-gradient';
-import {Icon} from "../../assets/icons/index"
+import {Tab} from "../../assets/icons/index"
 
 const Home = () => {
     const { userData, fetchWorkout, fetchGameData, fetchFriends, ngrokAPI, userGameData, fetchUserData } = useGlobal();
@@ -212,7 +212,7 @@ const Home = () => {
                         <Text style={styles.usernameText}>{userData?.username || "User"}</Text>
                     </View>
                     <View style={styles.imageContainer}>
-                    <Icon name="home" color="#FFF" size={70} />
+                    <Tab name="home" color="#FFF" size={70} />
                     </View>
                 </View>
             </SafeAreaView>

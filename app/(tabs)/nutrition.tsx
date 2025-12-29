@@ -1,10 +1,10 @@
-import { View, Text, SafeAreaView, Image, TouchableOpacity, ScrollView, FlatList, ActivityIndicator } from 'react-native'
+import { View, Text, SafeAreaView, Image, TouchableOpacity, ScrollView, FlatList, ActivityIndicator, StyleSheet } from 'react-native'
 import React, { useState, useEffect } from 'react'
-import images from "@/constants/images";
-import icons from "@/constants/icons";
 import { router } from "expo-router";
 import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 import { Icon } from '../../assets/icons/mealPageIcons';
+import { Tab } from '../../assets/icons/index';
 import { useGlobal } from '@/context/GlobalProvider';
 
 const Nutrition = () => {
@@ -37,8 +37,6 @@ const Nutrition = () => {
         { id: '3', title: 'Energy' },
     ];
 
-    // --- Render Functions with iOS 26 Styling ---
-
     const renderFeaturedMeal = ({ item }: { item: { imageUrl?: string; title: string; _id: string } }) => (
         <TouchableOpacity 
             activeOpacity={0.9}
@@ -51,15 +49,16 @@ const Nutrition = () => {
                 className="w-full h-full"
                 resizeMode="cover"
             />
-            {/* Glass Overlay for Text */}
             <View className="absolute bottom-0 left-0 right-0 p-5 bg-black/30 backdrop-blur-md">
                 <Text className="text-white font-poppins-bold text-xl tracking-tight">{item.title}</Text>
             </View>
             
-            {/* Floating Heart Icon */}
+            {/*  this is the heart icon on the top right of each card
+
             <View className="absolute top-4 right-4 bg-white/20 backdrop-blur-xl p-3 rounded-full border border-white/20">
-                <Icon name="heart" size={24} color="#FFFFFF" />
+                <Icon name="heart" size={24} color="#FFFFFF" /> 
             </View>
+            */}
         </TouchableOpacity>
     );
 
@@ -80,60 +79,52 @@ const Nutrition = () => {
     );
 
     return (
-        <SafeAreaView className="bg-[#050505] flex-1">
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-                
-                {/* Header: iOS Ultra-Minimalism */}
-                <View className="mt-8 mb-8 px-6 flex-row justify-between items-end">
+        <View className="flex-1 bg-[#050505]">
+            {/* 1. STATIONARY GRADIENT */}
+            <LinearGradient
+                colors={['#050505', '#050505', 'transparent']}
+                locations={[0, 0.4, 1]}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 180, zIndex: 10 }}
+            />
+
+            {/* 2. STATIONARY HEADER */}
+            <SafeAreaView style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }}>
+                <View className="mt-4 mb-4 px-6 flex-row justify-between items-end">
                     <View>
                         <Text className="text-zinc-500 font-poppins-medium text-xs uppercase tracking-[3px] mb-1">Your Kitchen</Text>
                         <Text className="font-poppins-bold text-white text-4xl tracking-tighter">Meal plans.</Text>
                     </View>
-                    <View className="bg-zinc-800 p-2 rounded-2xl border border-white/10">
-                        <Image source={images.meals} className="w-8 h-8 rounded-xl" resizeMode="contain" />
-                    </View>
+                    <Tab name='meals' size={50} color="#FFFFFF" />
                 </View>
+            </SafeAreaView>
 
-                {/* Quick Action Icons: Glassmorphism Circles */}
-                <View className="flex-row justify-between px-6 mb-10">
+            {/* 3. SCROLLING CONTENT */}
+            <ScrollView 
+                showsVerticalScrollIndicator={false} 
+                contentContainerStyle={{ flexGrow: 1, paddingTop: 150 }} // Offset for stationary header
+            >
+                <View className="flex-row px-6 gap-x-4 mb-8">
                     {[
-                        { icon: "whiteLighting", label: 'Quick', route: '/(nutrition)/generateMeal' },
-                        { icon: "heart", label: 'Saved', route: '/(nutrition)/SavedMeals' },
-                        { icon: "search", label: 'Search', route: null },
+                        { icon: "heart", label: 'Saved', color: "#FF3330",route: '/(nutrition)/SavedMeals' },
+                        { icon: "search", label: 'Search',color: "#007AFF", route: '/(nutrition)/SearchMeal' },
                     ].map((action, index) => (
-                        <View key={index} className="items-center">
                             <TouchableOpacity 
-                                className="w-16 h-16 rounded-[24px] bg-zinc-800/50 border border-white/10 items-center justify-center"
+                                key={index}
+                                className="flex-1 bg-zinc-900/60 border border-white/10 rounded-3xl p-4 flex-row item-center justify-center"
                                 onPress={() => action.route && router.push(action.route as any)}
                             >
-                                <Icon name={action.icon as any} size={24} color="#FFFFFF" />
+                                <Icon name={action.icon as any} size={24} color={action.color} />
+                                <Text className='text-white font-poppins-semibold ml-3 text-sm'>{action.label}</Text>
                             </TouchableOpacity>
-                            <Text className="text-zinc-400 font-poppins-medium mt-3 text-[12px]">{action.label}</Text>
-                        </View>
                     ))}
                 </View>
-
-                {/* Main Content: "The Sheet" */}
+            {/* Main Content: "The Sheet" */}
                 <View className="bg-[#F2F2F7] flex-1 rounded-t-[50px] p-6 shadow-2xl">
-                    
-                    {/* Progress & Calendar: Unified Glass Tiles 
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-10 -mt-2">
-                        <TouchableOpacity className="bg-zinc-900 rounded-[35px] w-40 h-32 mr-4 p-5 justify-between">
-                            <Image source={icons.progress} className="w-8 h-8" style={{ tintColor: '#A1FF00' }} />
-                            <Text className="text-white font-poppins-semibold text-lg leading-tight">My{'\n'}Progress</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity className="bg-white rounded-[35px] w-40 h-32 mr-4 p-5 justify-between border border-black/5 shadow-sm">
-                            <Image source={icons.calendar} className="w-8 h-8" style={{ tintColor: '#000' }} />
-                            <Text className="text-zinc-900 font-poppins-semibold text-lg leading-tight">Meal{'\n'}Plan</Text>
-                        </TouchableOpacity>
-                    </ScrollView>
-                    */}
                     {/* Featured Meals Section */}
                     <View className="mb-10">
                         <View className="flex-row justify-between items-center mb-5 px-1">
                             <Text className="font-poppins-bold text-2xl text-zinc-900 tracking-tight">Featured</Text>
-                            <Text className="text-blue-600 font-poppins-medium">See all</Text>
+                            <TouchableOpacity><Text className="text-blue-600 font-poppins-medium">See all</Text></TouchableOpacity>
                         </View>
                         {loading ? (
                             <ActivityIndicator size="large" color="#000" />
@@ -163,10 +154,10 @@ const Nutrition = () => {
                     </View>
 
                     {/* Footer Spacing */}
-                    <View className="h-10" />
+                    <View className="h-20" />
                 </View>
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 
