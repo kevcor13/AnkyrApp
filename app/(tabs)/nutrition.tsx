@@ -70,7 +70,6 @@ const Nutrition = () => {
                 pathname: '/FilteredMeals',
                 params: { filterType: filterType, filterValue: item.title }
             })}
-            style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10 }}
         >
             <Text className={`font-poppins-semibold text-lg tracking-tight ${darkBackground ? 'text-white' : 'text-zinc-800'}`}>
                 {item.title}
