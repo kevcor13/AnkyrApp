@@ -9,6 +9,8 @@ import UpNextScreen from "@/app/(components)/workout/UpNextScreen";
 import axios from "axios";
 import { router } from "expo-router";
 import ChangeThemeScreen from "../(components)/workout/ChangeThemeScreen";
+import { videoPreloader } from "@/utils/videoPreloader";
+
 
 export interface PerformedSet {
   reps: number;
@@ -54,6 +56,9 @@ const ActiveWorkoutScreen = () => {
   const [xpFromLastExercise] = useState(5);
   const [firstWorkoutIndex, setFirstWorkoutIndex] = useState<number | null>(null);
   const [hasShownThemePrompt, setHasShownThemePrompt] = useState(false);
+  ////video preloading state
+  const [videosPreloaded, setVideosPreloaded] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState(0);
   
   const hasInitialized = useRef(false);
 
@@ -161,10 +166,53 @@ const ActiveWorkoutScreen = () => {
     setFlowState("OVERVIEW");
     setFirstWorkoutIndex(taggedWorkout.length > 0 ? taggedWarmup.length : null);
     setHasShownThemePrompt(Boolean(userData?.askedThemeQuestion));
+
+
+    // preload videos
+    {/** 
+    const preloadAllVideos = async () => {
+      try {
+        await videoPreloader.initialize();
+        
+        const videoUrls = combined
+          .map(ex => ex.videoUrl)
+          .filter(url => url && url.length > 0);
+  
+        console.log(`🎬 Preloading ${videoUrls.length} videos...`);
+  
+        // Preload videos one by one to track progress
+        for (let i = 0; i < videoUrls.length; i++) {
+          await videoPreloader.preloadVideo(videoUrls[i]);
+          setPreloadProgress(((i + 1) / videoUrls.length) * 100);
+        }
+  
+        setVideosPreloaded(true);
+        console.log("✅ All videos preloaded!");
+  
+        // Update workout with cached URIs
+        const updatedCombined = combined.map(ex => ({
+          ...ex,
+          videoUrl: videoPreloader.getCachedUri(ex.videoUrl) || ex.videoUrl
+        }));
+        
+        setLiveWorkout(updatedCombined);
+      } catch (error) {
+        console.error("Failed to preload videos:", error);
+        setVideosPreloaded(true); // Continue anyway with original URLs
+      }
+    };
+
+    preloadAllVideos();
+    */} 
+    
+    
     
     hasInitialized.current = true;
     console.log("✅ Initialization complete");
   }, [userWorkoutData, selectedChallenges, userData]);
+
+
+
 
   const handleSetUpdate = (exIndex: number, setIdx: number, weight: number) => {
     setLiveWorkout((curr) => {
@@ -308,7 +356,12 @@ const ActiveWorkoutScreen = () => {
   if (!liveWorkout) {
     return (
       <LinearGradient colors={["#FF0509", "#271293"]} style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Preparing your workout...</Text>
+        <Text style={styles.loadingText}>
+        {videosPreloaded 
+          ? "Preparing your workout..." 
+          : `Loading videos... ${Math.round(preloadProgress)}%`
+        }
+      </Text>
       </LinearGradient>
     );
   }

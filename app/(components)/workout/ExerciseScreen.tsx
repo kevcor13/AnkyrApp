@@ -68,7 +68,6 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const isWarmup = exercise.phase === "warmup";
   const isCooldown = exercise.phase === "cooldown";
   const isBodyweight = recommendedLbs === 0;
-
   const handleLogSet = () => onSetLogged();
 
   const adjustWeight = (amount: number) => {
@@ -149,11 +148,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   return (
     <View style={{ flex: 1 }}>
       <View style={globalStyles.header}>
-        <Image
-          source={{ uri: exercise.videoUrl }}
-          style={globalStyles.video}
-          resizeMode={ResizeMode.COVER}
-        />
+      <Video
+      source={{ uri: exercise.videoUrl }} 
+    style={{ width: '100%', height: '100%' }} 
+    shouldPlay={true} // Now we play it
+    isLooping
+    isMuted={true} 
+    resizeMode={ResizeMode.COVER}
+    useNativeControls={false}
+  />
       </View>
       <LinearGradient
         colors={

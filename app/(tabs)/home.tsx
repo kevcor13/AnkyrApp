@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {Tab} from "../../assets/icons/index"
 
 const Home = () => {
-    const { userData, fetchWorkout, fetchGameData, fetchFriends, ngrokAPI, userGameData, fetchUserData } = useGlobal();
+    const { userData, fetchWorkout, fetchGameData, fetchFriends, ngrokAPI, getChallenges, userGameData, fetchUserData } = useGlobal();
     const [isLoading, setIsLoading] = useState(true);
     const [friends, setFriends] = useState([]);
     const [posts, setPosts] = useState<any[]>([]);
@@ -30,7 +30,7 @@ const Home = () => {
 
         return () => clearTimeout(timer);
     }, [userData]);
-{/** 
+    {/** 
     useEffect(() => {
         // Define an async function inside the useEffect
         const getChallenges = async () => {
@@ -38,9 +38,8 @@ const Home = () => {
             if (userData?._id) {
                 try {
                     const UserID = userData._id;
-                    const response = await axios.post(`${ngrokAPI}/api/GenAI/AIchallanges`, { UserID });
-                    // Log the 'data' property of the response object
-                    console.log("AI Challenges Response:", response.data);
+                    const response = await axios.post(`${ngrokAPI}/api/user/getChallenges`, { UserID });
+                    console.log("Challenges: ", response.data);
                 } catch (error) {
                     console.error("Error fetching AI challenges:", error);
                 }
@@ -51,7 +50,7 @@ const Home = () => {
         getChallenges();
     
     }, [userData]); 
-*/}
+    */}
  // retreives all the friends and their posts. 
     const loadFriendsAndPosts = async () => {
         try {
@@ -108,6 +107,12 @@ const Home = () => {
         }
     };
 
+    useEffect(() => { 
+        console.log("User Game Data Updated: ", userGameData);
+
+        getChallenges(userData._id, userGameData.league);
+
+     }, [userGameData]);
 
     const renderHeader = () => (
         <>

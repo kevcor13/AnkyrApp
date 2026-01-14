@@ -31,7 +31,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://a639602c29d6.ngrok-free.app'
+    const ngrokAPI = 'https://dc6d66010f5c.ngrok-free.app'
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       
@@ -78,7 +78,7 @@ const GlobalProvider = ({ children }) => {
 
                 // Fetch user data immediately after login
                 await fetchUserData(data.data); 
-                //await fetchGameData(data.data, data.user._id);
+                await fetchGameData(data.data, data.user._id);
 
                 return { success: true };
             } else {
@@ -196,6 +196,7 @@ const GlobalProvider = ({ children }) => {
             const response = await axios.post(`${ngrokAPI}/api/user/getGameData`, {token, UserID});
             if (response.data.status === "success") {
                 setUserGameData(response.data.data);
+                console.log("Fetched game data response:", response.data);
                 return response.data.data;
             } else {
                 console.error("Failed to fetch user data:", response.data.data);
@@ -363,8 +364,6 @@ const GlobalProvider = ({ children }) => {
     }
     // get the followers from user.
     // inside GlobalProvider, replace your old fetchFollowingUsers with this:
-    
-
 
     const fetchFriends = async () => {
         try {
@@ -412,8 +411,7 @@ const GlobalProvider = ({ children }) => {
             return [];
         }
     };
-
-    
+   
     const fetchQuestionnaireCompletion = async ()  => {
         try{
             const response = userData.questionnaire;
@@ -484,6 +482,33 @@ const GlobalProvider = ({ children }) => {
         }
     }
 
+    const getChallenges = async (UserID, league) => {
+        console.log("Getting challenges for user:", UserID, "with league:", league);
+        if (UserID) {
+            try {
+                // Removed duplicate UserID declaration
+                const leaveLevel = league; // Use the parameter directly
+                console.log("UserID:", UserID, "Leave Level:", leaveLevel);
+                
+                const response = await axios.post(`${ngrokAPI}/api/user/getChallenges`, { 
+                    UserID, 
+                    leaveLevel 
+                });
+                
+                console.log("Challenges: ", response.data.data);
+                return response.data.data; 
+                
+            } catch (error) {
+                console.error("Error fetching AI challenges:", error);
+                return [];
+            }
+        }
+        return []; // Return empty array if no UserID
+    };
+
+
+
+
     useEffect(() => {
         checkLoginState();
     }, []);
@@ -525,7 +550,8 @@ const GlobalProvider = ({ children }) => {
                 fetchWorkout,
                 fetchFriends,
                 updateGameData,
-                fetchWorkoutFocus
+                fetchWorkoutFocus,
+                getChallenges
             }}
         >
             {!loading && children}

@@ -13,11 +13,13 @@ import icons from "@/constants/icons";
 import { router } from "expo-router";
 import { useGlobal } from "@/context/GlobalProvider";
 import Animated, { SlideInLeft } from "react-native-reanimated";
+import { ResizeMode, Video } from "expo-av";
 
 interface Exercise {
   exerciseName: string;
   reps: string; // <-- now string to match ActiveWorkoutScreen / new schema
   phase: "warmup" | "workout" | "cooldown" | "challanges";
+  videoUrl: string;
 }
 
 interface ExerciseOverviewProps {
@@ -168,6 +170,13 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
           </View>
         </View>
       </Modal>
+      <Video
+        source={{ uri: exercise.videoUrl }} 
+        shouldPlay={false}   
+        isMuted={true}                     
+        resizeMode={ResizeMode.COVER}
+        style={{ width: 0, height: 0, opacity: 0 }} 
+      />
     </LinearGradient>
   );
 };
