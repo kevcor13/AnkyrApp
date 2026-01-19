@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     ScrollView
 } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import images from '@/constants/images'
 import axios from 'axios'
 import { useGlobal } from '@/context/GlobalProvider'
@@ -16,25 +16,53 @@ import { router } from 'expo-router'
 
 const CodeEntry = () => {
     const { ngrokAPI } = useGlobal()
-    const [code, setCode] = useState('')
+    const [code, setCode] = useState(['', '', '', '', '', ''])
     const [error, setError] = useState('')
+    const inputRefs = useRef<(TextInput | null)[]>([])
 
-    const handleCode = (text: string) => {
-        // strip out any non-digits
+    const handleCodeChange = (text: string, index: number) => {
         const digitsOnly = text.replace(/[^0-9]/g, '')
-        setCode(digitsOnly)
-        setError('')  // clear previous error as they type
+        
+        if (digitsOnly.length > 0) {
+            const newCode = [...code]
+            newCode[index] = digitsOnly[digitsOnly.length - 1]
+            setCode(newCode)
+            setError('')
+
+            // Auto-focus next input
+            if (index < 5 && digitsOnly.length > 0) {
+                inputRefs.current[index + 1]?.focus()
+            }
+        }
+    }
+
+    const handleKeyPress = (e: any, index: number) => {
+        if (e.nativeEvent.key === 'Backspace') {
+            const newCode = [...code]
+            if (code[index] === '') {
+                // Move to previous input if current is empty
+                if (index > 0) {
+                    inputRefs.current[index - 1]?.focus()
+                    newCode[index - 1] = ''
+                }
+            } else {
+                newCode[index] = ''
+            }
+            setCode(newCode)
+            setError('')
+        }
     }
 
     const handleNext = async () => {
         try {
             const documentId = '680aaab878a04aea3fe07bee'
+            const codeString = code.join('')
+            console.log('Validating code:', codeString)
             const resp = await axios.post(
                 `${ngrokAPI}/api/auth/checkCodeMatch`,
-                { documentId, code }
+                { documentId, code: codeString }
             )
             const { found } = resp.data
-
             if (found) {
                 router.push('/sign-up')
             } else {
@@ -46,6 +74,8 @@ const CodeEntry = () => {
         }
     }
 
+    const isCodeComplete = code.every(digit => digit !== '')
+
     return (
         <ImageBackground source={images.onboard} className="h-full w-full">
             <SafeAreaView className="mt-20 flex-1">
@@ -54,37 +84,49 @@ const CodeEntry = () => {
                         source={images.ankyrIcon}
                         className="h-[63px] w-[58px]"
                     />
-
                     <View className="mt-4">
                         <Text className="text-white text-[24px] font-poppins font-semibold">
                             Enter your member code
                         </Text>
-
-                        <TextInput
-                            value={code}
-                            onChangeText={handleCode}
-                            keyboardType="numeric"
-                            maxLength={6}
-                            className="bg-[#24292A] text-white p-6 font-poppins-semibold mt-10 rounded text-center"
-                            placeholder="Enter Code Manually"
-                            placeholderTextColor="#FFFFFF"
-                        />
+                        
+                        {/* iOS-style code input boxes */}
+                        <View className="flex-row justify-center gap-3 mt-10">
+                            {code.map((digit, index) => (
+                                <TextInput
+                                    key={index}
+                                    ref={(ref) => {
+                                        inputRefs.current[index] = ref as TextInput | null;
+                                    }}
+                                    value={digit}
+                                    onChangeText={(text) => handleCodeChange(text, index)}
+                                    onKeyPress={(e) => handleKeyPress(e, index)}
+                                    keyboardType="number-pad"
+                                    maxLength={1}
+                                    className="w-14 h-16 bg-white/10 border-2 border-white/20 rounded-xl text-white text-2xl font-poppins-semibold text-center"
+                                    style={{
+                                        fontSize: 24,
+                                    }}
+                                    selectionColor="#FFFFFF"
+                                    autoFocus={index === 0}
+                                />
+                            ))}
+                        </View>
 
                         {error.length > 0 && (
-                            <Text className="text-red-400 text-center mt-2">
+                            <Text className="text-red-400 text-center mt-4">
                                 {error}
                             </Text>
                         )}
-
-                        <Text className="text-white text-[14px] font-poppins text-center mt-4">
-                            Don’t have a code? How to get one
+                        
+                        <Text className="text-white text-[14px] font-poppins text-center mt-6">
+                            Don't have a code? How to get one
                         </Text>
                     </View>
 
-                    {code.length > 0 && (
+                    {isCodeComplete && (
                         <TouchableOpacity
                             onPress={handleNext}
-                            className="mt-8 bg-white py-3 rounded-lg items-center"
+                            className="mt-8 bg-white py-4 rounded-xl items-center"
                         >
                             <Text className="text-black text-lg font-poppins-semibold">
                                 Next

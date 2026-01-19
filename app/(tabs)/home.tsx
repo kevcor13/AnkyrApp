@@ -110,7 +110,7 @@ const Home = () => {
     useEffect(() => { 
         console.log("User Game Data Updated: ", userGameData);
 
-        getChallenges(userData._id, userGameData.league);
+        //getChallenges(userData._id, userGameData.league);
 
      }, [userGameData]);
 

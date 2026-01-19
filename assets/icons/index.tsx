@@ -1,5 +1,5 @@
 import { JSX } from 'react';
-import Svg, { Path, G, Circle } from 'react-native-svg';
+import Svg, { Path, G, Circle, Polygon } from 'react-native-svg';
 
 interface IconProps {
   color?: string;
@@ -59,7 +59,20 @@ meals: {
                 />
             )
         },
-        // Add more icons here with their appropriate viewBox values
+        ankryWords: {
+            viewBox: "0 0 259 67",
+            path: (
+                <>
+                    <Polygon points="17.36 56.55 19.95 51.52 34.39 51.52 36.4 56.55 48.14 56.55 28.33 10.45 26.35 10.45 7.26 56.55 17.36 56.55" fill={color}/>
+                    <Polygon points="26.86 30.44 32.16 44.24 22.54 44.24 26.86 30.44" fill={color}/>
+                    <Polygon points="56.44 10.45 56.44 56.55 65.49 56.55 65.49 26.45 66.32 26.43 86.56 56.55 95.4 56.55 95.4 10.45 86.71 10.45 87.25 41.38 65.31 10.45 56.44 10.45" fill={color}/>
+                    <Polygon points="111.33 10.45 111.33 56.55 120.26 56.55 120.26 43.55 123.6 39.98 137.03 56.55 149.06 56.55 129.5 33.5 149.06 10.45 137.34 10.45 119.95 30.58 119.79 10.45 111.33 10.45" fill={color}/>
+                    <Polygon points="155.29 10.45 164.96 10.45 175.91 25.02 187.18 10.45 196.54 10.45 196.54 13.27 180.38 35.67 180.44 56.55 171.51 56.55 171.63 34.45 155.29 10.45" fill={color}/>
+                    <Path d="M208.41,10.45v9.2l5.17,8.37v1.28h-5.37v27.25h9.12v-19.07h2.08l11.93,19.07h12.1l-13.06-19.1c13.79-6.57,13.17-22.47-1.06-27h-20.93Z" fill={color}/>
+                    <Path d="M219.12,19.64l5.79,8.73h3.57c3.13-3.48,4-6.35,0-7.91-.86-.35-2.9-.76-3.12-.82h-6.24Z" fill={color}/>
+                </>
+            )
+        },
     };
 
     const icon = icons[name] || icons.profile;

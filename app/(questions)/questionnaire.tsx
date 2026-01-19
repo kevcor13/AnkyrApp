@@ -26,6 +26,11 @@ import Animated, {
   runOnJS
 } from 'react-native-reanimated';
 
+import WheelAgePicker from "@/components/WheelAgePicker";
+import { QuestionnaireIcon } from "@/assets/icons/questionnaire";
+import WheelPicker from "@/components/WheelAgePicker";
+import FadeInView from "@/components/FadeInView";
+
 const Questionnaire = () => {
   const { userData, logoutUser, markQuestionnaireCompleted, ngrokAPI } = useGlobal();
   const [loading, setLoading] = useState(false);
@@ -225,9 +230,10 @@ ${splitRules}
       question: (
         <View>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 200 }} keyboardDismissMode="on-drag">
-              <View className="mt-[200] px-[80px]">
+            <View style={{ flexGrow: 1, paddingBottom: 200 }}>
+              <View className="mt-[100] px-[80px]">
                 <Text className="text-white text-[24px] font-poppins-semibold text-center">How old are you?</Text>
+                {/**   Save it as a text or keep it as a wheel
                 <TextInput
                   className="bg-[#24292A] mt-7 text-white p-5 mx-[19] rounded-lg text-[16px]"
                   keyboardType="numeric"
@@ -237,6 +243,13 @@ ${splitRules}
                     console.log("[Age Input] text =", text);
                     setAge(parseFloat(text));
                   }}
+                />
+                */}
+                <WheelPicker
+                  value={age}
+                  onChange={setAge}
+                  min={1}
+                  max={100}
                 />
               </View>
 
@@ -251,7 +264,7 @@ ${splitRules}
                   />
                 </View>
               )}
-            </ScrollView>
+            </View>
           </KeyboardAvoidingView>
         </View>
       ),
@@ -259,25 +272,40 @@ ${splitRules}
     // 2) GENDER
     {
       question: (
-        <View>
-          <Text className="text-white text-[21px] mb-4 mt-60 font-poppins-semibold text-center">Were you born a male or female?</Text>
-          <View className="flex-row px-24">
-            <View className="flex-row mt-6">
-              <Image source={images.womanIcon} resizeMode="cover" />
-              <View className="flex-row px-40">
-                <Image source={images.maleIcon} resizeMode="cover" />
-              </View>
-            </View>
+        <View className="items-center">
+          <Text className="text-white text-[21px] mb-4 mt-60 font-poppins-semibold text-center px-4">
+            Were you born a male or female?
+          </Text>
+          <View className="flex-row justify-between gap-[80px] mt-6">
+
+            <FadeInView delay={400} from="bottom">
+              <QuestionnaireIcon name="femaleIcon" color="#FFF" size={60} />
+            </FadeInView>
+
+            <FadeInView delay={800} from="bottom">
+              <QuestionnaireIcon name="maleIcon" color="#FFF" size={60} />
+            </FadeInView>
           </View>
-          <View className="flex-row px-12 space-x-4 mt-6">
-            <TouchableOpacity className="bg-white p-4 rounded-2xl px-14" onPress={() => handleSelection(setGender, 'Male')}>
-              <Text className="text-center text-black">Male</Text>
-            </TouchableOpacity>
-            <View className="flex-row px-10">
-              <TouchableOpacity className="bg-white p-4 rounded-2xl px-14" onPress={() => handleSelection(setGender, 'Female')}>
-                <Text className="text-center text-black">Female</Text>
+
+
+          <View className="flex-row gap-4 mt-6">
+            <FadeInView delay={600} from="bottom">
+              <TouchableOpacity
+                className="bg-white p-4 rounded-2xl px-14"
+                onPress={() => handleSelection(setGender, 'Male')}
+              >
+                <Text className="text-center text-black">Male</Text>
               </TouchableOpacity>
-            </View>
+            </FadeInView>
+
+            <FadeInView delay={1000} from="bottom">
+            <TouchableOpacity
+              className="bg-white p-4 rounded-2xl px-14"
+              onPress={() => handleSelection(setGender, 'Female')}
+            >
+              <Text className="text-center text-black">Female</Text>
+            </TouchableOpacity>
+            </FadeInView>
           </View>
         </View>
       ),
@@ -287,23 +315,35 @@ ${splitRules}
       question: (
         <View>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 200 }} keyboardDismissMode="on-drag">
+            <ScrollView style={{ flexGrow: 1, paddingBottom: 200 }}>
               <View className="mt-[200] px-[80px]">
                 <Text className="text-white text-[24px] font-poppins-semibold text-center">What is your current weight?</Text>
+
                 <TextInput
-                  className="bg-[#24292A] mt-7 text-white p-5 mx-[19] rounded-lg text-[16px]"
+                  className="bg-[#24292A] mt-7 text-white p-5 mx-[19] rounded-lg text-[16px text-center"
                   keyboardType="numeric"
                   placeholder="Enter your weight in lbs"
                   placeholderTextColor="#888"
                   onChangeText={(text) => {
                     console.log("[Weight Input] text =", text);
                     setWeight(parseFloat(text));
-                  }}
+                  }} />
+                {/** 
+                <View className="flex-row justify-center">
+                <WheelPicker
+                  value={weight}
+                  onChange={setWeight}
+                  min={66}
+                  max={440}
+                  suffix=" lbs"
                 />
+                </View>
+                */}
               </View>
 
               {/* ✅ Show Next only when weight entered */}
               {weightReady && (
+                <FadeInView delay={600} from="bottom">
                 <View className="mt-[-10px] px-[100px]">
                   <CustomButton
                     title="Next"
@@ -312,6 +352,7 @@ ${splitRules}
                     textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
                   />
                 </View>
+                </FadeInView>
               )}
             </ScrollView>
           </KeyboardAvoidingView>
@@ -328,21 +369,37 @@ ${splitRules}
             </Text>
           </View>
           <View className="mt-7 px-20">
+          
+          <FadeInView delay={400} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14" onPress={() => handleSelection(setWorkoutDays, 0)}>
               <Text className="text-center text-[14px] font-poppins-semibold text-black">0, that's why I'm here</Text>
             </TouchableOpacity>
+          </FadeInView>
+          
+          <FadeInView delay={600} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 2)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">1-2 day(s) a week</Text>
+              <Text className="text-center text-[14px] font-poppins-semibold text-black">1-2 day(s)</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={800} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 4)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">3-4 days a week</Text>
+              <Text className="text-center text-[14px] font-poppins-semibold text-black">3-4 days</Text>
             </TouchableOpacity>
+          </FadeInView>
+          
+          <FadeInView delay={1000} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 6)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">5-6 days a week</Text>
+              <Text className="text-center text-[14px] font-poppins-semibold text-black">5-6 days </Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={1200} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 7)}>
               <Text className="text-center text-[14px] font-poppins-semibold text-black">Everyday</Text>
             </TouchableOpacity>
+          </FadeInView>
+
           </View>
         </View>
       ),
@@ -355,16 +412,25 @@ ${splitRules}
             <Text className="text-white text-[21px] font-poppins-semibold mb-4">Describe your sleep routine.</Text>
           </View>
           <View className="mt-7 px-10">
+          
+          <FadeInView delay={400} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setSleepQuality, 'Very consistent, 8 hours')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">Very consistent, at least 8 hours </Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={600} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setSleepQuality, 'Moderately good')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">Moderately good, some off days</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={800} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setSleepQuality, 'Very inconsistent')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">Very inconsistent, I never
-                get 8 hours</Text>
+              <Text className="text-center text-[16px] font-poppins-semibold text-black">Very inconsistent</Text>
             </TouchableOpacity>
+          </FadeInView>
+
           </View>
         </View>
       ),
@@ -377,59 +443,68 @@ ${splitRules}
             <Text className="text-white text-[21px] font-poppins-semibold mb-4">What is your fitness experience?</Text>
           </View>
           <View className="mt-7 px-6">
+          <FadeInView delay={400} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setFitness, 'Beginner')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">I'm just getting into fitness</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={600} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setFitness, 'Intermediate')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">I have some fitness experience</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={800} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setFitness, 'Expert')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">I am currently active and consistent </Text>
             </TouchableOpacity>
+          </FadeInView>
           </View>
         </View>
       )
     },
-    // 7) MEDICAL CONDITIONS
-    {
-      question: (
-        <View>
-          <View className="mt-40 px-2 items-center">
-            <Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">
-              Any medical conditions you think we should take into account?
-            </Text>
-          </View>
-          <View className="mt-7 px-6">
-            <TouchableOpacity
-              className="bg-white p-4 rounded-2xl"
-              onPress={() => handleSelection(setMedicalCondition, false)}
-            >
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">
-                No/rather not share
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View className="mt-20 px-6 items-center">
-            <Text className="text-white text-[21px] font-poppins-semibold mb-4">
-              If so, type in the box below:
-            </Text>
-          </View>
-          <View className="mt-4 px-10">
-            <TextInput
-              className="bg-[#24292A] text-white p-6 rounded-lg"
-              placeholder="Example: Asthma..."
-              placeholderTextColor="#B0B0B0"
-              onChangeText={setInjuryType}
-            />
-          </View>
-          <View className="items-center px-10 mt-6">
-            <Text className="text-[#CDCDE0] font-poppins text-center">
-              Informatino shared with ANKYR is kept condfidential.
-            </Text>
-          </View>
-        </View>
-      ),
-    },
+    // 7) MEDICAL CONDITIONS 
+    // {
+    //   question: (
+    //     <View>
+    //       <View className="mt-40 px-2 items-center">
+    //         <Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">
+    //           Any medical conditions you think we should take into account?
+    //         </Text>
+    //       </View>
+    //       <View className="mt-7 px-6">
+    //         <TouchableOpacity
+    //           className="bg-white p-4 rounded-2xl"
+    //           onPress={() => handleSelection(setMedicalCondition, false)}
+    //         >
+    //           <Text className="text-center text-[16px] font-poppins-semibold text-black">
+    //             No/rather not share
+    //           </Text>
+    //         </TouchableOpacity>
+    //       </View>
+    //       <View className="mt-20 px-6 items-center">
+    //         <Text className="text-white text-[21px] font-poppins-semibold mb-4">
+    //           If so, type in the box below:
+    //         </Text>
+    //       </View>
+    //       <View className="mt-4 px-10">
+    //         <TextInput
+    //           className="bg-[#24292A] text-white p-6 rounded-lg"
+    //           placeholder="Example: Asthma..."
+    //           placeholderTextColor="#B0B0B0"
+    //           onChangeText={setInjuryType}
+    //         />
+    //       </View>
+    //       <View className="items-center px-10 mt-6">
+    //         <Text className="text-[#CDCDE0] font-poppins text-center">
+    //           Informatino shared with ANKYR is kept condfidential.
+    //         </Text>
+    //       </View>
+    //     </View>
+    //   ),
+    // },
+    
     // 8) MAIN GOAL
     {
       question: (
@@ -438,21 +513,37 @@ ${splitRules}
             <Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">What is your main fitness goal?</Text>
           </View>
           <View className="mt-7 px-20">
+          
+          <FadeInView delay={400} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setGoal, 'lose weight')}>
               <Text className="text-center font-poppins-semibold text-[16px] text-black">Lose Weight</Text>
             </TouchableOpacity>
+          </FadeInView>
+            
+          <FadeInView delay={600} from="bottom"> 
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'Build Muscle')}>
               <Text className="text-center font-poppins-semibold text-[16px] text-black">Build Muscle</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={800} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'lose weight and build muscle')}>
               <Text className="text-center font-poppins-semibold text-[16px] text-black">Both of the above</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={1000} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'running')}>
               <Text className="text-center font-poppins-semibold text-[16px] text-black">Running</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={1200} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'be active')}>
               <Text className="text-center font-poppins-semibold text-[16px] text-black">I just want to be active</Text>
             </TouchableOpacity>
+          </FadeInView>
+
           </View>
         </View>
       )
@@ -465,26 +556,47 @@ ${splitRules}
             <Text className="text-white text-2xl font-bold text-center">What days do you want to workout?</Text>
           </View>
           <View className="flex-row justify-between mt-20 px-6">
-            <TouchableOpacity className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Sunday ? 'bg-[#DAEEED]' : 'bg-[#44504F]'}`} onPress={() => toggleDaySelection('Sunday')}>
-              <Text className="text-white text-xl font-bold">S</Text>
+            <TouchableOpacity 
+              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Sunday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+              onPress={() => toggleDaySelection('Sunday')}
+            >
+              <Text className={`text-xl font-bold ${selectedDays.Sunday ? 'text-black' : 'text-white'}`}>S</Text>
             </TouchableOpacity>
-            <TouchableOpacity className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Monday ? 'bg-[#DAEEED]' : 'bg-[#44504F]'}`} onPress={() => toggleDaySelection('Monday')}>
-              <Text className="text-white text-xl font-bold">M</Text>
+            <TouchableOpacity 
+              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Monday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+              onPress={() => toggleDaySelection('Monday')}
+            >
+              <Text className={`text-xl font-bold ${selectedDays.Monday ? 'text-black' : 'text-white'}`}>M</Text>
             </TouchableOpacity>
-            <TouchableOpacity className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Tuesday ? 'bg-[#DAEEED]' : 'bg-[#44504F]'}`} onPress={() => toggleDaySelection('Tuesday')}>
-              <Text className="text-white text-xl font-bold">T</Text>
+            <TouchableOpacity 
+              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Tuesday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+              onPress={() => toggleDaySelection('Tuesday')}
+            >
+              <Text className={`text-xl font-bold ${selectedDays.Tuesday ? 'text-black' : 'text-white'}`}>T</Text>
             </TouchableOpacity>
-            <TouchableOpacity className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Wednesday ? 'bg-[#DAEEED]' : 'bg-[#44504F]'}`} onPress={() => toggleDaySelection('Wednesday')}>
-              <Text className="text-white text-xl font-bold">W</Text>
+            <TouchableOpacity 
+              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Wednesday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+              onPress={() => toggleDaySelection('Wednesday')}
+            >
+              <Text className={`text-xl font-bold ${selectedDays.Wednesday ? 'text-black' : 'text-white'}`}>W</Text>
             </TouchableOpacity>
-            <TouchableOpacity className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Thursday ? 'bg-[#DAEEED]' : 'bg-[#44504F]'}`} onPress={() => toggleDaySelection('Thursday')}>
-              <Text className="text-white text-xl font-bold">T</Text>
+            <TouchableOpacity 
+              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Thursday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+              onPress={() => toggleDaySelection('Thursday')}
+            >
+              <Text className={`text-xl font-bold ${selectedDays.Thursday ? 'text-black' : 'text-white'}`}>T</Text>
             </TouchableOpacity>
-            <TouchableOpacity className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Friday ? 'bg-[#DAEEED]' : 'bg-[#44504F]'}`} onPress={() => toggleDaySelection('Friday')}>
-              <Text className="text-white text-xl font-bold">F</Text>
+            <TouchableOpacity 
+              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Friday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+              onPress={() => toggleDaySelection('Friday')}
+            >
+              <Text className={`text-xl font-bold ${selectedDays.Friday ? 'text-black' : 'text-white'}`}>F</Text>
             </TouchableOpacity>
-            <TouchableOpacity className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Saturday ? 'bg-[#DAEEED]' : 'bg-[#44504F]'}`} onPress={() => toggleDaySelection('Saturday')}>
-              <Text className="text-white text-xl font-bold">S</Text>
+            <TouchableOpacity 
+              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Saturday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+              onPress={() => toggleDaySelection('Saturday')}
+            >
+              <Text className={`text-xl font-bold ${selectedDays.Saturday ? 'text-black' : 'text-white'}`}>S</Text>
             </TouchableOpacity>
           </View>
           <Text className="text-white text-center mt-4">You can choose up to 6 days a week</Text>
@@ -510,15 +622,22 @@ ${splitRules}
             <Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">What equipment do you have access to?</Text>
           </View>
           <View className="mt-7 px-20">
+          <FadeInView delay={400} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl" onPress={() => handleSelection(setEquipmentAvailable, 'full gym')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">Gym membership</Text>
             </TouchableOpacity>
+          </FadeInView>
+
+          <FadeInView delay={600} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setEquipmentAvailable, 'small at home gym')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">Small home gym</Text>
             </TouchableOpacity>
+          </FadeInView>
+          <FadeInView delay={800} from="bottom">
             <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'no equipment')}>
               <Text className="text-center text-[16px] font-poppins-semibold text-black">I dont have access to equipment</Text>
             </TouchableOpacity>
+          </FadeInView>
           </View>
         </View>
       ),

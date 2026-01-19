@@ -10,6 +10,7 @@ import images from "@/constants/images";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CustomButton from "@/components/CustomButton";
 import { router } from "expo-router";
+import {Tab} from '../../assets/icons/index';
 
 const OnboardQuestionnaire = () => {
   return (
