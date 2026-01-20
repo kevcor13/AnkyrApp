@@ -1,5 +1,3 @@
-import icons from '@/constants/icons';
-import images from '@/constants/images';
 import { Tabs } from "expo-router";
 import React from 'react';
 import {Tab} from '../../assets/icons/index';

@@ -20,7 +20,7 @@ export const styles = StyleSheet.create({
     },
     workoutCard: { padding: 30 },
     exerciseNameMain: { fontFamily: 'raleway-light', color: 'white', fontSize: 40 },
-    repsContainer: { flexDirection: 'row', alignItems: 'baseline', marginTop: 10 },
+    repsContainer: { flexDirection: 'row', alignItems: 'baseline'},
     repsSetsMain: { fontFamily: 'poppins-semibold', fontSize: 64, color: '#8AFFF9' },
     repsLabel: { fontFamily: 'poppins-semibold', fontSize: 24, color: '#8AFFF9' },
     bodyweightText: { marginTop: 40, fontFamily: 'poppins-medium', color: 'white', fontSize: 24 },
@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
     },
     nextButtonText: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
     nextButtonTextWorkout: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
-    streakContainer: { alignItems: 'center', marginTop: 250 },
+    streakContainer: { alignItems: 'center', marginTop: 80},
     endButton: {
         backgroundColor: '#C0C0C0', // A neutral color to differentiate from 'Start'
         paddingHorizontal: 40,

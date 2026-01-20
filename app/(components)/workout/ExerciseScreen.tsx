@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { Video, ResizeMode } from "expo-av";
 import { styles as globalStyles } from "@/constants/styles";
 import icons from "@/constants/icons";
 import { useGlobal } from "@/context/GlobalProvider";
+import CircularTimer from "@/components/CircularTimer";
 
 interface PerformedSet { reps: number; weight: number; }
 
@@ -22,7 +23,7 @@ interface Exercise {
   sets: number;
   reps: string;
   restBetweenSeconds: number;
-  recommendedWeight: number;     // may come in as number but normalize anyway
+  recommendedWeight: number;
   performedSets: PerformedSet[];
 }
 
@@ -48,11 +49,8 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const { userData } = useGlobal();
   const theme = userData.defaultTheme;
 
-  // ✅ Always work with a numeric recommendation (handles "35" strings or undefined)
   const recommendedLbs = Number(exercise.recommendedWeight ?? 0);
 
-  // If a set weight is unset (-1) OR is 0 while we have a positive recommendation,
-  // initialize it to the recommended weight.
   useEffect(() => {
     const setWeight = exercise.performedSets[currentSetIndex]?.weight;
     if (
@@ -72,8 +70,6 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
 
   const adjustWeight = (amount: number) => {
     const currentWeight = exercise.performedSets[currentSetIndex]?.weight;
-    // ✅ If currentWeight is 0 but we have a positive recommendation,
-    // use the recommendation as the base instead of 0.
     const baseWeight =
       typeof currentWeight === "number" &&
       (currentWeight > 0 || (currentWeight === 0 && recommendedLbs === 0))
@@ -96,7 +92,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const displayWeight =
     displayUnit === "kg"
       ? Math.round(weightInLbs * LBS_TO_KG_CONVERSION)
-      : Math.round(weightInLbs); // round lbs for a cleaner badge
+      : Math.round(weightInLbs);
 
   const adjustmentAmountLbs = weightInLbs - recommendedLbs;
   const displayAdjustmentAmount =
@@ -104,39 +100,56 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
       ? Math.round(adjustmentAmountLbs * LBS_TO_KG_CONVERSION)
       : adjustmentAmountLbs;
 
-  // --- TIMER / reps parsing (unchanged) --------------------------------------
+  // --- IMPROVED TIMER with Start button and accurate seconds -------------
   const isTimed = /\bseconds?\b/i.test(exercise.reps);
-  const [secondsLeftMs, setSecondsLeftMs] = useState<number | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number>(0);
   const [timerActive, setTimerActive] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
+  const startTimeRef = useRef<number | null>(null);
+  const totalSecondsRef = useRef<number>(0);
 
   useEffect(() => {
     if (isTimed) {
       const match = exercise.reps.match(/(\d+(?:\.\d+)?)\s*seconds?/i);
-      const secs = match ? parseFloat(match[1]) : 0;
-      const ms = Math.max(0, Math.round(secs * 1000));
-      setSecondsLeftMs(ms);
-      setTimerActive(ms > 0);
-    } else {
-      setSecondsLeftMs(null);
+      const secs = match ? Math.ceil(parseFloat(match[1])) : 0;
+      totalSecondsRef.current = secs;
+      setSecondsLeft(secs);
       setTimerActive(false);
+      setTimerStarted(false);
+      startTimeRef.current = null;
+    } else {
+      setSecondsLeft(0);
+      setTimerActive(false);
+      setTimerStarted(false);
     }
   }, [exercise.reps, exercise.exerciseName, currentSetIndex, isTimed]);
 
   useEffect(() => {
-    if (!timerActive || !isTimed || secondsLeftMs == null || secondsLeftMs <= 0) return;
+    if (!timerActive || !isTimed) return;
+    
     const id = setInterval(() => {
-      setSecondsLeftMs((prev) => {
-        if (prev == null) return 0;
-        const next = prev - 100;
-        return next > 0 ? next : 0;
-      });
+      if (startTimeRef.current === null) return;
+      
+      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const remaining = Math.max(0, totalSecondsRef.current - elapsed);
+      
+      setSecondsLeft(remaining);
+      
+      if (remaining === 0) {
+        setTimerActive(false);
+      }
     }, 100);
+    
     return () => clearInterval(id);
-  }, [timerActive, isTimed, secondsLeftMs]);
+  }, [timerActive, isTimed]);
 
-  useEffect(() => {
-    if (secondsLeftMs === 0 && timerActive) setTimerActive(false);
-  }, [secondsLeftMs, timerActive]);
+  const handleStartTimer = () => {
+    if (!timerStarted) {
+      startTimeRef.current = Date.now();
+      setTimerActive(true);
+      setTimerStarted(true);
+    }
+  };
 
   const repsText = exercise.reps ?? "";
   const perMatch = repsText.match(/\bper\s+.+/i);
@@ -148,15 +161,15 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   return (
     <View style={{ flex: 1 }}>
       <View style={globalStyles.header}>
-      <Video
-      source={{ uri: exercise.videoUrl }} 
-    style={{ width: '100%', height: '100%' }} 
-    shouldPlay={true} // Now we play it
-    isLooping
-    isMuted={true} 
-    resizeMode={ResizeMode.COVER}
-    useNativeControls={false}
-  />
+        <Video
+          source={{ uri: exercise.videoUrl }} 
+          style={{ width: '100%', height: '100%' }} 
+          shouldPlay={true}
+          isLooping
+          isMuted={true} 
+          resizeMode={ResizeMode.COVER}
+          useNativeControls={false}
+        />
       </View>
       <LinearGradient
         colors={
@@ -176,14 +189,9 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           <View style={globalStyles.repsContainer}>
             {isTimed ? (
               <>
-              <View className="flex-1">
-                <Text style={globalStyles.repsSetsMain}>
-                  {((secondsLeftMs ?? 0) / 1000).toFixed(1)}
-                </Text>
-              </View>
-              <View>
-                <Text style={globalStyles.repsLabel}>seconds</Text>
-              </View>
+                <View className="flex-1">
+                  <Text style={globalStyles.repsSetsMain}></Text>
+                </View>
               </>
             ) : isPer ? (
               <>
@@ -202,9 +210,22 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
             <Text style={styles.perQualifier}>{perPhrase}</Text>
           ) : null}
 
-          {recommendedLbs === 0 ? (
+          {isTimed ? (
+            <View style={styles.timerSection}>
+              <CircularTimer
+                secondsLeft={secondsLeft}
+                totalSeconds={totalSecondsRef.current}
+                timerStarted={timerStarted}
+                onStart={handleStartTimer}
+              />
+            </View>
+          ) : null}
+
+          {!isTimed && recommendedLbs === 0 ? (
             <Text style={globalStyles.bodyweightText}>Bodyweight</Text>
-          ) : (
+          ) : null}
+          
+          {!isTimed && recommendedLbs > 0 ? (
             <View style={styles.weightAdjusterContainer}>
               {hasAdjusted && displayAdjustmentAmount !== 0 ? (
                 <Text style={styles.adjustmentIndicatorText}>
@@ -220,7 +241,6 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                   <Text style={styles.adjusterButtonText}>-</Text>
                 </TouchableOpacity>
                 <View style={styles.weightDisplay}>
-                  {/* ✅ This will now show the recommended weight instead of 0 */}
                   <Text style={styles.weightDisplayText}>{displayWeight}</Text>
                 </View>
                 <TouchableOpacity onPress={() => adjustWeight(5)} style={styles.adjusterButton}>
@@ -247,9 +267,9 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                 </TouchableOpacity>
               </View>
             </View>
-          )}
+          ) : null}
 
-          {(!isTimed || secondsLeftMs === 0) && (
+          {(!isTimed || secondsLeft === 0) && (
             <TouchableOpacity style={globalStyles.nextButtonWorkout} onPress={handleLogSet}>
               <Text style={globalStyles.nextButtonTextWorkout}>
                 {currentSetIndex >= exercise.sets - 1
@@ -258,10 +278,11 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
               </Text>
             </TouchableOpacity>
           )}
-
+        {/** 
           <View style={globalStyles.streakContainer}>
             <Image style={{ height: 74, width: 75 }} source={icons.blueStreak} />
           </View>
+          */}
         </ScrollView>
       </LinearGradient>
     </View>
@@ -290,6 +311,12 @@ const styles = StyleSheet.create({
   unitButtonText: { fontFamily: "poppins-semibold", fontSize: 14, color: "white" },
   unitButtonTextActive: { color: "#271293" },
   perQualifier: { fontFamily: "poppins-medium", fontSize: 14, color: "rgba(255, 255, 255, 0.85)", textAlign: "center", marginTop: 4 },
+  timerSection: {
+    minHeight: 220,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
   nextButtonContainer: {},
 });
 

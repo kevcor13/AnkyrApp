@@ -25,42 +25,49 @@ type RestScreenProps = {
 };
 
 const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, totalExercises, currentExerciseIndex,}) => {
-  // keep public state simple; show one decimal
-  const [countdownMs, setCountdownMs] = useState(Math.max(0, Math.round(duration * 1000)));
+  const [secondsLeft, setSecondsLeft] = useState(Math.max(0, Math.ceil(duration)));
   const [isRestFinished, setIsRestFinished] = useState(duration <= 0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const startTimeRef = useRef<number | null>(null);
+  const totalSecondsRef = useRef<number>(Math.ceil(duration));
 
   const progress = totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
 
-  const progressWidth = `${progress * 100}%`;
-  // progress bar anim (fill from 0% to 100% over the whole rest)
+  // Start the timer immediately
   useEffect(() => {
-    progressAnim.setValue(0);
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: Math.max(0, Math.round(duration * 1000)), // duration is in seconds -> ms
-      useNativeDriver: false, // width can't use native driver
-    }).start();
+    const totalSecs = Math.ceil(duration);
+    totalSecondsRef.current = totalSecs;
+    setSecondsLeft(totalSecs);
+    startTimeRef.current = Date.now();
+    setIsRestFinished(totalSecs <= 0);
   }, [duration]);
 
-
+  // Accurate countdown timer
   useEffect(() => {
-    if (countdownMs <= 0) {
-      setIsRestFinished(true);
-      setCountdownMs(0);
+    if (secondsLeft <= 0 || startTimeRef.current === null) {
+      if (secondsLeft <= 0) {
+        setIsRestFinished(true);
+      }
       return;
     }
+
     const id = setInterval(() => {
-      setCountdownMs((prev) => {
-        const next = prev - 100; // 100ms steps
-        return next > 0 ? next : 0;
-      });
+      if (startTimeRef.current === null) return;
+      
+      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const remaining = Math.max(0, totalSecondsRef.current - elapsed);
+      
+      setSecondsLeft(remaining);
+      
+      if (remaining === 0) {
+        setIsRestFinished(true);
+      }
     }, 100);
+    
     return () => clearInterval(id);
-  }, [countdownMs]);
+  }, [secondsLeft]);
 
   // slide in NEXT button when finished
   useEffect(() => {
@@ -73,28 +80,21 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
     }
   }, [isRestFinished]);
 
-  const secondsDisplay = (countdownMs / 1000).toFixed(1);
-
   const handleLeaveWorkout = () => {
     setShowLeaveModal(true);
   };
 
   return (
     <LinearGradient colors={["#7BCFC7", "#271293"]} style={styles.container}>
-      {/* Status bar fix: light, translucent over gradient */}
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
-      {/* All main content; leave space at the bottom for the streak bar */}
       <View style={styles.content}>
         <View style={{ flexDirection: "row", marginTop: 70, margin: 30, alignItems: "center" }}>
           <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
             <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
           </TouchableOpacity>
           <View style={styles.progressBarContainer}>
-            <Animated.View style={[styles.progressBar, { width: progressAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, screenWidth],
-              }) }]} />
+            <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
           </View>
 
           <TouchableOpacity style={styles.iconButton} onPress={handleLeaveWorkout}>
@@ -105,10 +105,12 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
         <View style={{ justifyContent: "center", margin: 30 }}>
           <Text style={styles.title}>REST</Text>
           <View style={{ flexDirection: "row" }}>
-            {/* show like 30.0 seconds */}
             <View className="flex-1">
-            <Text style={styles.timer}>{secondsDisplay}</Text>
+              <Text style={styles.timer}>
+                {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
+              </Text>
             </View>
+            {/** 
             <Text
               style={{
                 fontFamily: "poppins-semibold",
@@ -117,8 +119,9 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
                 marginTop: 80,
               }}
             >
-              seconds
+              min
             </Text>
+            */}
           </View>
         </View>
 
@@ -137,7 +140,6 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
         )}
       </View>
 
-      {/* Fixed bottom streak bar */}
       <View pointerEvents="none" style={styles.streakContainer}>
         <Image
           source={icons.blueStreak}
@@ -146,7 +148,6 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
         />
       </View>
 
-      {/* Leave Workout Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -183,10 +184,9 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // Push content above the fixed streak; keep enough bottom padding so it's never covered
   content: {
     flex: 1,
-    paddingBottom: 96, // space reserved for the streak image + breathing room
+    paddingBottom: 96,
   },
 
   iconButton: {
@@ -247,21 +247,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
 
-  // Bottom-pinned streak
   streakContainer: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     alignItems: "center",
-    paddingBottom: 24, // pseudo safe-area; tweak if you use insets
+    paddingBottom: 24,
   },
   streakImage: {
     width: 100,
     height: 100,
   },
 
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.6)",

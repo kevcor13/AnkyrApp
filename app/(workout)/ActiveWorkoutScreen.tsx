@@ -9,7 +9,6 @@ import UpNextScreen from "@/app/(components)/workout/UpNextScreen";
 import axios from "axios";
 import { router } from "expo-router";
 import ChangeThemeScreen from "../(components)/workout/ChangeThemeScreen";
-import { videoPreloader } from "@/utils/videoPreloader";
 
 
 export interface PerformedSet {
