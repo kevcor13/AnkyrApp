@@ -163,6 +163,7 @@ const ChallengesPage: React.FC = () => {
     }
 
     return (
+        
         <LinearGradient
             colors={['#FF0509', '#271293']}
             style={styles.mainContainer}
@@ -172,7 +173,10 @@ const ChallengesPage: React.FC = () => {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header Card */}
-                <View style={styles.headerCard}>
+                <LinearGradient
+                    style={styles.headerCard}
+                    colors={['#FF0509', '#271293']}
+                 >
                     <Text style={styles.dayLabel}>YOUR</Text>
                     <Text style={styles.dayText}>{currentDay}</Text>
                     <Text style={styles.workoutLabel}>WORKOUT</Text>
@@ -209,7 +213,7 @@ const ChallengesPage: React.FC = () => {
                             </TouchableOpacity>
                         </View>                    
                     )}
-                </View>
+                </LinearGradient>
 
                 {/* Calendar */}
                 <View style={styles.calendarContainer}>
@@ -366,7 +370,6 @@ const ChallengesPage: React.FC = () => {
                     </View>
                 </View>
             </Modal>
-
         </LinearGradient>
     );
 };
