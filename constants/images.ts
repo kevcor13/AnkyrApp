@@ -1,6 +1,6 @@
 import aperture from "@/assets/icons/Aperture.png"
 import WheelIcon from "@/assets/icons/capture.png"
-import streak from "@/assets/icons/challenges.png"
+import streak from "@/assets/icons/Challenges.png"
 import eyeHide from "@/assets/icons/eye-hide.png"
 import eye from "@/assets/icons/eye.png"
 import womanIcon from "@/assets/icons/FemaleIcon.png"
