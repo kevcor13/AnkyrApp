@@ -236,10 +236,37 @@ const GlobalProvider = ({ children }) => {
     const fetchWorkout = async (token, UserID) => {
         try{
             const date = new Date();
+            
+            // First, check if there's a temporary routine
+            try {
+                console.log("Checking for temporary routine...");
+                const tempResponse = await axios.post(`${ngrokAPI}/api/workout/getTemporaryRoutineDay`, {
+                    token,
+                    UserID,
+                    date
+                });
+                
+                console.log("Temporary routine response:", tempResponse.data);
+                
+                // If there's a temporary routine, use it
+                if (tempResponse.data.status === "success" && tempResponse.data.data) {
+                    console.log("Found temporary routine, using it:", tempResponse.data.data);
+                    setUserWorkoutData(tempResponse.data.data);
+                    await fetchLoggedWorkouts(UserID);
+                    return tempResponse.data.data;
+                } else {
+                    console.log("No temporary routine found, fetching normal workout data");
+                }
+            } catch (tempError) {
+                // If temporary routine check fails or returns no data, continue to normal fetch
+                console.log("Temporary routine check failed or no temporary routine exists, proceeding with normal fetch");
+            }
+            
+            // If no temporary routine, fetch normal workout data
             const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, date, UserID});
             console.log("this is the response" , response.data);
             if (response.data.status === "success") {
-                console.log("Fetched workout data responsess:", response.data.data);
+                //console.log("Fetched workout data responsess:", response.data.data);
                 setUserWorkoutData(response.data.data)
                 //await seperateWorkouts(response.data.data)
                 //await fetchXpHistory(UserID);
@@ -506,6 +533,74 @@ const GlobalProvider = ({ children }) => {
         return []; // Return empty array if no UserID
     };
 
+    // Fetch full user routine
+    const fetchUserRoutine = async (UserID) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            if (!token || !UserID) {
+                console.error("Missing token or UserID for fetching user routine");
+                return null;
+            }
+
+            const endpoint = `${ngrokAPI}/api/workout/getUserRoutine`;
+            console.log("Fetching user routine from:", endpoint);
+            
+            const response = await axios.post(endpoint, {
+                token,
+                UserID
+            });
+
+            if (response.data.status === "success") {
+                console.log("Fetched user routine:", JSON.stringify(response.data.data, null, 2));
+                return response.data.data;
+            } else {
+                console.error("Failed to fetch user routine:", response.data.message);
+                return null;
+            }
+        } catch (error) {
+            if (error.response) {
+                // Server responded with error status
+                console.error(`Error fetching user routine - Status: ${error.response.status}, URL: ${error.config?.url}`);
+                console.error("Response data:", error.response.data);
+            } else if (error.request) {
+                // Request made but no response
+                console.error("Error fetching user routine - No response received:", error.request);
+            } else {
+                // Error setting up request
+                console.error("Error fetching user routine:", error.message);
+            }
+            return null;
+        }
+    };
+
+    const fetchTemporaryUserRoutine = async (UserID) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            if (!token || !UserID) {
+                console.error("Missing token or UserID for fetching user routine");
+                return null;
+            }
+
+            const endpoint = `${ngrokAPI}/api/workout/getTemporaryUserRoutine`;
+            console.log("Fetching user Temp routine from:", endpoint);
+            
+            const response = await axios.post(endpoint, {
+                token,
+                UserID
+            });
+
+            if (response.data.status === "success") {
+                console.log("Fetched user Temp routine:", JSON.stringify(response.data.data, null, 2));
+                return response.data.data;
+            } else {
+                console.error("Failed to fetch user Temp routine:", response.data.message);
+                return null;
+            }
+        } catch (error) {
+            return null;
+        }
+    };
+
 
 
 
@@ -541,6 +636,7 @@ const GlobalProvider = ({ children }) => {
                 loginUser,
                 fetchRecipes,
                 logoutUser,
+                fetchTemporaryUserRoutine,
                 fetchQuestionnaireCompletion,
                 markQuestionnaireCompleted,
                 addChallengesToWorkout,
@@ -551,7 +647,8 @@ const GlobalProvider = ({ children }) => {
                 fetchFriends,
                 updateGameData,
                 fetchWorkoutFocus,
-                getChallenges
+                getChallenges,
+                fetchUserRoutine
             }}
         >
             {!loading && children}

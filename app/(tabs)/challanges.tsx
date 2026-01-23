@@ -27,7 +27,7 @@ interface IChallenge {
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, updateGameData, fetchGameData } = useGlobal();
+    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, fetchWorkout, fetchGameData, fetchUserRoutine, fetchTemporaryUserRoutine } = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
@@ -37,11 +37,12 @@ const ChallengesPage: React.FC = () => {
     const [isWorkoutAllowed, setIsWorkoutAllowed] = useState(false);
     const [selectedWorkout, setSelectedWorkout] = useState<IWorkoutLog | null>(null);
     const [showNextDayWorkout, setShowNextDayWorkout] = useState(false);
-    const [nextDayWorkout, setNextDayWorkout] = useState(null)
+    const [nextDayWorkout, setNextDayWorkout] = useState<any>(null)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isNotCompleted, setIsNotCompleted] = useState(false);
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
     const [showDateModal, setShowDateModal] = useState(false);
+    const [userRoutine, setUserRoutine] = useState<any>(null);
 
     const [isRestDay, setIsRestDay] = useState(false);
 
@@ -58,6 +59,30 @@ const ChallengesPage: React.FC = () => {
 
                 setCurrentDay(today);
                 fetchGameData(token, userData._id);
+
+                // Fetch routine when entering Challenges page - check temporary first, then regular
+                if (userData?._id) {
+                    // First, try to fetch temporary routine
+                    let routineToUse = null;
+                    const tempRoutine = await fetchTemporaryUserRoutine(userData._id);
+                    
+                    if (tempRoutine) {
+                        console.log("Found temporary routine, using it:", JSON.stringify(tempRoutine, null, 2));
+                        routineToUse = tempRoutine;
+                    } else {
+                        // If no temporary routine, fetch regular routine
+                        console.log("No temporary routine found, fetching regular routine");
+                        const fetchedRoutine = await fetchUserRoutine(userData._id);
+                        if (fetchedRoutine) {
+                            routineToUse = fetchedRoutine;
+                            console.log("User Routine Schema:", JSON.stringify(fetchedRoutine, null, 2));
+                        }
+                    }
+                    
+                    if (routineToUse) {
+                        setUserRoutine(routineToUse);
+                    }
+                }
 
                 if (userWorkoutData) {
                     console.log("Fetched workout data:", userWorkoutData);
@@ -87,6 +112,18 @@ const ChallengesPage: React.FC = () => {
         }
     }, [userData]);
 
+    // Automatically show today's workout from routine when routine is loaded and modal opens
+    useEffect(() => {
+        if (userRoutine && showDateModal) {
+            // Small delay to ensure modal is rendered
+            const timer = setTimeout(() => {
+                const today = new Date();
+                handleDateSelect(today);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [userRoutine, showDateModal]);
+
     const isSameDay = (date1: string | number | Date, date2: string | number | Date) => {
         if (!date1 || !date2) return false;
         const d1 = new Date(date1);
@@ -108,48 +145,86 @@ const ChallengesPage: React.FC = () => {
     }
 
     const handleDateSelect = async (selectedDate: Date) => {
+        setSelectedDate(selectedDate);
+        const today = new Date();
+        const selectedDayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
-            setSelectedDate(selectedDate);
-            const today = new Date();
-
-            if (isSameDay(selectedDate, today)) {
-                const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
-                if (workoutForDay) {
-                    setSelectedWorkout(workoutForDay);
-                    setNextDayWorkout(null);
-                    setIsWorkoutAllowed(true);
+        // First check if there's a completed workout for this date
+        const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
+        
+        if (workoutForDay) {
+            // Show completed workout
+            setSelectedWorkout(workoutForDay);
+            setNextDayWorkout(null);
+            setShowNextDayWorkout(false);
+            setIsWorkoutAllowed(isSameDay(selectedDate, today));
+        } else {
+            // No completed workout, check routine for scheduled workout
+            setSelectedWorkout(null);
+            
+            if (userRoutine?.routine) {
+                // Find workout for this day in the routine
+                const routineDay = userRoutine.routine.find((day: any) => day.day === selectedDayName);
+                
+                if (routineDay) {
+                    // Format the routine day to match NextDayWorkout component structure
+                    const formattedWorkout = {
+                        day: routineDay.day,
+                        focus: routineDay.focus || userWorkoutData?.focus || '',
+                        timeEstimate: routineDay.timeEstimate || userWorkoutData?.timeEstimate || 0,
+                        warmup: routineDay.warmup || [],
+                        workoutRoutine: routineDay.workoutRoutine || [],
+                        cooldown: routineDay.cooldown || []
+                    };
+                    setNextDayWorkout(formattedWorkout);
+                    setShowNextDayWorkout(true);
                 } else {
-                    setSelectedWorkout(null);
-                    setNextDayWorkout(userWorkoutData);
-                    setIsWorkoutAllowed(false);
-                    setIsNotCompleted(false);
+                    // No workout scheduled for this day
+                    setNextDayWorkout(null);
+                    setShowNextDayWorkout(false);
                 }
             } else if (selectedDate > today) {
+                // Fallback: fetch workout data from API if routine not available
                 const token = await AsyncStorage.getItem("token");
                 const UserID = userData._id;
-                const date = selectedDate
-                const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {
-                    token: token,
-                    date,
-                    UserID
-                });
-                setSelectedWorkout(null);
-                setNextDayWorkout(response.data.data);
-                setShowNextDayWorkout(true);
-                setIsWorkoutAllowed(false);
-            } else {
-                const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
-                if (workoutForDay) {
-                    setSelectedWorkout(workoutForDay || null);
+                const date = selectedDate;
+                try {
+                    const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {
+                        token: token,
+                        date,
+                        UserID
+                    });
+                    setNextDayWorkout(response.data.data);
+                    setShowNextDayWorkout(true);
+                } catch (error) {
+                    console.error("Error fetching workout data:", error);
                     setNextDayWorkout(null);
-                    setIsWorkoutAllowed(false);
-                } else {
-                    setSelectedWorkout(null);
-                    setNextDayWorkout(null);
-                    setIsWorkoutAllowed(false);
-                    setIsNotCompleted(true);
+                    setShowNextDayWorkout(false);
                 }
+            } else {
+                setNextDayWorkout(null);
+                setShowNextDayWorkout(false);
+                setIsNotCompleted(true);
             }
+            
+            setIsWorkoutAllowed(false);
+        }
+    };
+
+    const handleRoutineUpdated = async (updatedRoutine: any) => {
+        console.log("Routine updated in CalendarView, updating local state:", updatedRoutine);
+        setUserRoutine(updatedRoutine);
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+            console.error("No authentication token found");
+            return;
+        }
+        // Refresh the workout data from the server (this will update userWorkoutData in GlobalProvider)
+        // fetchWorkout already sets userWorkoutData globally, so we don't need to set it here
+        if (userData?._id) {
+            await fetchWorkout(token, userData._id);
+            console.log("Refreshed workout data from server");
+        }
     };
 
     const handleChallengeSelection = (challengeToToggle: IChallenge) => {
@@ -168,10 +243,6 @@ const ChallengesPage: React.FC = () => {
         setShowChallanges(false);
         setLocallySelectedChallenges([]);
     };
-
-    const handleNextDay = () => {
-        router.navigate("/(workout)/WorkoutOverview")
-    }
 
     const closeDateModal = () => {
         setShowDateModal(false);
@@ -379,6 +450,10 @@ const ChallengesPage: React.FC = () => {
                                 <CalendarSelector
                                     onSelect={handleDateSelect}
                                     getStatusForDate={getStatusForDate}
+                                    userRoutine={userRoutine}
+                                    userData={userData}
+                                    ngrokAPI={ngrokAPI}
+                                    onRoutineUpdated={handleRoutineUpdated}
                                 />
                             </View>
 
@@ -393,7 +468,7 @@ const ChallengesPage: React.FC = () => {
                                     <View style={Mstyle.legendColor} />
                                     <Text style={Mstyle.legendText}>Body Energy</Text>
                                 </View>
-                            </View> */}
+                            </View> 
 
                             <TouchableOpacity
                                 style={Mstyle.fullWeekButton}
@@ -402,6 +477,7 @@ const ChallengesPage: React.FC = () => {
                             >
                                 <Text style={Mstyle.fullWeekButtonText}>Today</Text>
                             </TouchableOpacity>
+                            */}
                         </ScrollView>
                     </Animated.View>
                 </View>
