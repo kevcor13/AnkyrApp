@@ -1,100 +1,123 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-
-type DayItem = {
-  date: Date;
-  shortWeekday: string;
-  dayOfMonth: number;
-};
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 type DayStatus = "completed" | "upcoming" | "missed" | "today" | "none";
+
+interface WeekDay {
+  date: Date;
+  dayOfMonth: number;
+  shortWeekday: string;
+  isToday: boolean;
+  isPast: boolean;
+  isFuture: boolean;
+}
 
 const CalendarSelector: React.FC<{
   onSelect?: (d: Date) => void;
   getStatusForDate?: (d: Date) => DayStatus;
 }> = ({ onSelect, getStatusForDate }) => {
-  const [days, setDays] = useState<DayItem[]>([]);
-  const [selected, setSelected] = useState<Date>(new Date());
+  const [currentWeek, setCurrentWeek] = useState<WeekDay[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
-    const today = new Date();
-    const items: DayItem[] = [];
-    
-    for (let offset = -2; offset <= 2; offset++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + offset);
-      items.push({
-        date: d,
-        shortWeekday: d.toLocaleString("en-US", { weekday: "short" }),
-        dayOfMonth: d.getDate(),
-      });
-    }
-    setDays(items);
-    setSelected(today);
+    generateCurrentWeek();
   }, []);
 
-  const handlePress = (d: DayItem) => {
-    setSelected(d.date);
-    onSelect?.(d.date);
+  const generateCurrentWeek = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get the Monday of current week
+    const currentDay = today.getDay();
+    const monday = new Date(today);
+    const diff = currentDay === 0 ? -6 : 1 - currentDay; // If Sunday, go back 6 days, else go to Monday
+    monday.setDate(today.getDate() + diff);
+    
+    const week: WeekDay[] = [];
+    
+    // Generate 7 days starting from Monday
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      date.setHours(0, 0, 0, 0);
+      
+      const isToday = date.getTime() === today.getTime();
+      
+      week.push({
+        date,
+        dayOfMonth: date.getDate(),
+        shortWeekday: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        isToday,
+        isPast: date < today,
+        isFuture: date > today,
+      });
+    }
+    
+    setCurrentWeek(week);
+  };
+
+  const handleDatePress = (day: WeekDay) => {
+    setSelectedDate(day.date);
+    onSelect?.(day.date);
   };
 
   return (
-    <View style={styles.calendarWrapper}>
-      <TouchableOpacity style={styles.arrowBtn} activeOpacity={0.6}>
-        <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.7)" />
-      </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Weekday Headers */}
+      <View style={styles.weekdaysHeader}>
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+          <View key={day} style={styles.weekdayCell}>
+            <Text style={styles.weekdayText}>{day}</Text>
+          </View>
+        ))}
+      </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.daysContainer}
-      >
-        {days.map((d) => {
-          const status = getStatusForDate ? getStatusForDate(d.date) : "none";
-          const isActive =
-            d.dayOfMonth === selected.getDate() &&
-            d.date.getMonth() === selected.getMonth();
-          
+      {/* Week Days Grid */}
+      <View style={styles.weekGrid}>
+        {currentWeek.map((day, index) => {
+          const status = getStatusForDate ? getStatusForDate(day.date) : "none";
+          const isSelected = 
+            day.date.getDate() === selectedDate.getDate() &&
+            day.date.getMonth() === selectedDate.getMonth() &&
+            day.date.getFullYear() === selectedDate.getFullYear();
+
           return (
             <TouchableOpacity
-              key={d.date.toISOString()}
+              key={index}
               style={[
-                styles.dayItem,
-                isActive && styles.dayItemActive,
-                status === "completed" && styles.dayCompleted,
-                status === "missed" && styles.dayMissed,
-                status === "today" && styles.dayToday,
+                styles.dayCell,
+                day.isToday && styles.dayCellToday,
+                isSelected && styles.dayCellSelected,
+                status === "completed" && styles.dayCellCompleted,
+                status === "missed" && styles.dayCellMissed,
               ]}
-              onPress={() => handlePress(d)}
+              onPress={() => handleDatePress(day)}
               activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.weekdayText,
-                  isActive && styles.weekdayTextActive,
-                  status === "completed" && styles.textCompleted,
-                ]}
-              >
-                {d.shortWeekday}
-              </Text>
-              <Text
-                style={[
-                  styles.dateText,
-                  isActive && styles.dateTextActive,
-                  status === "completed" && styles.textCompleted,
-                ]}
-              >
-                {d.dayOfMonth}
-              </Text>
+              {day.isToday ? (
+                <Text style={styles.todayLabel}>Today</Text>
+              ) : (
+                <>
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      day.isToday && styles.dayNumberToday,
+                      isSelected && styles.dayNumberSelected,
+                      status === "completed" && styles.dayNumberCompleted,
+                      day.isFuture && styles.dayNumberFuture,
+                    ]}
+                  >
+                    {day.dayOfMonth}
+                  </Text>
+                  {day.isPast && status !== "completed" && (
+                    <Text style={styles.lockIcon}></Text>
+                  )}
+                </>
+              )}
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
-
-      <TouchableOpacity style={styles.arrowBtn} activeOpacity={0.6}>
-        <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.7)" />
-      </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -102,84 +125,88 @@ const CalendarSelector: React.FC<{
 export default CalendarSelector;
 
 const styles = StyleSheet.create({
-  calendarWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
+  container: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 16,
+    padding: 10,
+  },
+  weekdaysHeader: {
+    flexDirection: 'row',
     marginBottom: 20,
   },
-  arrowBtn: {
-    padding: 10,
-    borderRadius: 20,
-  },
-  daysContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 4,
-  },
-  dayItem: {
-    width: 56,
-    height: 76,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
-  } as any,
-  dayItemActive: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderColor: "rgba(120, 245, 216, 0.4)",
-    shadowColor: "#78F5D8",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  dayCompleted: {
-    backgroundColor: "rgba(56, 255, 245, 0.2)",
-    borderColor: "rgba(56, 255, 245, 0.5)",
-    shadowColor: "#38FFF5",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-  },
-  dayMissed: {
-    backgroundColor: "rgba(136, 136, 136, 0.25)",
-    borderColor: "rgba(255, 59, 48, 0.5)",
-    borderWidth: 1.5,
-  },
-  dayToday: {
-    borderColor: "#78F5D8",
-    borderWidth: 2,
-    shadowColor: "#78F5D8",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+  weekdayCell: {
+    flex: 1,
+    alignItems: 'center',
   },
   weekdayText: {
-    color: "rgba(255, 255, 255, 0.65)",
+    color: 'rgba(255, 255, 255, 0.5)',
     fontSize: 13,
-    fontWeight: "500",
-    marginBottom: 2,
-    letterSpacing: 0.3,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
-  weekdayTextActive: {
-    color: "#78F5D8",
-    fontWeight: "600",
+  weekGrid: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  dateText: {
-    color: "rgba(255, 255, 255, 0.95)",
-    fontSize: 20,
-    fontWeight: "600",
-    letterSpacing: -0.3,
+  dayCell: {
+    flex: 1,
+    aspectRatio: 0.75,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(217, 217, 217, 0.27)',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  dateTextActive: {
-    color: "#78F5D8",
-    fontWeight: "700",
+  dayCellToday: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  textCompleted: {
-    color: "#38FFF5",
+  dayCellSelected: {
+    backgroundColor: 'rgba(56, 255, 245, 0.2)',
+    borderColor: '#38FFF5',
+    shadowColor: '#38FFF5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  dayCellCompleted: {
+    backgroundColor: 'rgba(56, 255, 245, 0.2)',
+    borderColor: '#38FFF5',
+  },
+  dayCellMissed: {
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    borderColor: 'rgba(255, 59, 48, 0.5)',
+  },
+  dayNumber: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  dayNumberToday: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  dayNumberSelected: {
+    color: '#38FFF5',
+    fontWeight: '700',
+  },
+  dayNumberCompleted: {
+    color: '#38FFF5',
+    fontWeight: '600',
+  },
+  dayNumberFuture: {
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+  todayLabel: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  lockIcon: {
+    fontSize: 14,
+    marginTop: 2,
   },
 });
