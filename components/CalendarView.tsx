@@ -422,7 +422,7 @@ const CalendarSelector: React.FC<{
             >
               {day.isToday ? (
                 <>
-                  <Text style={styles.todayLabel}>Today</Text>
+                  <Text style={styles.todayLabel}>{day.dayOfMonth}</Text>
                   {hasWorkout && workoutFocus && (
                     <Text style={styles.workoutFocusLabel}>{workoutFocus}</Text>
                   )}
@@ -451,7 +451,7 @@ const CalendarSelector: React.FC<{
                     {day.dayOfMonth}
                   </Text>
                   {hasWorkout && workoutFocus && !day.isPast && (
-                    <Text style={styles.workoutFocusText} numberOfLines={1}>
+                    <Text style={styles.workoutFocusText} >
                       {workoutFocus}
                     </Text>
                   )}
@@ -548,19 +548,20 @@ const styles = StyleSheet.create({
   dayCell: {
     flex: 1,
     aspectRatio: 0.75,
-    justifyContent: 'center',
+    margin: -2.5,
+    //justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(217, 217, 217, 0.27)',
+    backgroundColor: 'rgba(217, 217, 217, 0.40)',
     borderRadius: 12,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   dayCellToday: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(56, 255, 245, 0.2)',
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   dayCellSelected: {
-    backgroundColor: 'rgba(56, 255, 245, 0.2)',
+    backgroundColor: 'rgba(217, 217, 217, 0.0)',
     borderColor: '#38FFF5',
     shadowColor: '#38FFF5',
     shadowOffset: { width: 0, height: 4 },
@@ -572,14 +573,15 @@ const styles = StyleSheet.create({
     borderColor: '#38FFF5',
   },
   dayCellMissed: {
-    backgroundColor: 'rgba(255, 59, 48, 0.15)',
-    borderColor: 'rgba(255, 59, 48, 0.5)',
+    //backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    //borderColor: 'rgba(255, 59, 48, 0.5)',
   },
   dayNumber: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: '600',
-    marginBottom: 4,
+    marginTop: 2,
+    //marginBottom: 4,
   },
   dayNumberToday: {
     color: '#FFFFFF',
@@ -594,12 +596,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   dayNumberFuture: {
-    color: 'rgba(255, 255, 255, 0.4)',
+    //color: 'rgba(255, 255, 255, 0.4)',
   },
   todayLabel: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    marginTop: 2,
     textAlign: 'center',
   },
   lockIcon: {
@@ -611,7 +614,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   workoutFocusLabel: {
-    color: '#38FFF5',
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '600',
     marginTop: 4,
@@ -619,16 +622,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   workoutFocusText: {
-    color: '#38FFF5',
+    color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: 6,
     textAlign: 'center',
     textTransform: 'uppercase',
   },
   dayCellSwapSelected: {
-    backgroundColor: 'rgba(255, 193, 7, 0.3)',
-    borderColor: '#FFC107',
+    backgroundColor: 'rgba(217, 217, 217, 0.0)',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   dayCellDisabled: {

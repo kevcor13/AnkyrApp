@@ -206,7 +206,7 @@ const Home = () => {
             <LinearGradient
                 colors={['#000000', '#000000', 'transparent']}
                 locations={[0, 0.43, 1]}
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 180, zIndex: 10 }}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 120, zIndex: 10 }}
             />    
 
             {/* 2. STATIONARY HEADER */}

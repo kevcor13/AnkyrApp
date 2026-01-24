@@ -299,9 +299,15 @@ const ChallengesPage: React.FC = () => {
         // >
 
         <View style={{ backgroundColor: "#000000" }}>
+            {/** Stationary Gradient */}
+            <LinearGradient
+                colors={['#000000', '#000000', 'transparent']}
+                locations={[0, 0.43, 1]}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 10 }}
+            />
 
             {/** Stationary Header */}
-            <SafeAreaView style={styles.header}>
+            <SafeAreaView style={[styles.header, { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }]}>
                 <TouchableOpacity
                     style={styles.dateButton}
                     onPress={() => {
@@ -592,6 +598,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
+        paddingTop: Platform.OS === 'ios' ? 60 : 60,
         paddingBottom: 120,
     },
     headerCard: {
@@ -695,7 +702,7 @@ const styles = StyleSheet.create({
     },
     statCard: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
         borderRadius: 16,
         padding: 20,
         borderWidth: 1,
@@ -967,7 +974,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     dateButtonText: {
-        fontSize: 34,
+        fontSize: 20,
         color: '#FFFFFF',
         fontWeight: '600',
         letterSpacing: 0.5,
