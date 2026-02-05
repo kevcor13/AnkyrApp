@@ -3,33 +3,33 @@ Ankyr is a comprehensive fitness application that bridges the gap between person
 
 Problem Solved: Traditional fitness apps offer either generic workout plans or social features, but rarely both. Ankyr integrates AI-powered personalization with social connectivity to create a holistic fitness experience.
 
-## Features
+## 🎯 Features
 
-**Authentication**
+** 🔐 Authentication**
 - Secure user registration and authentication system
 - Personalized user profiles with fitness tracking
 - Privacy-focused data handling****
 
-**Social Media Functionality**
+** 🤝 Social Media Functionality**
 - Create and share fitness posts with the community
 - Follow other users and manage follower/following relationships
 - Send and receive following requests
 - Explore user profiles and workout achievements
 - Engage with a supportive fitness community
 
-**Personalized AI Workouts**
+** 🤖Personalized AI Workouts**
 - Smart Questionnaire System: Users complete a detailed fitness assessment
 - Intelligent Algorithm: AI analyzes goals, experience, equipment availability, and preferences (see more in the Backend) 
 - Personalized Workout Plans: Dynamic, adaptive routines tailored to individual fitness profiles
 - Progressive Overload: Workouts evolve based on user progress and feedback
 
-**Workout Experience**
+** 🏋🏽‍♂️ Workout Experience**
 - Log daily progress and track completed workouts
 - View detailed exercise instructions and form guidance
 - Monitor workout history and performance trends
 - Access AI-generated routines optimized for your fitness journey
 
-## Tech Stack 
+## 🛠 Tech Stack 
 - **Frontend**:
 - Framework: React Native with Expo
 - Language: TypeScript (93.1%) / JavaScript (5.9%)
