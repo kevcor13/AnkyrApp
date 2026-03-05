@@ -5,25 +5,30 @@ import CustomButton from "@/components/CustomButton";
 import axios from "axios";
 import LeagueHeader from "@/components/LeagueHeader";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { use, useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Platform } from "react-native";
+import React, { use, useEffect, useRef, useState } from "react";
+import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Platform, Animated, Dimensions, PanResponder } from "react-native";
 import icons from "@/constants/icons";
+import images from '@/constants/images';
 import { router } from "expo-router";
 import GraphView from "@/components/GraphView";
 import WorkoutLogDetail, { IWorkoutLog } from '@/components/WorkoutLogDetail'
 import NextDayWorkout from "@/components/NextDayWorkout";
 import LeagueMembers from "@/components/LeagueMembers";
+import { SafeAreaView } from "react-native-safe-area-context";
+import DateDropdown from "@/components/DateDropDown";
+import { modalStyles as Mstyle } from '@/constants/modalStyles';
+
 
 interface IChallenge {
     exercise: string;
     duration: string;
     xp: number;
-    [key: string]: any; 
+    [key: string]: any;
 }
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, updateGameData, fetchGameData} = useGlobal();
+    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, fetchWorkout, fetchGameData, fetchUserRoutine, fetchTemporaryUserRoutine } = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
@@ -33,21 +38,52 @@ const ChallengesPage: React.FC = () => {
     const [isWorkoutAllowed, setIsWorkoutAllowed] = useState(false);
     const [selectedWorkout, setSelectedWorkout] = useState<IWorkoutLog | null>(null);
     const [showNextDayWorkout, setShowNextDayWorkout] = useState(false);
-    const [nextDayWorkout, setNextDayWorkout] = useState(null)
+    const [nextDayWorkout, setNextDayWorkout] = useState<any>(null)
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isNotCompleted, setIsNotCompleted] = useState(false);
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
+    const [showDateModal, setShowDateModal] = useState(false);
+    const [userRoutine, setUserRoutine] = useState<any>(null);
 
     const [isRestDay, setIsRestDay] = useState(false);
+
+
+    const panY = useRef(new Animated.Value(0)).current; // For swipe down
+    const contentOpacity = useRef(new Animated.Value(1)).current; // For date switching
+    const SCREEN_HEIGHT = Dimensions.get('screen').height;
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const token = await AsyncStorage.getItem("token");
                 const today = new Date().toLocaleString("en-US", { weekday: "long" });
-                
+
                 setCurrentDay(today);
                 fetchGameData(token, userData._id);
+
+                // Fetch routine when entering Challenges page - check temporary first, then regular
+                if (userData?._id) {
+                    // First, try to fetch temporary routine
+                    let routineToUse = null;
+                    const tempRoutine = await fetchTemporaryUserRoutine(userData._id);
+                    
+                    if (tempRoutine) {
+                        console.log("Found temporary routine, using it:", JSON.stringify(tempRoutine, null, 2));
+                        routineToUse = tempRoutine;
+                    } else {
+                        // If no temporary routine, fetch regular routine
+                        console.log("No temporary routine found, fetching regular routine");
+                        const fetchedRoutine = await fetchUserRoutine(userData._id);
+                        if (fetchedRoutine) {
+                            routineToUse = fetchedRoutine;
+                            console.log("User Routine Schema:", JSON.stringify(fetchedRoutine, null, 2));
+                        }
+                    }
+                    
+                    if (routineToUse) {
+                        setUserRoutine(routineToUse);
+                    }
+                }
 
                 if (userWorkoutData) {
                     console.log("Fetched workout data:", userWorkoutData);
@@ -67,7 +103,7 @@ const ChallengesPage: React.FC = () => {
         if (userData) {
             const alreadyDoneToday = isSameDay(userData.lastWorkoutCompletionData, new Date());
             const workoutForDay = loggedWorkouts.find((log: IWorkoutLog) => isSameDay(log.date, new Date()));
-            if(alreadyDoneToday){
+            if (alreadyDoneToday) {
                 setIsWorkoutAllowed(alreadyDoneToday);
                 setSelectedWorkout(workoutForDay);
             }
@@ -76,6 +112,18 @@ const ChallengesPage: React.FC = () => {
             setIsLoading(true);
         }
     }, [userData]);
+
+    // Automatically show today's workout from routine when routine is loaded and modal opens
+    useEffect(() => {
+        if (userRoutine && showDateModal) {
+            // Small delay to ensure modal is rendered
+            const timer = setTimeout(() => {
+                const today = new Date();
+                handleDateSelect(today);
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [userRoutine, showDateModal]);
 
     const isSameDay = (date1: string | number | Date, date2: string | number | Date) => {
         if (!date1 || !date2) return false;
@@ -100,44 +148,83 @@ const ChallengesPage: React.FC = () => {
     const handleDateSelect = async (selectedDate: Date) => {
         setSelectedDate(selectedDate);
         const today = new Date();
+        const selectedDayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
-        if(isSameDay(selectedDate, today)){
-            const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
-            if(workoutForDay){
-                setSelectedWorkout(workoutForDay);
-                setNextDayWorkout(null);
-                setIsWorkoutAllowed(true);
-            } else {
-                setSelectedWorkout(null);
-                setNextDayWorkout(null);
-                setIsWorkoutAllowed(false);
-                setIsNotCompleted(false);
-            }
-        } else if (selectedDate > today) {
-            const token = await AsyncStorage.getItem("token");
-            const UserID = userData._id;
-            const date = selectedDate
-            const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {
-                token: token,
-                date,
-                UserID
-            });
-            setSelectedWorkout(null);
-            setNextDayWorkout(response.data.data);
-            setShowNextDayWorkout(true);
-            setIsWorkoutAllowed(false);
+        // First check if there's a completed workout for this date
+        const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
+        
+        if (workoutForDay) {
+            // Show completed workout
+            setSelectedWorkout(workoutForDay);
+            setNextDayWorkout(null);
+            setShowNextDayWorkout(false);
+            setIsWorkoutAllowed(isSameDay(selectedDate, today));
         } else {
-            const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
-            if(workoutForDay){
-                setSelectedWorkout(workoutForDay || null);
-                setNextDayWorkout(null);
-                setIsWorkoutAllowed(false);
+            // No completed workout, check routine for scheduled workout
+            setSelectedWorkout(null);
+            
+            if (userRoutine?.routine) {
+                // Find workout for this day in the routine
+                const routineDay = userRoutine.routine.find((day: any) => day.day === selectedDayName);
+                
+                if (routineDay) {
+                    // Format the routine day to match NextDayWorkout component structure
+                    const formattedWorkout = {
+                        day: routineDay.day,
+                        focus: routineDay.focus || userWorkoutData?.focus || '',
+                        timeEstimate: routineDay.timeEstimate || userWorkoutData?.timeEstimate || 0,
+                        warmup: routineDay.warmup || [],
+                        workoutRoutine: routineDay.workoutRoutine || [],
+                        cooldown: routineDay.cooldown || []
+                    };
+                    setNextDayWorkout(formattedWorkout);
+                    setShowNextDayWorkout(true);
+                } else {
+                    // No workout scheduled for this day
+                    setNextDayWorkout(null);
+                    setShowNextDayWorkout(false);
+                }
+            } else if (selectedDate > today) {
+                // Fallback: fetch workout data from API if routine not available
+                const token = await AsyncStorage.getItem("token");
+                const UserID = userData._id;
+                const date = selectedDate;
+                try {
+                    const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {
+                        token: token,
+                        date,
+                        UserID
+                    });
+                    setNextDayWorkout(response.data.data);
+                    setShowNextDayWorkout(true);
+                } catch (error) {
+                    console.error("Error fetching workout data:", error);
+                    setNextDayWorkout(null);
+                    setShowNextDayWorkout(false);
+                }
             } else {
-                setSelectedWorkout(null);
                 setNextDayWorkout(null);
-                setIsWorkoutAllowed(false);
+                setShowNextDayWorkout(false);
                 setIsNotCompleted(true);
             }
+            
+            setIsWorkoutAllowed(false);
+        }
+    };
+
+    const handleRoutineUpdated = async (updatedRoutine: any) => {
+        console.log("Routine updated in CalendarView, updating local state:", updatedRoutine);
+        setUserRoutine(updatedRoutine);
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+            console.error("No authentication token found");
+            return;
+        }
+        // Refresh the workout data from the server (this will update userWorkoutData in GlobalProvider)
+        // fetchWorkout already sets userWorkoutData globally, so we don't need to set it here
+        if (userData?._id) {
+            await fetchWorkout(token, userData._id);
+            console.log("Refreshed workout data from server");
         }
     };
 
@@ -158,17 +245,134 @@ const ChallengesPage: React.FC = () => {
         setLocallySelectedChallenges([]);
     };
 
-    const handleNextDay = () => {
-        router.navigate("/(workout)/WorkoutOverview")
-    }
+    const closeDateModal = () => {
+        setShowDateModal(false);
+            panY.setValue(0);
+    };
+
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => gestureState.dy > 5,
+            onPanResponderMove: (evt, gestureState) => {
+                if (gestureState.dy > 0) panY.setValue(gestureState.dy);
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+                    closeDateModal();
+                } else {
+                    Animated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
+                }
+            },
+        })
+    ).current;
+
+    const formatModalDate = (date: Date) => {
+        return date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    const handleModalDateClick = (date: Date) => {
+        setShowDateModal(false);
+        router.push({
+            pathname: '../(workout)/FutureWorkout',
+            params: { date: date.toISOString() }
+        });
+    };
+
+    const handleViewFullWeek = () => {
+        setShowDateModal(false);
+        router.push('../(workout)/FullWeekView');
+    };
+
+const badgeMap: Record<string, any> = {
+    OLYMPIAN: images.Olympian,
+    TITAN:    images.titan,
+    SKIPPER:  images.skipperBadge,
+    PILOT:    images.pilot,
+    PRIVATE:  images.Private,
+    NOVICE:   images.novice,
+};
+
+const getLeagueImage = (league: string | undefined) => {
+    if (!league) return images.novice;
+    return badgeMap[league.toUpperCase()] ?? images.novice;
+};
+
 
     return (
-        
-        <LinearGradient
-            colors={['#FF0509', '#271293']}
-            style={styles.mainContainer}
-        >
-            <ScrollView 
+
+        // <LinearGradient
+        //     colors={['#FF0509', '#271293']}
+        //     style={styles.mainContainer}
+        // >
+
+        <View style={{ backgroundColor: "#000000" }}>
+            {/** Stationary Gradient */}
+            <LinearGradient
+                colors={['#000000', '#000000', 'transparent']}
+                locations={[0, 0.43, 1]}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 10 }}
+            />
+
+            {/** Stationary Header */}
+            <SafeAreaView style={[styles.header, { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }]}>
+    <TouchableOpacity
+        style={styles.dateButton}
+        onPress={() => {
+            setShowDateModal(true);
+            handleDateSelect(new Date());
+        }}
+        activeOpacity={0.7}
+    >
+        <Text style={styles.dateButtonText}>
+            {new Date().toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                weekday: 'short'
+            }).replace(',', ', ')}
+        </Text>
+        <Text style={styles.dateArrow}>▼</Text>
+    </TouchableOpacity>
+
+    {/* Stats Row */}
+    <View style={styles.headerStats}>
+        {/* Streak 
+        <View style={styles.headerStat}>
+            <Image source={icons.blueStreak} style={[styles.headerStatIcon, { tintColor: '#A855F7' }]} />
+            <Text style={styles.headerStatValue}>{userGameData?.streak ?? 0}</Text>
+        </View>
+
+        {/* Losses / Lives 
+        <View style={styles.headerStat}>
+            <Image source={icons.loss} style={[styles.headerStatIcon, { tintColor: '#FFFFFF', opacity: 0.8 }]} />
+            <Text style={styles.headerStatValue}>{userGameData?.losses ?? 0}</Text>
+        </View>
+
+        {/* XP *
+        <View style={styles.headerStat}>
+            <Text style={styles.headerXP}>
+                {(userGameData?.points ?? 0).toLocaleString()}
+                <Text style={styles.headerXPUnit}> XP</Text>
+            </Text>
+        </View>
+
+        {/* League Badge */}
+        <View style={styles.leagueBadgeWrapper}>
+            <Image
+                source={getLeagueImage(userGameData?.league)}
+                style={styles.leagueBadgeIcon}
+                resizeMode="contain"
+            />
+        </View>
+    </View>
+</SafeAreaView>
+
+            <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
@@ -176,26 +380,14 @@ const ChallengesPage: React.FC = () => {
                 <LinearGradient
                     style={styles.headerCard}
                     colors={['#FF0509', '#271293']}
-                 >
+                >
                     <Text style={styles.dayLabel}>YOUR</Text>
                     <Text style={styles.dayText}>{currentDay}</Text>
                     <Text style={styles.workoutLabel}>WORKOUT</Text>
-                    
+
                     {isWorkoutAllowed || selectedWorkout ? (
                         <View style={styles.statusBadge}>
                             <Text style={styles.statusText}>✓ COMPLETED</Text>
-                        </View>
-                    ) : selectedDate && selectedDate > new Date() ? (
-                        <View style={styles.statusBadge}>
-                            <Text style={styles.statusText}>UPCOMING</Text>
-                        </View>
-                    ) : isNotCompleted ? (
-                        <View style={[styles.statusBadge, styles.missedBadge]}>
-                            <Text style={styles.statusText}>MISSED</Text>
-                        </View>
-                    ) : isRestDay ? (
-                        <View style={styles.statusBadge}>
-                            <Text style={styles.statusText}>REST DAY</Text>
                         </View>
                     ) : (
                         <View style={styles.workoutInfoContainer}>
@@ -204,25 +396,25 @@ const ChallengesPage: React.FC = () => {
                                 <Image source={icons.blueStreak} style={styles.timeIcon} />
                                 <Text style={styles.timeText}>{timeEstimate} min</Text>
                             </View>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={styles.iosButton}
                                 onPress={() => router.navigate("/(workout)/WorkoutOverview")}
                                 activeOpacity={0.7}
                             >
                                 <Text style={styles.iosButtonText}>Start Workout</Text>
                             </TouchableOpacity>
-                        </View>                    
+                        </View>
                     )}
                 </LinearGradient>
 
-                {/* Calendar */}
+                {/* Calendar 
                 <View style={styles.calendarContainer}>
                     <CalendarSelector onSelect={handleDateSelect} getStatusForDate={getStatusForDate} />
                 </View>
 
                 {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
                 {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
-
+                */}
                 {/* Stats Cards */}
                 <View style={styles.statsContainer}>
                     <View style={styles.statCard}>
@@ -238,7 +430,7 @@ const ChallengesPage: React.FC = () => {
                     <View style={styles.statCard}>
                         <View style={styles.statHeader}>
                             <Text style={styles.statLabel}>XP</Text>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 onPress={() => setShowInfoModal(true)}
                                 style={styles.infoButton}
                             >
@@ -252,7 +444,7 @@ const ChallengesPage: React.FC = () => {
                 </View>
 
                 {/* Challenges Button */}
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.challengesButton}
                     onPress={() => setShowChallanges(true)}
                     activeOpacity={0.8}
@@ -267,13 +459,82 @@ const ChallengesPage: React.FC = () => {
                     </LinearGradient>
                 </TouchableOpacity>
 
-                {/* League Section */}
+                 League Section 
                 <View style={styles.leagueSection}>
+                    {/*
                     <Text style={styles.leagueTitle}>MY LEAGUE</Text>
-                    <LeagueHeader league={userGameData.league} />
+                        <LeagueHeader league={userGameData.league} />
+                    */}
                     <LeagueMembers />
                 </View>
             </ScrollView>
+
+
+
+
+
+            {/* Date Selection Modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={showDateModal}
+                onRequestClose={closeDateModal}
+            >
+                <View style={Mstyle.modelContainer}>
+                    <Animated.View
+                        style={[
+                            Mstyle.dateModalContainer,
+                            { transform: [{ translateY: panY }] } // Connects the swipe gesture
+                        ]}
+                    >
+                        {/* Attached panHandlers to the header area specifically */}
+                        <View style={Mstyle.modalHeader} {...panResponder.panHandlers}>
+                            <View style={Mstyle.modalHandle} />
+                            <TouchableOpacity
+                                style={Mstyle.modalCloseButton}
+                                onPress={closeDateModal}
+                            >
+                                <Text style={Mstyle.modalCloseText}>Done</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={Mstyle.modalScroll} showsVerticalScrollIndicator={false}>
+                            <View style={styles.calendarContainer}>
+                                <CalendarSelector
+                                    onSelect={handleDateSelect}
+                                    getStatusForDate={getStatusForDate}
+                                    userRoutine={userRoutine}
+                                    userData={userData}
+                                    ngrokAPI={ngrokAPI}
+                                    onRoutineUpdated={handleRoutineUpdated}
+                                />
+                            </View>
+
+                            {/* This Animated.View handles the smooth date switching */}
+                            <Animated.View style={{ opacity: contentOpacity }}>
+                                {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
+                                {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
+                            </Animated.View>
+
+                            {/* <View style={Mstyle.legendSection}>
+                                <View style={Mstyle.legendItem}>
+                                    <View style={Mstyle.legendColor} />
+                                    <Text style={Mstyle.legendText}>Body Energy</Text>
+                                </View>
+                            </View> 
+
+                            <TouchableOpacity
+                                style={Mstyle.fullWeekButton}
+                                onPress={handleViewFullWeek}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={Mstyle.fullWeekButtonText}>Today</Text>
+                            </TouchableOpacity>
+                            */}
+                        </ScrollView>
+                    </Animated.View>
+                </View>
+            </Modal>
 
             {/* Challenges Modal */}
             <Modal
@@ -292,7 +553,7 @@ const ChallengesPage: React.FC = () => {
                                 <Text style={styles.modalTitle}>Daily Challenges</Text>
                                 <Image source={icons.whiteZap} style={styles.modalTitleIcon} />
                             </View>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={styles.modalCloseButton}
                                 onPress={() => setShowChallanges(false)}
                             >
@@ -302,7 +563,7 @@ const ChallengesPage: React.FC = () => {
 
                         <ScrollView style={styles.modalScroll}>
                             <Text style={styles.modalSubtitle}>GET AHEAD</Text>
-                            
+
                             {challenges.map((challenge: IChallenge, index: number) => {
                                 const isSelected = locallySelectedChallenges.some(c => c.exercise === challenge.exercise);
                                 return (
@@ -315,12 +576,12 @@ const ChallengesPage: React.FC = () => {
                                         <View style={styles.challengeCheckbox}>
                                             {isSelected && <Text style={styles.checkmark}>✓</Text>}
                                         </View>
-                                        
+
                                         <View style={styles.challengeInfo}>
                                             <Text style={styles.challengeName}>{challenge.exercise}</Text>
                                             <Text style={styles.challengeDuration}>{challenge.duration}</Text>
                                         </View>
-                                        
+
                                         <View style={styles.challengeXp}>
                                             <Text style={styles.xpLabel}>+{challenge.xp}</Text>
                                             <Text style={styles.xpUnit}>XP</Text>
@@ -331,7 +592,7 @@ const ChallengesPage: React.FC = () => {
                         </ScrollView>
 
                         <View style={styles.modalFooter}>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 onPress={handleAddSelectedChallenges}
                                 style={styles.addButton}
                                 disabled={locallySelectedChallenges.length === 0}
@@ -361,7 +622,7 @@ const ChallengesPage: React.FC = () => {
                         <Text style={styles.infoText}>
                             Complete daily challenges and join events for bonus XP!
                         </Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={styles.infoButton}
                             onPress={() => setShowInfoModal(false)}
                         >
@@ -370,17 +631,28 @@ const ChallengesPage: React.FC = () => {
                     </View>
                 </View>
             </Modal>
-        </LinearGradient>
+        </View>
     );
 };
 
 export default ChallengesPage;
 
 const styles = StyleSheet.create({
+    header: {
+        flexDirection: 'row',
+    },
     mainContainer: {
         flex: 1,
     },
+    headerStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingRight: 16,
+    paddingVertical: 8,
+}, 
     scrollContent: {
+        paddingTop: Platform.OS === 'ios' ? 60 : 60,
         paddingBottom: 120,
     },
     headerCard: {
@@ -393,7 +665,7 @@ const styles = StyleSheet.create({
     },
     dayLabel: {
         fontSize: 46,
-        fontFamily:'quicksand-bold',
+        fontFamily: 'quicksand-bold',
         color: 'white',
         letterSpacing: -2,
         fontWeight: '700',
@@ -438,7 +710,7 @@ const styles = StyleSheet.create({
         fontSize: 32,
         color: '#8B8BEA',
         fontWeight: '600',
-        fontFamily:'raleway-light',
+        fontFamily: 'raleway-light',
         fontStyle: 'italic',
         marginBottom: 12,
     },
@@ -473,8 +745,8 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     calendarContainer: {
-        marginTop: 20,
-        marginHorizontal: 20,
+        //marginTop: 20,
+        //marginHorizontal: 20,
     },
     statsContainer: {
         flexDirection: 'row',
@@ -484,7 +756,7 @@ const styles = StyleSheet.create({
     },
     statCard: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
         borderRadius: 16,
         padding: 20,
         borderWidth: 1,
@@ -579,11 +851,12 @@ const styles = StyleSheet.create({
     // Modal Styles
     modalOverlay: {
         flex: 1,
+        marginTop: Platform.OS === 'ios' ? 60 : 0,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'flex-end',
+        justifyContent: 'center',
     },
     modalContainer: {
-        backgroundColor: '#1C1C1E',
+        //backgroundColor: '#1C1C1E',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         maxHeight: '90%',
@@ -631,7 +904,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     modalScroll: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 10,
     },
     modalSubtitle: {
         fontSize: 15,
@@ -745,4 +1018,75 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         paddingVertical: 12,
     },
+
+    /// Date Button Styles ///
+    dateButton: {
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dateButtonText: {
+        fontSize: 20,
+        color: '#FFFFFF',
+        fontWeight: '600',
+        letterSpacing: 0.5,
+    },
+    dateArrow: {
+        fontSize: 20,
+        color: '#FFFFFF',
+        fontWeight: '400',
+        marginLeft: 12,
+    },
+    dateModalTitle: {
+        fontSize: 20,
+        color: '#FFFFFF',
+        fontWeight: '700',
+        textAlign: 'center',
+    },
+    dateModalItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        //justifyContent: 'space-between',
+        //backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 12,
+        padding: 18,
+        marginBottom: 12,
+    },
+    dateModalItemText: {
+        fontSize: 17,
+        color: '#FFFFFF',
+        fontWeight: '500',
+    },
+    dateChevron: {
+        marginLeft: 10,
+        fontSize: 24,
+        color: 'rgba(255, 255, 255, 0.4)',
+        fontWeight: '300',
+    },
+    dateChevronCyan: {
+        color: '#38FFF5',
+    },
+    fullWeekItem: {
+        backgroundColor: 'rgba(56, 255, 245, 0.1)',
+        borderWidth: 1,
+        borderColor: '#38FFF5',
+        marginTop: 8,
+    },
+    fullWeekItemText: {
+        fontSize: 17,
+        color: '#38FFF5',
+        fontWeight: '600',
+    },
+    leagueBadgeWrapper: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    },
+    leagueBadgeIcon: {
+    width: 36,
+    height: 36,
+},
 });

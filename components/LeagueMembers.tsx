@@ -14,6 +14,8 @@ type Row = {
   isSelf?: boolean;
 };
 
+type DisplayRow = Row | { kind: "divider"; id: string };
+
 const LeagueMembers: React.FC = () => {
   const { ngrokAPI, userData } = useGlobal();
   const [rows, setRows] = useState<Row[]>([]);
@@ -29,8 +31,7 @@ const LeagueMembers: React.FC = () => {
         const { data } = await axios.post(`${ngrokAPI}/api/user/getLeagueMembers`, {
           token,
           UserID: userData._id,
-          limit: 20,
-          includeSelf: true
+          includeSelf: true,
         });
 
         if (!alive) return;
@@ -44,35 +45,63 @@ const LeagueMembers: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={{ padding: 16, backgroundColor: "black" }}>
-        <ActivityIndicator />
+      <View style={{ padding: 16, alignItems: "center" }}>
+        <ActivityIndicator color="#fff" />
       </View>
     );
   }
 
+  const normalizedRows: Row[] = rows.map(item => ({
+    ...item,
+    isSelf: item.userId === String(userData?._id) || item.isSelf,
+  }));
+
+  const topFive = normalizedRows.slice(0, 5);
+  const selfRow = normalizedRows.find(r => r.isSelf);
+  const isSelfInTopFive = !!selfRow && topFive.some(r => r.userId === selfRow.userId);
+
+  const displayRows: DisplayRow[] = isSelfInTopFive || !selfRow
+    ? topFive
+    : [...topFive, { kind: "divider", id: "self-divider" }, selfRow];
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.heading}>League members:</Text>
+    <View style={styles.container}>
       <FlatList
-        data={rows}
-        keyExtractor={(item, i) => item.userId + "-" + i}
-        ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        data={displayRows}
+        keyExtractor={(item, i) => ("kind" in item ? item.id : item.userId + "-" + i)}
         scrollEnabled={false}
+        ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
         renderItem={({ item }) => {
-          const name = item.isSelf ? "You" : item.username;
+          if ("kind" in item) {
+            return (
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+              </View>
+            );
+          }
+
+          const displayName = item.isSelf ? "You" : item.username;
           const xp = (item.points || 0).toLocaleString();
+
           return (
             <View style={styles.row}>
               <Text style={styles.rank}>{item.rank}.</Text>
 
-              <Image
-                source={{ uri: item.profileImage}}
-                style={styles.avatar}
-              />
+              <View style={styles.avatarWrapper}>
+                <Image
+                  source={
+                      { uri: item.profileImage }
+            
+                  }
+                  style={styles.avatar}
+                />
+              </View>
 
-              <Text style={styles.name} numberOfLines={1}>{name}</Text>
+              <Text style={styles.name} numberOfLines={1}>
+                {displayName}
+              </Text>
 
-              <View style={styles.right}>
+              <View style={styles.xpContainer}>
                 <Text style={styles.xpValue}>{xp}</Text>
                 <Text style={styles.xpUnit}> XP</Text>
               </View>
@@ -85,54 +114,64 @@ const LeagueMembers: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  card:{
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    marginTop: 30,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+  container: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
-  heading: {
-    color: "#FFFFFF",
-    fontFamily: "poppins-semibold",
-    fontSize: 20,
-    marginBottom: 8
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  row: { flexDirection: "row", alignItems: "center" },
   rank: {
-    width: 24,
+    width: 28,
     color: "#FFFFFF",
-    opacity: 0.9,
-    fontFamily: "poppins-semibold",
-    fontSize: 16
+    fontSize: 16,
+    fontFamily: "Poppins-SemiBold",
+    opacity: 0.95,
+  },
+  avatarWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
+    marginRight: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   avatar: {
-    width: 36, height: 36, borderRadius: 999,
-    marginHorizontal: 12,
-    backgroundColor: "rgba(255,255,255,0.15)"
+    width: "100%",
+    height: "100%",
   },
   name: {
     flex: 1,
     color: "#FFFFFF",
+    fontSize: 14,
     fontFamily: "Poppins-SemiBold",
-    fontSize: 14
   },
-  right: { flexDirection: "row", alignItems: "baseline" },
+  xpContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
   xpValue: {
     color: "#FFFFFF",
-    fontFamily: "Poppins-SemiBold",
     fontSize: 18,
-    letterSpacing: 0.25
+    fontFamily: "Poppins-SemiBold",
+    letterSpacing: 0.3,
   },
   xpUnit: {
-    color: "#7E8AA6",
+    color: "#8A96B0",
+    fontSize: 11,
     fontFamily: "Poppins-Medium",
-    fontSize: 12,
-    marginLeft: 4,
-    textTransform: "uppercase"
-  }
+    textTransform: "uppercase",
+    marginLeft: 2,
+  },
+  dividerRow: {
+    height: 20,
+    justifyContent: "center",
+  },
+  dividerLine: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
 });
 
 export default LeagueMembers;

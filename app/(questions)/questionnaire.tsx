@@ -5,7 +5,6 @@ import axios from "axios";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -18,18 +17,70 @@ import {
 } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  Easing,
-  runOnJS
+  FadeIn,
+  FadeInRight,
+  FadeInUp,
+  FadeOut,
 } from 'react-native-reanimated';
 
-import WheelAgePicker from "@/components/WheelAgePicker";
 import { QuestionnaireIcon } from "@/assets/icons/questionnaire";
 import WheelPicker from "@/components/WheelAgePicker";
-import FadeInView from "@/components/FadeInView";
+
+const TITLE_DUR = 500;
+const ANS_DUR = 350;
+const STAGGER = 300;
+const SCREEN_ENTER_DUR = 600;
+const SCREEN_EXIT_DUR = 400;
+
+type QuestionScreenProps = {
+  title?: React.ReactNode;
+  titleWrapperClassName?: string;
+  titleWrapperStyle?: any;
+  children?: React.ReactNode;
+};
+
+const QuestionScreen = ({
+  title,
+  titleWrapperClassName,
+  titleWrapperStyle,
+  children,
+}: QuestionScreenProps) => (
+  <View>
+    {title ? (
+      <Animated.View entering={FadeInRight.duration(TITLE_DUR)}>
+        {titleWrapperClassName || titleWrapperStyle ? (
+          <View className={titleWrapperClassName} style={titleWrapperStyle}>
+            {title}
+          </View>
+        ) : (
+          title
+        )}
+      </Animated.View>
+    ) : null}
+    {children}
+  </View>
+);
+
+type StaggerItemProps = {
+  index: number;
+  children: React.ReactNode;
+  style?: any;
+  className?: string;
+};
+
+const StaggerItem = ({ index, children, style, className }: StaggerItemProps) => (
+  <Animated.View
+    entering={FadeInUp.duration(ANS_DUR).delay(index * STAGGER)}
+  >
+    {className || style ? (
+      <View className={className} style={style}>
+        {children}
+      </View>
+    ) : (
+      children
+    )}
+  </Animated.View>
+);
 
 const Questionnaire = () => {
   const { userData, logoutUser, markQuestionnaireCompleted, ngrokAPI } = useGlobal();
@@ -53,14 +104,20 @@ const Questionnaire = () => {
   const [stressLevel, setStressLevel] = useState('');
   const [nutritionQuality, setNutritionQuality] = useState('');
   const [changeDays, setChangeDays] = useState(false);
-
-  const { width: SCREEN_WIDTH } = Dimensions.get("window");
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // keep workoutDays in sync
   useEffect(() => {
     const dayCount = Object.values(selectedDays).filter(Boolean).length;
     setWorkoutDays(dayCount);
   }, [selectedDays]);
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+      }
+    };
+  }, []);
 
   const getSelectedDayNames = () => {
     const dayMap = { Sunday: "Sunday", Monday: "Monday", Tuesday: "Tuesday", Wednesday: "Wednesday", Thursday: "Thursday", Friday: "Friday", Saturday: "Saturday" };
@@ -69,9 +126,6 @@ const Questionnaire = () => {
     return selectedDayNames;
   };
 
-  const slideX = useSharedValue(0);
-  const overlayOpacity = useSharedValue(0);
-
   // ----------------------------------------------------------------
 
   const transitionToNext = () => {
@@ -79,28 +133,12 @@ const Questionnaire = () => {
     if (questionIndex >= questions.length - 1) return;
 
     setIsTransitioning(true);
-
-    // Fade to black
-    overlayOpacity.value = withTiming(1, { duration: 250 }, () => {
-      // This callback runs on UI thread, use runOnJS to update React state
-      runOnJS(setQuestionIndex)(questionIndex + 1);
-      slideX.value = SCREEN_WIDTH;
-
-      // Slide in and fade out
-      slideX.value = withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) });
-      overlayOpacity.value = withTiming(0, { duration: 350 }, () => {
-        runOnJS(setIsTransitioning)(false);
-      });
-    });
+    setQuestionIndex(prev => prev + 1);
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+    transitionTimerRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, SCREEN_ENTER_DUR + 50);
   };
-
-  const animatedContentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideX.value }]
-  }));
-
-  const animatedOverlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value
-  }));
   // -------------------------------------------------------------
 
   const handleSubmit = () => {
@@ -228,11 +266,13 @@ ${splitRules}
     // 1) AGE
     {
       question: (
-        <View>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <QuestionScreen
+            title={<Text className="text-white text-[24px] font-poppins-semibold text-center">How old are you?</Text>}
+            titleWrapperClassName="mt-[100] px-[80px]"
+          >
             <View style={{ flexGrow: 1, paddingBottom: 200 }}>
-              <View className="mt-[100] px-[80px]">
-                <Text className="text-white text-[24px] font-poppins-semibold text-center">How old are you?</Text>
+              <View className="px-[80px]">
                 {/**   Save it as a text or keep it as a wheel
                 <TextInput
                   className="bg-[#24292A] mt-7 text-white p-5 mx-[19] rounded-lg text-[16px]"
@@ -245,89 +285,95 @@ ${splitRules}
                   }}
                 />
                 */}
-                <WheelPicker
-                  value={age}
-                  onChange={setAge}
-                  min={1}
-                  max={100}
-                />
+                <StaggerItem index={0}>
+                  <WheelPicker
+                    value={age}
+                    onChange={setAge}
+                    min={1}
+                    max={100}
+                  />
+                </StaggerItem>
               </View>
 
               {/* ✅ Show Next only when age entered */}
               {ageReady && (
-                <View className="mt-[-10px] px-[100px]">
-                  <CustomButton
-                    title="Next"
-                    handlePress={handleNext}
-                    buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
-                    textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
-                  />
-                </View>
+                <StaggerItem index={1}>
+                  <View className="mt-[-10px] px-[100px]">
+                    <CustomButton
+                      title="Next"
+                      handlePress={handleNext}
+                      buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
+                      textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
+                    />
+                  </View>
+                </StaggerItem>
               )}
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </QuestionScreen>
+        </KeyboardAvoidingView>
       ),
     },
     // 2) GENDER
     {
       question: (
-        <View className="items-center">
-          <Text className="text-white text-[21px] mb-4 mt-60 font-poppins-semibold text-center px-4">
-            Were you born a male or female?
-          </Text>
-          <View className="flex-row justify-between gap-[80px] mt-6">
+        <QuestionScreen
+          title={(
+            <Text className="text-white text-[21px] font-poppins-semibold text-center">
+              Were you born a male or female?
+            </Text>
+          )}
+          titleWrapperClassName="mb-4 mt-60 px-4 items-center"
+        >
+          <View className="items-center">
+            <StaggerItem index={0}>
+              <View className="flex-row justify-between gap-[80px] mt-6">
+                <QuestionnaireIcon name="femaleIcon" color="#FFF" size={60} />
+                <QuestionnaireIcon name="maleIcon" color="#FFF" size={60} />
+              </View>
+            </StaggerItem>
 
-            <FadeInView delay={400} from="bottom">
-              <QuestionnaireIcon name="femaleIcon" color="#FFF" size={60} />
-            </FadeInView>
+            <StaggerItem index={1}>
+              <View className="flex-row gap-4 mt-6">
+                <TouchableOpacity
+                  className="bg-white p-4 rounded-2xl px-14"
+                  onPress={() => handleSelection(setGender, 'Male')}
+                >
+                  <Text className="text-center text-black">Male</Text>
+                </TouchableOpacity>
 
-            <FadeInView delay={800} from="bottom">
-              <QuestionnaireIcon name="maleIcon" color="#FFF" size={60} />
-            </FadeInView>
+                <TouchableOpacity
+                  className="bg-white p-4 rounded-2xl px-14"
+                  onPress={() => handleSelection(setGender, 'Female')}
+                >
+                  <Text className="text-center text-black">Female</Text>
+                </TouchableOpacity>
+              </View>
+            </StaggerItem>
           </View>
-
-
-          <View className="flex-row gap-4 mt-6">
-            <FadeInView delay={600} from="bottom">
-              <TouchableOpacity
-                className="bg-white p-4 rounded-2xl px-14"
-                onPress={() => handleSelection(setGender, 'Male')}
-              >
-                <Text className="text-center text-black">Male</Text>
-              </TouchableOpacity>
-            </FadeInView>
-
-            <FadeInView delay={1000} from="bottom">
-            <TouchableOpacity
-              className="bg-white p-4 rounded-2xl px-14"
-              onPress={() => handleSelection(setGender, 'Female')}
-            >
-              <Text className="text-center text-black">Female</Text>
-            </TouchableOpacity>
-            </FadeInView>
-          </View>
-        </View>
+        </QuestionScreen>
       ),
     },
     // 3) WEIGHT
     {
       question: (
-        <View>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-            <ScrollView style={{ flexGrow: 1, paddingBottom: 200 }}>
-              <View className="mt-[200] px-[80px]">
-                <Text className="text-white text-[24px] font-poppins-semibold text-center">What is your current weight?</Text>
-
-                <TextInput
-                  className="bg-[#24292A] mt-7 text-white p-5 mx-[19] rounded-lg text-[16px text-center"
-                  keyboardType="numeric"
-                  placeholder="Enter your weight in lbs"
-                  placeholderTextColor="#888"
-                  onChangeText={(text) => {
-                    console.log("[Weight Input] text =", text);
-                    setWeight(parseFloat(text));
-                  }} />
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          <ScrollView style={{ flexGrow: 1, paddingBottom: 200 }}>
+            <QuestionScreen
+              title={<Text className="text-white text-[24px] font-poppins-semibold text-center">What is your current weight?</Text>}
+              titleWrapperClassName="mt-[200] px-[80px]"
+            >
+              <View className="px-[80px]">
+                <StaggerItem index={0}>
+                  <TextInput
+                    className="bg-[#24292A] mt-7 text-white p-5 mx-[19] rounded-lg text-[16px text-center"
+                    keyboardType="numeric"
+                    placeholder="Enter your weight in lbs"
+                    placeholderTextColor="#888"
+                    onChangeText={(text) => {
+                      console.log("[Weight Input] text =", text);
+                      setWeight(parseFloat(text));
+                    }} />
+                </StaggerItem>
                 {/** 
                 <View className="flex-row justify-center">
                 <WheelPicker
@@ -343,125 +389,123 @@ ${splitRules}
 
               {/* ✅ Show Next only when weight entered */}
               {weightReady && (
-                <FadeInView delay={600} from="bottom">
-                <View className="mt-[-10px] px-[100px]">
-                  <CustomButton
-                    title="Next"
-                    handlePress={handleNext}
-                    buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
-                    textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
-                  />
-                </View>
-                </FadeInView>
+                <StaggerItem index={1}>
+                  <View className="mt-[-10px] px-[100px]">
+                    <CustomButton
+                      title="Next"
+                      handlePress={handleNext}
+                      buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
+                      textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
+                    />
+                  </View>
+                </StaggerItem>
               )}
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </View>
+            </QuestionScreen>
+          </ScrollView>
+        </KeyboardAvoidingView>
       ),
     },
     // 4) CURRENT WORKOUT DAYS
     {
       question: (
-        <View>
-          <View className="mt-20 px-13 items-center">
+        <QuestionScreen
+          title={(
             <Text className="font-poppins-semibold text-white text-2xl mb-4 text-center">
               How many days a week are you currently working out?
             </Text>
-          </View>
+          )}
+          titleWrapperClassName="mt-20 px-13 items-center"
+        >
           <View className="mt-7 px-20">
+            <StaggerItem index={0}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14" onPress={() => handleSelection(setWorkoutDays, 0)}>
+                <Text className="text-center text-[14px] font-poppins-semibold text-black">0, that's why I'm here</Text>
+              </TouchableOpacity>
+            </StaggerItem>
           
-          <FadeInView delay={400} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14" onPress={() => handleSelection(setWorkoutDays, 0)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">0, that's why I'm here</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={1}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 2)}>
+                <Text className="text-center text-[14px] font-poppins-semibold text-black">1-2 day(s)</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+
+            <StaggerItem index={2}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 4)}>
+                <Text className="text-center text-[14px] font-poppins-semibold text-black">3-4 days</Text>
+              </TouchableOpacity>
+            </StaggerItem>
           
-          <FadeInView delay={600} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 2)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">1-2 day(s)</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={3}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 6)}>
+                <Text className="text-center text-[14px] font-poppins-semibold text-black">5-6 days </Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={800} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 4)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">3-4 days</Text>
-            </TouchableOpacity>
-          </FadeInView>
-          
-          <FadeInView delay={1000} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 6)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">5-6 days </Text>
-            </TouchableOpacity>
-          </FadeInView>
-
-          <FadeInView delay={1200} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 7)}>
-              <Text className="text-center text-[14px] font-poppins-semibold text-black">Everyday</Text>
-            </TouchableOpacity>
-          </FadeInView>
-
+            <StaggerItem index={4}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-14 mt-7" onPress={() => handleSelection(setWorkoutDays, 7)}>
+                <Text className="text-center text-[14px] font-poppins-semibold text-black">Everyday</Text>
+              </TouchableOpacity>
+            </StaggerItem>
           </View>
-        </View>
+        </QuestionScreen>
       ),
     },
     // 5) SLEEP
     {
       question: (
-        <View>
-          <View className="mt-40 px-10 items-center">
-            <Text className="text-white text-[21px] font-poppins-semibold mb-4">Describe your sleep routine.</Text>
-          </View>
+        <QuestionScreen
+          title={<Text className="text-white text-[21px] font-poppins-semibold mb-4">Describe your sleep routine.</Text>}
+          titleWrapperClassName="mt-40 px-10 items-center"
+        >
           <View className="mt-7 px-10">
-          
-          <FadeInView delay={400} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setSleepQuality, 'Very consistent, 8 hours')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">Very consistent, at least 8 hours </Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={0}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setSleepQuality, 'Very consistent, 8 hours')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">Very consistent, at least 8 hours </Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={600} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setSleepQuality, 'Moderately good')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">Moderately good, some off days</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={1}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setSleepQuality, 'Moderately good')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">Moderately good, some off days</Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={800} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setSleepQuality, 'Very inconsistent')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">Very inconsistent</Text>
-            </TouchableOpacity>
-          </FadeInView>
-
+            <StaggerItem index={2}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setSleepQuality, 'Very inconsistent')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">Very inconsistent</Text>
+              </TouchableOpacity>
+            </StaggerItem>
           </View>
-        </View>
+        </QuestionScreen>
       ),
     },
     // 6) FITNESS LEVEL
     {
       question: (
-        <View>
-          <View className="mt-40 px-6 items-center">
-            <Text className="text-white text-[21px] font-poppins-semibold mb-4">What is your fitness experience?</Text>
-          </View>
+        <QuestionScreen
+          title={<Text className="text-white text-[21px] font-poppins-semibold mb-4">What is your fitness experience?</Text>}
+          titleWrapperClassName="mt-40 px-6 items-center"
+        >
           <View className="mt-7 px-6">
-          <FadeInView delay={400} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setFitness, 'Beginner')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">I'm just getting into fitness</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={0}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setFitness, 'Beginner')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">I'm just getting into fitness</Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={600} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setFitness, 'Intermediate')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">I have some fitness experience</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={1}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setFitness, 'Intermediate')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">I have some fitness experience</Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={800} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setFitness, 'Expert')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">I am currently active and consistent </Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={2}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setFitness, 'Expert')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">I am currently active and consistent </Text>
+              </TouchableOpacity>
+            </StaggerItem>
           </View>
-        </View>
+        </QuestionScreen>
       )
     },
     // 7) MEDICAL CONDITIONS 
@@ -508,138 +552,154 @@ ${splitRules}
     // 8) MAIN GOAL
     {
       question: (
-        <View>
-          <View className="mt-20 px-7 items-center">
-            <Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">What is your main fitness goal?</Text>
-          </View>
+        <QuestionScreen
+          title={<Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">What is your main fitness goal?</Text>}
+          titleWrapperClassName="mt-20 px-7 items-center"
+        >
           <View className="mt-7 px-20">
-          
-          <FadeInView delay={400} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setGoal, 'lose weight')}>
-              <Text className="text-center font-poppins-semibold text-[16px] text-black">Lose Weight</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={0}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6" onPress={() => handleSelection(setGoal, 'lose weight')}>
+                <Text className="text-center font-poppins-semibold text-[16px] text-black">Lose Weight</Text>
+              </TouchableOpacity>
+            </StaggerItem>
             
-          <FadeInView delay={600} from="bottom"> 
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'Build Muscle')}>
-              <Text className="text-center font-poppins-semibold text-[16px] text-black">Build Muscle</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={1}> 
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'Build Muscle')}>
+                <Text className="text-center font-poppins-semibold text-[16px] text-black">Build Muscle</Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={800} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'lose weight and build muscle')}>
-              <Text className="text-center font-poppins-semibold text-[16px] text-black">Both of the above</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={2}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'lose weight and build muscle')}>
+                <Text className="text-center font-poppins-semibold text-[16px] text-black">Both of the above</Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={1000} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'running')}>
-              <Text className="text-center font-poppins-semibold text-[16px] text-black">Running</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={3}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'running')}>
+                <Text className="text-center font-poppins-semibold text-[16px] text-black">Running</Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={1200} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'be active')}>
-              <Text className="text-center font-poppins-semibold text-[16px] text-black">I just want to be active</Text>
-            </TouchableOpacity>
-          </FadeInView>
-
+            <StaggerItem index={4}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'be active')}>
+                <Text className="text-center font-poppins-semibold text-[16px] text-black">I just want to be active</Text>
+              </TouchableOpacity>
+            </StaggerItem>
           </View>
-        </View>
+        </QuestionScreen>
       )
     },
     // 9) SELECT WORKOUT DAYS (max 6)
     {
       question: (
-        <View>
-          <View className="mt-20 items-center">
-            <Text className="text-white text-2xl font-bold text-center">What days do you want to workout?</Text>
-          </View>
+        <QuestionScreen
+          title={<Text className="text-white text-2xl font-bold text-center">What days do you want to workout?</Text>}
+          titleWrapperClassName="mt-20 items-center"
+        >
           <View className="flex-row justify-between mt-20 px-6">
-            <TouchableOpacity 
-              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Sunday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
-              onPress={() => toggleDaySelection('Sunday')}
-            >
-              <Text className={`text-xl font-bold ${selectedDays.Sunday ? 'text-black' : 'text-white'}`}>S</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Monday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
-              onPress={() => toggleDaySelection('Monday')}
-            >
-              <Text className={`text-xl font-bold ${selectedDays.Monday ? 'text-black' : 'text-white'}`}>M</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Tuesday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
-              onPress={() => toggleDaySelection('Tuesday')}
-            >
-              <Text className={`text-xl font-bold ${selectedDays.Tuesday ? 'text-black' : 'text-white'}`}>T</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Wednesday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
-              onPress={() => toggleDaySelection('Wednesday')}
-            >
-              <Text className={`text-xl font-bold ${selectedDays.Wednesday ? 'text-black' : 'text-white'}`}>W</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Thursday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
-              onPress={() => toggleDaySelection('Thursday')}
-            >
-              <Text className={`text-xl font-bold ${selectedDays.Thursday ? 'text-black' : 'text-white'}`}>T</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Friday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
-              onPress={() => toggleDaySelection('Friday')}
-            >
-              <Text className={`text-xl font-bold ${selectedDays.Friday ? 'text-black' : 'text-white'}`}>F</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Saturday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
-              onPress={() => toggleDaySelection('Saturday')}
-            >
-              <Text className={`text-xl font-bold ${selectedDays.Saturday ? 'text-black' : 'text-white'}`}>S</Text>
-            </TouchableOpacity>
+            <StaggerItem index={0}>
+              <TouchableOpacity 
+                className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Sunday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+                onPress={() => toggleDaySelection('Sunday')}
+              >
+                <Text className={`text-xl font-bold ${selectedDays.Sunday ? 'text-black' : 'text-white'}`}>S</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+            <StaggerItem index={1}>
+              <TouchableOpacity 
+                className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Monday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+                onPress={() => toggleDaySelection('Monday')}
+              >
+                <Text className={`text-xl font-bold ${selectedDays.Monday ? 'text-black' : 'text-white'}`}>M</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+            <StaggerItem index={2}>
+              <TouchableOpacity 
+                className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Tuesday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+                onPress={() => toggleDaySelection('Tuesday')}
+              >
+                <Text className={`text-xl font-bold ${selectedDays.Tuesday ? 'text-black' : 'text-white'}`}>T</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+            <StaggerItem index={3}>
+              <TouchableOpacity 
+                className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Wednesday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+                onPress={() => toggleDaySelection('Wednesday')}
+              >
+                <Text className={`text-xl font-bold ${selectedDays.Wednesday ? 'text-black' : 'text-white'}`}>W</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+            <StaggerItem index={4}>
+              <TouchableOpacity 
+                className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Thursday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+                onPress={() => toggleDaySelection('Thursday')}
+              >
+                <Text className={`text-xl font-bold ${selectedDays.Thursday ? 'text-black' : 'text-white'}`}>T</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+            <StaggerItem index={5}>
+              <TouchableOpacity 
+                className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Friday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+                onPress={() => toggleDaySelection('Friday')}
+              >
+                <Text className={`text-xl font-bold ${selectedDays.Friday ? 'text-black' : 'text-white'}`}>F</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+            <StaggerItem index={6}>
+              <TouchableOpacity 
+                className={`w-12 h-12 rounded-lg items-center justify-center ${selectedDays.Saturday ? 'bg-[#FFFFFF]' : 'bg-[#44504F]'}`} 
+                onPress={() => toggleDaySelection('Saturday')}
+              >
+                <Text className={`text-xl font-bold ${selectedDays.Saturday ? 'text-black' : 'text-white'}`}>S</Text>
+              </TouchableOpacity>
+            </StaggerItem>
           </View>
-          <Text className="text-white text-center mt-4">You can choose up to 6 days a week</Text>
-          <View className="mt-20 px-10 items-center">
+          <StaggerItem index={7} className="mt-4">
+            <Text className="text-white text-center">You can choose up to 6 days a week</Text>
+          </StaggerItem>
+          <StaggerItem index={8} className="mt-20 px-10 items-center">
             <Text className="mt-20 text-white text-center text-3xl font-bold">You selected a {Object.values(selectedDays).filter(Boolean).length} day workout plan.</Text>
-          </View>
-          <View className="mt-[-10px] px-[100px]">
-            <CustomButton
-              title="Next"
-              handlePress={handleNext}
-              buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
-              textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
-            />
-          </View>
-        </View>
+          </StaggerItem>
+          <StaggerItem index={9}>
+            <View className="mt-[-10px] px-[100px]">
+              <CustomButton
+                title="Next"
+                handlePress={handleNext}
+                buttonStyle={{ backgroundColor: "white", borderRadius: 11, paddingVertical: 11, paddingHorizontal: 32, marginTop: 28, justifyContent: "center" }}
+                textStyle={{ color: "#000000", fontSize: 19, fontFamily: "poppins-semiBold" }}
+              />
+            </View>
+          </StaggerItem>
+        </QuestionScreen>
       ),
     },
     // 10) EQUIPMENT
     {
       question: (
-        <View>
-          <View className="mt-20 px-10 items-center">
-            <Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">What equipment do you have access to?</Text>
-          </View>
+        <QuestionScreen
+          title={<Text className="text-white text-[21px] font-poppins-semibold mb-4 text-center">What equipment do you have access to?</Text>}
+          titleWrapperClassName="mt-20 px-10 items-center"
+        >
           <View className="mt-7 px-20">
-          <FadeInView delay={400} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl" onPress={() => handleSelection(setEquipmentAvailable, 'full gym')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">Gym membership</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={0}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl" onPress={() => handleSelection(setEquipmentAvailable, 'full gym')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">Gym membership</Text>
+              </TouchableOpacity>
+            </StaggerItem>
 
-          <FadeInView delay={600} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setEquipmentAvailable, 'small at home gym')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">Small home gym</Text>
-            </TouchableOpacity>
-          </FadeInView>
-          <FadeInView delay={800} from="bottom">
-            <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'no equipment')}>
-              <Text className="text-center text-[16px] font-poppins-semibold text-black">I dont have access to equipment</Text>
-            </TouchableOpacity>
-          </FadeInView>
+            <StaggerItem index={1}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setEquipmentAvailable, 'small at home gym')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">Small home gym</Text>
+              </TouchableOpacity>
+            </StaggerItem>
+            <StaggerItem index={2}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'no equipment')}>
+                <Text className="text-center text-[16px] font-poppins-semibold text-black">I dont have access to equipment</Text>
+              </TouchableOpacity>
+            </StaggerItem>
           </View>
-        </View>
+        </QuestionScreen>
       ),
     },
   ];
@@ -659,15 +719,14 @@ ${splitRules}
 
           {/* CONTENT (slides & fades under the fixed header) */}
           <View style={{ flex: 1, paddingTop: 8 }}>
-            <Animated.View style={[{ flex: 1 }, animatedContentStyle]}>
+            <Animated.View
+              key={`question-${questionIndex}`}
+              entering={FadeIn.duration(SCREEN_ENTER_DUR)}
+              exiting={FadeOut.duration(SCREEN_EXIT_DUR)}
+              style={{ flex: 1 }}
+            >
               {questions[questionIndex].question}
             </Animated.View>
-
-            {/* Fade-to-black overlay (content-only) */}
-            <Animated.View
-              pointerEvents={isTransitioning ? "auto" : "none"}
-              style={[StyleSheet.absoluteFillObject, { backgroundColor: "black" }, animatedOverlayStyle]}
-            />
           </View>
           <View className="mt-[71px] items-center">
             <Image source={images.ankyrIcon} className="h-[55px] w-[50px]" />

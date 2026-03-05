@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
 import icons from "@/constants/icons";
 import images from "@/constants/images";
@@ -32,6 +32,12 @@ interface Props {
 
 const NextDayWorkout: React.FC<Props> = ({ workout }) => {
   if (!workout) return null;
+  //const [isTodaysWorkout, setIsTodaysWorkout] = useState<boolean>()
+
+  const today = new Date().toLocaleString("en-US", { weekday: "long" });
+  const isTodaysWorkout = workout.day === today;
+
+
 
   const openVideo = (url?: string) => {
     if (!url) return;
@@ -83,7 +89,11 @@ const NextDayWorkout: React.FC<Props> = ({ workout }) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.headerContainer}>
-        <Text style={styles.headerKicker}>Next Workout</Text>
+        {isTodaysWorkout ?  (
+          <Text style={styles.headerKicker}>TODAY</Text>
+        ):(
+          <Text style={styles.headerKicker}>Next Workout</Text>
+        )}
         <Text style={styles.workoutName}>{workout.focus}</Text>
         <Text style={styles.dayText}>{workout.day}</Text>
       </View>

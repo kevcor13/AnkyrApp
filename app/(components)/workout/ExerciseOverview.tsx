@@ -60,7 +60,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
     <LinearGradient
       colors={
         isWarmup
-          ? ["#FF0509", "#E89750"]
+          ? ["#000000", "#6C4A23"]
           : theme
           ? ["#FF0509", "#271293"]
           : ["#000000", "#272727"]
