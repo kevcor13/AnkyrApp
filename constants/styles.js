@@ -18,7 +18,7 @@ export const styles = StyleSheet.create({
     video: {
         ...StyleSheet.absoluteFillObject,
     },
-    workoutCard: { padding: 30 },
+    workoutCard: { padding: 20 },
     exerciseNameMain: { fontFamily: 'raleway-light', color: 'white', fontSize: 40 },
     repsContainer: { flexDirection: 'row', alignItems: 'baseline'},
     repsSetsMain: { fontFamily: 'poppins-semibold', fontSize: 64, color: '#8AFFF9' },
@@ -34,7 +34,7 @@ export const styles = StyleSheet.create({
         marginTop: 20
     },
     nextButtonWorkout: {
-        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        backgroundColor: 'rgba(255, 255, 255, 0.27)',
         paddingVertical: 18,
         borderRadius: 30,
         alignItems: 'center',

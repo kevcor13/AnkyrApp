@@ -8,6 +8,7 @@ import RestScreen from "@/app/(components)/workout/RestScreen";
 import UpNextScreen from "@/app/(components)/workout/UpNextScreen";
 import axios from "axios";
 import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import ChangeThemeScreen from "../(components)/workout/ChangeThemeScreen";
 
 
@@ -41,10 +42,11 @@ type FlowState =
 const ActiveWorkoutScreen = () => {
   const {
     userWorkoutData,
-    userGameData,
     userData,
     ngrokAPI,
     selectedChallenges,
+    fetchLoggedWorkouts,
+    fetchGameData,
   } = useGlobal();
 
   const [liveWorkout, setLiveWorkout] = useState<Exercise[] | null>(null);
@@ -309,30 +311,45 @@ const ActiveWorkoutScreen = () => {
         points: liveWorkout.length * 5,
       };
 
-      await axios.post(`${ngrokAPI}/api/update/logWorkout`, workoutLogPayload);
-
-      const points = (userGameData?.points || 0) + liveWorkout.length * 5;
-      const streak = (userGameData?.streak || 0) + 1;
-
-      let league = "NOVICE";
-      if (points >= 30000) league = "OLYMPIAN";
-      else if (points >= 20000) league = "TITAN";
-      else if (points >= 12000) league = "SKIPPER";
-      else if (points >= 5000) league = "PILOT";
-      else if (points >= 1000) league = "PRIVATE";
-
-      await axios.post(`${ngrokAPI}/api/update/updatePointsAndStreak`, {
+      const completionResponse = await axios.post(`${ngrokAPI}/api/update/completeWorkout`, {
         UserID,
-        points,
-        streak,
-        league,
+        workoutLogPayload,
+        clientTimestamp: new Date().toISOString(),
+        clientTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
-      await axios.post(`${ngrokAPI}/api/update/recordWorkoutCompletion`, { UserID });
+      const completionData = completionResponse?.data?.data || {};
+      const previousStreak = Number(completionData.previousStreak);
+      const currentStreak = Number(completionData.currentStreak);
 
-      Alert.alert("Workout Complete!", "Great job! Your progress has been saved.");
-      router.replace("/(workout)/EndWorkoutScreen");
-    } catch (error) {
+      if (
+        !Number.isFinite(previousStreak) ||
+        !Number.isFinite(currentStreak)
+      ) {
+        Alert.alert("Error", "Workout saved, but streak data was invalid.");
+        return;
+      }
+
+      const token = await AsyncStorage.getItem("token");
+      if (token) {
+        await fetchGameData(token, UserID);
+      }
+      await fetchLoggedWorkouts(UserID);
+
+      const xpEarned =
+        Number.isFinite(Number(completionData.xpEarned))
+          ? Number(completionData.xpEarned)
+          : liveWorkout.length * 5;
+      
+      router.replace({
+        pathname: "/(workout)/EndWorkoutScreen",
+        params: {
+          previousStreak: previousStreak.toString(),
+          currentStreak: currentStreak.toString(),
+          xpEarned: xpEarned.toString(),
+        }
+      });
+    } catch {
       Alert.alert("Error", "There was a problem saving your workout.");
     } finally {
       setIsFinishing(false);

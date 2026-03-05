@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image} from 'react-native';
-import icons from "@/constants/icons";
+import { View, Text, StyleSheet, Image } from 'react-native';
 import images from "@/constants/images"
 import { useGlobal } from '@/context/GlobalProvider';
-import WorkoutCard from './WorkoutCard';
 
 // --- Interfaces for Type Safety --- //
 // These interfaces define the shape of your workout data.
@@ -40,10 +38,9 @@ interface Props {
 // --- The Component --- //
 
 const WorkoutLogDetail: React.FC<Props> = ({ workout }) => {
-  const {userData, userGameData} = useGlobal();
+  const { userGameData } = useGlobal();
   const [badgeImage, setBadgeImage] = useState<string | null>(null);
-  const [points, setPoints] = useState(Number);
-  const [XP, setXP] = useState(Number);
+  const [XP, setXP] = useState(0);
   // If no workout is passed, the component renders nothing.
   if (!workout) {
     return null;
@@ -60,28 +57,25 @@ const WorkoutLogDetail: React.FC<Props> = ({ workout }) => {
       };
   
       fetchData();
-    }, [userData]);
+  }, [userGameData]);
   
-    useEffect(() => {
-      if (XP === null) return;
-      if (XP >= 30000) {
-        setBadgeImage(images.Olympian);
-      } else if (XP >= 20000) {
-        setBadgeImage(images.titan);
-      } else if (XP >= 12000) {
-        setBadgeImage(images.skipper);
-      } else if (XP >= 5000) {
-        setBadgeImage(images.pilot);
-      } else if (XP >= 1000) {
-        setBadgeImage(images.Private);
-      } else {
-        setBadgeImage(images.novice);
-      }
-    }, [points]);
+  useEffect(() => {
+    if (XP >= 30000) {
+      setBadgeImage(images.Olympian);
+    } else if (XP >= 20000) {
+      setBadgeImage(images.titan);
+    } else if (XP >= 12000) {
+      setBadgeImage(images.skipper);
+    } else if (XP >= 5000) {
+      setBadgeImage(images.pilot);
+    } else if (XP >= 1000) {
+      setBadgeImage(images.Private);
+    } else {
+      setBadgeImage(images.novice);
+    }
+  }, [XP]);
   // Helper function to convert duration from seconds to a more readable "X mins" format.
-  const formatDuration = (seconds: number) => {
-    return `${Math.round(seconds / 60)} mins`;
-  };
+  const durationMins = Math.max(1, Math.round(workout.durationSeconds / 60));
 
   return (
     <View style={styles.container}>
@@ -90,24 +84,25 @@ const WorkoutLogDetail: React.FC<Props> = ({ workout }) => {
       
       {/* Details Row: Duration and XP Earned */}
       <View style={styles.detailsRow}>
-          <Text style={styles.detailText}>{Math.round(workout.durationSeconds / 60)}</Text>
+        <View style={styles.durationBlock}>
+          <Text style={styles.detailText}>{durationMins}</Text>
           <Text style={styles.detailTextMins}>mins</Text>
-          <Image source={icons.blueStreak} style={{width:105, height:106, marginLeft:60}}/>
+        </View>
+        {badgeImage && (
+          <Image
+            source={
+              typeof badgeImage === "string"
+                ? { uri: badgeImage }
+                : badgeImage
+            }
+            style={styles.badgeImage}
+          />
+        )}
       </View>
       <View style={styles.detailsXProw}>
-        {badgeImage && (
-        <Image
-          source={
-            typeof badgeImage === "string"
-              ? { uri: badgeImage }
-              : badgeImage
-          }
-          className="w-28 h-28"
-        />
-        )}
         <View style={styles.xpContainer}>
           <Text style={styles.xpTitle}>total XP earned:</Text>
-          <View style={styles.detailsXProw}>
+          <View style={styles.xpValueRow}>
             <Text style={styles.xpSecondTitle}>+ {workout.points}</Text>
             <Text style={styles.xpThridTitle}>xp</Text>
           </View>
@@ -118,20 +113,20 @@ const WorkoutLogDetail: React.FC<Props> = ({ workout }) => {
       {/* List of Exercises */}
       {workout.exercises.map((exercise, index) => (
         <View key={exercise._id || index} style={styles.exerciseCard}>
-          <View style={{flexDirection:'row', justifyContent:'space-between'}}>
+          <View style={styles.exerciseHeaderRow}>
             <Text style={styles.exerciseName}>{exercise.name}</Text>
-            <Text style={{color:'white', fontFamily:'raleway-semibold', fontSize:11, textTransform: 'uppercase', marginLeft:-10}}>Earned:</Text>
+            <Text style={styles.earnedLabel}>Earned</Text>
           </View>
-          <View style={{flexDirection:'row', justifyContent:'space-between'}}>
-          {exercise.sets && exercise.sets.length > 0 && (
-            <Text style={styles.setText}>
-              {`${exercise.sets[0].weight} lbs, ${exercise.sets[0].reps} reps x ${exercise.sets.length} sets`}
-            </Text>
-          )}
-          <View style={styles.detailsXProw}>
-            <Text style={{color:'#8AFFF9', fontFamily:'raleway-semibold', fontSize:20, textTransform: 'uppercase', marginLeft:-10}}>5</Text>
-            <Text style={{color:'#8AFFF9', fontFamily:'raleway-semibold', fontSize:13, textTransform: 'uppercase', margin:5}}>xp</Text>
-          </View>
+          <View style={styles.exerciseDetailRow}>
+            {exercise.sets && exercise.sets.length > 0 && (
+              <Text style={styles.setText}>
+                {`${exercise.sets[0].weight} lbs, ${exercise.sets[0].reps} reps x ${exercise.sets.length} sets`}
+              </Text>
+            )}
+            <View style={styles.earnedXpRow}>
+              <Text style={styles.earnedXpValue}>5</Text>
+              <Text style={styles.earnedXpUnit}>xp</Text>
+            </View>
           </View>
         </View>
       ))}
@@ -143,9 +138,13 @@ export default WorkoutLogDetail;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000000', // A semi-transparent dark blue
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
     padding: 20,
-    marginTop: 25,
+    marginTop: 20,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   workoutName: {
     color: '#FFFFFF',
@@ -156,8 +155,13 @@ const styles = StyleSheet.create({
   },
   detailsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingBottom: 10,
+  },
+  durationBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
   },
   detailText: {
     color: '#38FFF5',
@@ -168,21 +172,30 @@ const styles = StyleSheet.create({
     color: '#38FFF5',
     fontFamily: 'poppins-semiBold',
     fontSize: 24,
-    marginTop:40,
-    marginLeft:-10
+    marginLeft: 8,
+    marginBottom: 8,
   },
   detailsXProw:{
     flexDirection:'row',
+    alignItems: 'center',
+  },
+  badgeImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 16,
   },
   xpContainer:{
-    marginTop:20,
-    marginLeft:10
+    marginTop: 8,
   },
   xpTitle:{
     fontFamily:'raleway-semibold',
     fontSize:16,
     color:'white',
     textTransform: 'uppercase',
+  },
+  xpValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   xpSecondTitle:{
     fontFamily:'raleway-semibold',
@@ -195,19 +208,14 @@ const styles = StyleSheet.create({
     fontSize:13,
     color:'#8AFFF9',
     textTransform: 'uppercase',
-    margin:5,
-    marginTop:15
+    marginLeft: 6,
   },    
-pointsText: {
-  color: '#78F5D8',
-      fontFamily: 'poppins-semiBold',
-      fontSize: 18,
-  },
   sectionTitle: {
     color: '#FFFFFF',
     fontSize: 22,
     fontFamily: 'poppins-semibold',
-    marginBottom: 15,
+    marginBottom: 12,
+    marginTop: 6,
   },
   exerciseCard: {
     backgroundColor: '#1C1C20',
@@ -215,16 +223,49 @@ pointsText: {
     padding: 15,
     marginBottom: 10,
   },
+  exerciseHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  exerciseDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   exerciseName: {
     color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'poppins-medium',
     marginBottom: 5,
   },
+  earnedLabel: {
+    color: '#FFFFFF',
+    fontFamily: 'raleway-semibold',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    opacity: 0.8,
+  },
   setText: {
     color: '#DDDDDD',
     fontSize: 14,
     fontFamily: 'poppins-regular',
   },
+  earnedXpRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  earnedXpValue: {
+    color:'#8AFFF9',
+    fontFamily:'raleway-semibold',
+    fontSize:20,
+    textTransform: 'uppercase',
+  },
+  earnedXpUnit: {
+    color:'#8AFFF9',
+    fontFamily:'raleway-semibold',
+    fontSize:13,
+    textTransform: 'uppercase',
+    marginLeft: 6,
+  },
 });
-

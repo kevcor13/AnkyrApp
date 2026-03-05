@@ -8,6 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { use, useEffect, useRef, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Platform, Animated, Dimensions, PanResponder } from "react-native";
 import icons from "@/constants/icons";
+import images from '@/constants/images';
 import { router } from "expo-router";
 import GraphView from "@/components/GraphView";
 import WorkoutLogDetail, { IWorkoutLog } from '@/components/WorkoutLogDetail'
@@ -288,7 +289,19 @@ const ChallengesPage: React.FC = () => {
         router.push('../(workout)/FullWeekView');
     };
 
+const badgeMap: Record<string, any> = {
+    OLYMPIAN: images.Olympian,
+    TITAN:    images.titan,
+    SKIPPER:  images.skipperBadge,
+    PILOT:    images.pilot,
+    PRIVATE:  images.Private,
+    NOVICE:   images.novice,
+};
 
+const getLeagueImage = (league: string | undefined) => {
+    if (!league) return images.novice;
+    return badgeMap[league.toUpperCase()] ?? images.novice;
+};
 
 
     return (
@@ -308,24 +321,56 @@ const ChallengesPage: React.FC = () => {
 
             {/** Stationary Header */}
             <SafeAreaView style={[styles.header, { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }]}>
-                <TouchableOpacity
-                    style={styles.dateButton}
-                    onPress={() => {
-                        setShowDateModal(true);
-                        handleDateSelect(new Date());
-                    }}
-                    activeOpacity={0.7}
-                >
-                    <Text style={styles.dateButtonText}>
-                        {new Date().toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            weekday: 'short'
-                        }).replace(',', ', ')}
-                    </Text>
-                    <Text style={styles.dateArrow}>▼</Text>
-                </TouchableOpacity>
-            </SafeAreaView>
+    <TouchableOpacity
+        style={styles.dateButton}
+        onPress={() => {
+            setShowDateModal(true);
+            handleDateSelect(new Date());
+        }}
+        activeOpacity={0.7}
+    >
+        <Text style={styles.dateButtonText}>
+            {new Date().toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                weekday: 'short'
+            }).replace(',', ', ')}
+        </Text>
+        <Text style={styles.dateArrow}>▼</Text>
+    </TouchableOpacity>
+
+    {/* Stats Row */}
+    <View style={styles.headerStats}>
+        {/* Streak 
+        <View style={styles.headerStat}>
+            <Image source={icons.blueStreak} style={[styles.headerStatIcon, { tintColor: '#A855F7' }]} />
+            <Text style={styles.headerStatValue}>{userGameData?.streak ?? 0}</Text>
+        </View>
+
+        {/* Losses / Lives 
+        <View style={styles.headerStat}>
+            <Image source={icons.loss} style={[styles.headerStatIcon, { tintColor: '#FFFFFF', opacity: 0.8 }]} />
+            <Text style={styles.headerStatValue}>{userGameData?.losses ?? 0}</Text>
+        </View>
+
+        {/* XP *
+        <View style={styles.headerStat}>
+            <Text style={styles.headerXP}>
+                {(userGameData?.points ?? 0).toLocaleString()}
+                <Text style={styles.headerXPUnit}> XP</Text>
+            </Text>
+        </View>
+
+        {/* League Badge */}
+        <View style={styles.leagueBadgeWrapper}>
+            <Image
+                source={getLeagueImage(userGameData?.league)}
+                style={styles.leagueBadgeIcon}
+                resizeMode="contain"
+            />
+        </View>
+    </View>
+</SafeAreaView>
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
@@ -414,10 +459,12 @@ const ChallengesPage: React.FC = () => {
                     </LinearGradient>
                 </TouchableOpacity>
 
-                {/* League Section */}
+                 League Section 
                 <View style={styles.leagueSection}>
+                    {/*
                     <Text style={styles.leagueTitle}>MY LEAGUE</Text>
-                    <LeagueHeader league={userGameData.league} />
+                        <LeagueHeader league={userGameData.league} />
+                    */}
                     <LeagueMembers />
                 </View>
             </ScrollView>
@@ -597,6 +644,13 @@ const styles = StyleSheet.create({
     mainContainer: {
         flex: 1,
     },
+    headerStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingRight: 16,
+    paddingVertical: 8,
+}, 
     scrollContent: {
         paddingTop: Platform.OS === 'ios' ? 60 : 60,
         paddingBottom: 120,
@@ -1025,4 +1079,14 @@ const styles = StyleSheet.create({
         color: '#38FFF5',
         fontWeight: '600',
     },
+    leagueBadgeWrapper: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    },
+    leagueBadgeIcon: {
+    width: 36,
+    height: 36,
+},
 });

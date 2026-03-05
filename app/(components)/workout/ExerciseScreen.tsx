@@ -174,7 +174,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
       <LinearGradient
         colors={
           isWarmup
-            ? ["#FF0509", "#E89750"]
+            ? ["#000000", "#6C4A23"]
             : isCooldown
             ? ["#A12287", "#1F059D"]
             : theme
@@ -183,6 +183,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
         }
         style={globalStyles.gradientContainer}
       >
+        
         <ScrollView style={globalStyles.workoutCard}>
           <Text style={globalStyles.exerciseNameMain}>{exercise.exerciseName}</Text>
 
@@ -312,10 +313,13 @@ const styles = StyleSheet.create({
   unitButtonTextActive: { color: "#271293" },
   perQualifier: { fontFamily: "poppins-medium", fontSize: 14, color: "rgba(255, 255, 255, 0.85)", textAlign: "center", marginTop: 4 },
   timerSection: {
-    minHeight: 220,
+    minHeight: 100,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginTop: -20,
+    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   nextButtonContainer: {},
 });

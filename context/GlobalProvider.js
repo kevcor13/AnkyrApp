@@ -31,7 +31,7 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://dc6d66010f5c.ngrok-free.app'
+    const ngrokAPI = 'https://2c4c-140-209-62-2.ngrok-free.app'
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       
@@ -77,7 +77,8 @@ const GlobalProvider = ({ children }) => {
                 setUser(data.user);
 
                 // Fetch user data immediately after login
-                await fetchUserData(data.data); 
+                await fetchUserData(data.data);
+                // fetchGameData will handle streak validation internally
                 await fetchGameData(data.data, data.user._id);
 
                 return { success: true };
@@ -195,9 +196,15 @@ const GlobalProvider = ({ children }) => {
         try {
             const response = await axios.post(`${ngrokAPI}/api/user/getGameData`, {token, UserID});
             if (response.data.status === "success") {
-                setUserGameData(response.data.data);
+                const gameData = response.data.data || {};
+                setUserGameData({
+                    ...gameData,
+                    streak: Number(gameData.streak ?? 0),
+                    points: Number(gameData.points ?? 0),
+                });
                 console.log("Fetched game data response:", response.data);
-                return response.data.data;
+
+                return gameData;
             } else {
                 console.error("Failed to fetch user data:", response.data.data);
             }
@@ -601,9 +608,6 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
-
-
-
     useEffect(() => {
         checkLoginState();
     }, []);
@@ -648,7 +652,8 @@ const GlobalProvider = ({ children }) => {
                 updateGameData,
                 fetchWorkoutFocus,
                 getChallenges,
-                fetchUserRoutine
+                fetchUserRoutine,
+                fetchLoggedWorkouts
             }}
         >
             {!loading && children}
