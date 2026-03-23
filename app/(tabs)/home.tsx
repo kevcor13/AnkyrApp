@@ -8,8 +8,8 @@ import {router} from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import PostCard from '@/components/PostCard';
+import AppIcon from "@/components/AppIcon";
 import { LinearGradient } from 'expo-linear-gradient';
-import {Tab} from "../../assets/icons/index"
 
 const Home = () => {
     const { userData, fetchWorkout, fetchGameData, fetchFriends, ngrokAPI, getChallenges, userGameData, fetchUserData } = useGlobal();
@@ -217,7 +217,7 @@ const Home = () => {
                         <Text style={styles.usernameText}>{userData?.username || "User"}</Text>
                     </View>
                     <View style={styles.imageContainer}>
-                    <Tab name="home" color="#FFF" size={70} />
+                    <AppIcon name="home" fill="#FFF" size={70} />
                     </View>
                 </View>
             </SafeAreaView>

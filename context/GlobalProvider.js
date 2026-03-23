@@ -31,7 +31,21 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://2c4c-140-209-62-2.ngrok-free.app'
+    const ngrokAPI = 'https://c88a-173-8-115-9.ngrok-free.app'
+    const normalizeGameData = (rawGameData = {}) => {
+        const coveredDateKeysCurrentMonth = Array.isArray(rawGameData.coveredDateKeysCurrentMonth)
+            ? rawGameData.coveredDateKeysCurrentMonth
+            : [];
+
+        return {
+            ...rawGameData,
+            streak: Number(rawGameData.streak ?? 0),
+            points: Number(rawGameData.points ?? 0),
+            floatiesRemaining: Number(rawGameData.floatiesBalance ?? 0),
+            floatiesCycleKey: rawGameData.floatiesCycleKey ?? null,
+            coveredDateKeysCurrentMonth,
+        };
+    };
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
       
@@ -196,12 +210,8 @@ const GlobalProvider = ({ children }) => {
         try {
             const response = await axios.post(`${ngrokAPI}/api/user/getGameData`, {token, UserID});
             if (response.data.status === "success") {
-                const gameData = response.data.data || {};
-                setUserGameData({
-                    ...gameData,
-                    streak: Number(gameData.streak ?? 0),
-                    points: Number(gameData.points ?? 0),
-                });
+                const gameData = normalizeGameData(response.data.data || {});
+                setUserGameData(gameData);
                 console.log("Fetched game data response:", response.data);
 
                 return gameData;
@@ -212,6 +222,50 @@ const GlobalProvider = ({ children }) => {
             console.error("Error fetching game data:", error);
         }
     }
+
+    const useFloatie = async (UserID, missedDate, clientTimezone, clientTimestamp) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            if (!token) {
+                return { success: false, message: "No authentication token found." };
+            }
+
+            const response = await axios.post(`${ngrokAPI}/api/update/useFloatie`, {
+                token,
+                UserID,
+                missedDate,
+                clientTimezone,
+                clientTimestamp,
+            });
+
+            if (response.data.status !== "success") {
+                return { success: false, message: response.data.message || "Failed to use floatie." };
+            }
+
+            const payload = response.data.data || {};
+
+            // Refresh shared state after successful usage.
+            await Promise.all([
+                fetchGameData(token, UserID),
+                fetchLoggedWorkouts(UserID),
+            ]);
+
+            return {
+                success: true,
+                currentStreak: Number(payload.currentStreak ?? 0),
+                floatiesRemaining: Number(payload.floatiesRemaining ?? 0),
+                usedDateKey: payload.usedDateKey ?? null,
+                timezone: payload.timezone ?? clientTimezone,
+            };
+        } catch (error) {
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to use floatie.";
+            console.error("Error using floatie:", error);
+            return { success: false, message };
+        }
+    };
     //update Game Data
     const updateGameData = async ( userId, points) => {
         try {
@@ -646,6 +700,7 @@ const GlobalProvider = ({ children }) => {
                 addChallengesToWorkout,
                 fetchUserData, // Expose fetchUserData if needed elsewhere
                 fetchGameData,
+                useFloatie,
                 fetchFitnessData,
                 fetchWorkout,
                 fetchFriends,

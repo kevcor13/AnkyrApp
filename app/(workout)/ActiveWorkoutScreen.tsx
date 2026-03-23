@@ -321,6 +321,7 @@ const ActiveWorkoutScreen = () => {
       const completionData = completionResponse?.data?.data || {};
       const previousStreak = Number(completionData.previousStreak);
       const currentStreak = Number(completionData.currentStreak);
+      const floatiesRemaining = Number(completionData.floatiesRemaining ?? 0);
 
       if (
         !Number.isFinite(previousStreak) ||
@@ -347,6 +348,9 @@ const ActiveWorkoutScreen = () => {
           previousStreak: previousStreak.toString(),
           currentStreak: currentStreak.toString(),
           xpEarned: xpEarned.toString(),
+          floatiesRemaining: Number.isFinite(floatiesRemaining)
+            ? floatiesRemaining.toString()
+            : "0",
         }
       });
     } catch {

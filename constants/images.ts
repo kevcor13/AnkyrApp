@@ -1,6 +1,6 @@
 import aperture from "@/assets/icons/Aperture.png"
 import WheelIcon from "@/assets/icons/capture.png"
-import streak from "@/assets/icons/Challenges.png"
+import streak from "@/assets/icons/Challenge.png"
 import eyeHide from "@/assets/icons/eye-hide.png"
 import eye from "@/assets/icons/eye.png"
 import womanIcon from "@/assets/icons/FemaleIcon.png"
@@ -11,7 +11,7 @@ import libraryIcon from "@/assets/icons/icon.library.jpg"
 import maleIcon from "@/assets/icons/MaleIcon.png"
 import meals from "@/assets/icons/nutritionIcon.png"
 import pictureIcons from "@/assets/icons/pictureIcon.png"
-import profile from "@/assets/icons/profileIcon.svg"
+import profile from "@/assets/icons/profileIcon.png"
 import send from "@/assets/icons/Send.png"
 import ankyrName from "@/assets/images/Ankyr-name.png"
 import ankyr from "@/assets/images/ankyr.jpg"
@@ -29,9 +29,13 @@ import titan from "@/assets/Leagues/Titan.png"
 import spotify from "@/assets/images/spotifyLogo.png"
 import appleMusic from "@/assets/images/AppleMusicLogo.png"
 import skipperBadge from "@/assets/Leagues/BadgesWeffect/SKIPPER WREATH.png"
+import squareGradient from "@/assets/images/gradientSquare.png"
+import AiBox from "@/assets/images/AiOverviewBox.png"
 
 export default {
     skipperBadge,
+    AiBox,
+    squareGradient,
     bronze,
     aperture,
     spotify,

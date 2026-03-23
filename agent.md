@@ -104,6 +104,7 @@ AnkyrApp/
 │       ├── ChangePreview.tsx
 │       └── notifications.tsx
 ├── components/                 # Reusable UI components
+│   ├── AppIcon.tsx            # App-wide SVG icon renderer
 │   ├── CustomButton.tsx
 │   ├── PostCard.tsx
 │   ├── WorkoutCard.tsx
@@ -116,15 +117,16 @@ AnkyrApp/
 ├── providers/                   # Additional providers
 │   └── ScaleProvider.tsx      # Responsive scaling utilities
 ├── constants/                  # Constants and configs
-│   ├── images.ts              # Image imports
-│   ├── icons.ts               # Icon imports
+│   ├── images.ts              # Raster images, backgrounds, badges, and photos
+│   ├── icons.ts               # Raster icon/image sources for <Image /> and tab icons
+│   ├── svgIcons.ts            # Central registry for imported SVG icon components
 │   ├── styles.js              # Shared StyleSheet styles
 │   └── workout.ts              # Workout type definitions
 ├── lib/                        # Utility libraries
 │   └── appwrite.ts            # Appwrite storage functions
 ├── assets/                     # Static assets
 │   ├── fonts/                 # Custom fonts (Poppins, Quicksand, Raleway, etc.)
-│   ├── icons/                 # App icons
+│   ├── icons/                 # Raster and SVG icon source files
 │   ├── images/                # Images
 │   ├── Leagues/               # League badge images
 │   ├── Recipes/               # Recipe images
@@ -132,8 +134,9 @@ AnkyrApp/
 ├── global.css                 # Tailwind CSS global styles
 ├── tailwind.config.js         # Tailwind configuration
 ├── babel.config.js            # Babel config (NativeWind, Reanimated)
-├── metro.config.js            # Metro bundler config
-└── tsconfig.json              # TypeScript configuration
+├── metro.config.js            # Metro bundler config with react-native-svg-transformer
+├── tsconfig.json              # TypeScript configuration
+└── image.d.ts                 # Asset module declarations, including SVG components
 ```
 
 ---
@@ -387,12 +390,22 @@ See `constants/styles.js` for shared StyleSheet definitions.
 ## Important Constants
 
 ### Images (`constants/images.ts`)
-- Exports all image assets for easy importing
+- Exports raster images, backgrounds, badges, and other non-SVG assets used as `Image` sources
 - Usage: `import images from "@/constants/images"`
 
 ### Icons (`constants/icons.ts`)
-- Exports all icon assets
+- Exports raster icons and tab icon image sources
 - Usage: `import icons from "@/constants/icons"`
+
+### SVG Icons (`constants/svgIcons.ts` + `components/AppIcon.tsx`)
+- `constants/svgIcons.ts` is the single registry for SVG icon components
+- `components/AppIcon.tsx` renders any registered SVG icon by name
+- Usage:
+```tsx
+import AppIcon from "@/components/AppIcon";
+
+<AppIcon name="nutrition" size={32} fill="#FFFFFF" />
+```
 
 ### Workout Types (`constants/workout.ts`)
 - TypeScript interfaces for workout data structures
@@ -410,6 +423,15 @@ See `constants/styles.js` for shared StyleSheet definitions.
 ### Import Paths
 - Use `@/` alias for root directory imports
 - Example: `import { useGlobal } from "@/context/GlobalProvider"`
+
+### Asset Workflow
+- Use `AppIcon` for reusable SVG icons that should be tintable and shared across the app
+- Add new SVG files to `assets/icons/`, register them in `constants/svgIcons.ts`, then render them with `import AppIcon from "@/components/AppIcon"`
+- Example: `<AppIcon name="home" size={24} fill="#fff" />`
+- Use `constants/icons.ts` for raster icon assets passed to React Native `<Image source={...} />` or `NativeTabs.Icon`
+- Use `constants/images.ts` for non-icon imagery such as photos, backgrounds, league badges, and other large image assets
+- Avoid raw `require("@/assets/...")` imports inside screens when the asset belongs in one of the central registries
+- SVG imports are configured as React components through `react-native-svg-transformer`, so do not pass an imported `.svg` directly to `<Image source={...} />`
 
 ### Async Storage
 - Token: `AsyncStorage.getItem("token")`

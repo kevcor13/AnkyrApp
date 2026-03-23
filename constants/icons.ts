@@ -21,10 +21,24 @@ import blueStreak from "@/assets/icons/BlueStreakIcon.png"
 import halfArrow from "@/assets/icons/halfArrowLeft.png"
 import stopButton from "@/assets/icons/StopWorkoutButton.png"
 import skipButton from "@/assets/icons/SkipButton.png"
+import flotie from "@/assets/icons/flotie.png"
+import gradientStreak from "@/assets/icons/Vector.png"
+import tabCamera from "@/assets/icons/Camera.png"
+import tabChallenge from "@/assets/icons/Challenge.png"
+import tabHome from "@/assets/icons/Home.png"
+import tabMeals from "@/assets/icons/Meals.png"
+import tabProfile from "@/assets/icons/Profile.png"
 
 export default {
     headphonesIcon,
+    gradientStreak,
+    tabCamera,
+    tabChallenge,
+    tabHome,
+    tabMeals,
+    tabProfile,
     skipButton,
+    flotie,
     stopButton,
     infoIcon,
     halfArrow,

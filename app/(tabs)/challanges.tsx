@@ -5,18 +5,23 @@ import CustomButton from "@/components/CustomButton";
 import axios from "axios";
 import LeagueHeader from "@/components/LeagueHeader";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { use, useEffect, useRef, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Platform, Animated, Dimensions, PanResponder } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View, StyleSheet, Image, Modal, Platform, Animated, Dimensions, PanResponder, ImageBackground } from "react-native";
 import icons from "@/constants/icons";
 import images from '@/constants/images';
 import { router } from "expo-router";
 import GraphView from "@/components/GraphView";
-import WorkoutLogDetail, { IWorkoutLog } from '@/components/WorkoutLogDetail'
+import WorkoutLogDetail from '@/components/WorkoutLogDetail'
+import type { IWorkoutLog } from '@/components/WorkoutLogDetail'
 import NextDayWorkout from "@/components/NextDayWorkout";
 import LeagueMembers from "@/components/LeagueMembers";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateDropdown from "@/components/DateDropDown";
 import { modalStyles as Mstyle } from '@/constants/modalStyles';
+import MaskedView from '@react-native-masked-view/masked-view';
+import ThisWeekCard from "@/components/ThisWeekCard";
+import AppIcon from "@/components/AppIcon";
+import App from "./camera";
 
 
 interface IChallenge {
@@ -26,9 +31,11 @@ interface IChallenge {
     [key: string]: any;
 }
 
+const floatiePromptShownByUser = new Set<string>();
+
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, fetchWorkout, fetchGameData, fetchUserRoutine, fetchTemporaryUserRoutine } = useGlobal();
+    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, fetchWorkout, fetchGameData, fetchUserRoutine, fetchTemporaryUserRoutine, useFloatie } = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
@@ -44,12 +51,13 @@ const ChallengesPage: React.FC = () => {
     const [locallySelectedChallenges, setLocallySelectedChallenges] = useState<IChallenge[]>([]);
     const [showDateModal, setShowDateModal] = useState(false);
     const [userRoutine, setUserRoutine] = useState<any>(null);
-
+    const [showFloatiePrompt, setShowFloatiePrompt] = useState(false);
+    const [floatieTargetDate, setFloatieTargetDate] = useState<Date | null>(null);
+    const [isUsingFloatie, setIsUsingFloatie] = useState(false);
     const [isRestDay, setIsRestDay] = useState(false);
 
-
-    const panY = useRef(new Animated.Value(0)).current; // For swipe down
-    const contentOpacity = useRef(new Animated.Value(1)).current; // For date switching
+    const panY = useRef(new Animated.Value(0)).current;
+    const contentOpacity = useRef(new Animated.Value(1)).current;
     const SCREEN_HEIGHT = Dimensions.get('screen').height;
 
     useEffect(() => {
@@ -61,17 +69,14 @@ const ChallengesPage: React.FC = () => {
                 setCurrentDay(today);
                 fetchGameData(token, userData._id);
 
-                // Fetch routine when entering Challenges page - check temporary first, then regular
                 if (userData?._id) {
-                    // First, try to fetch temporary routine
                     let routineToUse = null;
                     const tempRoutine = await fetchTemporaryUserRoutine(userData._id);
-                    
+
                     if (tempRoutine) {
                         console.log("Found temporary routine, using it:", JSON.stringify(tempRoutine, null, 2));
                         routineToUse = tempRoutine;
                     } else {
-                        // If no temporary routine, fetch regular routine
                         console.log("No temporary routine found, fetching regular routine");
                         const fetchedRoutine = await fetchUserRoutine(userData._id);
                         if (fetchedRoutine) {
@@ -79,7 +84,7 @@ const ChallengesPage: React.FC = () => {
                             console.log("User Routine Schema:", JSON.stringify(fetchedRoutine, null, 2));
                         }
                     }
-                    
+
                     if (routineToUse) {
                         setUserRoutine(routineToUse);
                     }
@@ -113,10 +118,8 @@ const ChallengesPage: React.FC = () => {
         }
     }, [userData]);
 
-    // Automatically show today's workout from routine when routine is loaded and modal opens
     useEffect(() => {
         if (userRoutine && showDateModal) {
-            // Small delay to ensure modal is rendered
             const timer = setTimeout(() => {
                 const today = new Date();
                 handleDateSelect(today);
@@ -125,6 +128,16 @@ const ChallengesPage: React.FC = () => {
         }
     }, [userRoutine, showDateModal]);
 
+    useEffect(() => {
+        if (!userData?._id || floatiePromptShownByUser.has(userData._id)) return;
+        const targetDate = getMostRecentEligibleMissedDate();
+        if (targetDate) {
+            floatiePromptShownByUser.add(userData._id);
+            setFloatieTargetDate(targetDate);
+            setShowFloatiePrompt(true);
+        }
+    }, [userRoutine, userData?._id, loggedWorkouts, userGameData?.floatiesRemaining, userGameData?.coveredDateKeysCurrentMonth]);
+
     const isSameDay = (date1: string | number | Date, date2: string | number | Date) => {
         if (!date1 || !date2) return false;
         const d1 = new Date(date1);
@@ -132,6 +145,95 @@ const ChallengesPage: React.FC = () => {
         return d1.getFullYear() === d2.getFullYear() &&
             d1.getMonth() === d2.getMonth() &&
             d1.getDate() === d2.getDate();
+    };
+
+    const toDateKey = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    };
+
+    const normalizeStartOfDay = (date: Date) => {
+        const normalized = new Date(date);
+        normalized.setHours(0, 0, 0, 0);
+        return normalized;
+    };
+
+    const isInCurrentMonth = (date: Date) => {
+        const today = new Date();
+        return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth();
+    };
+
+    const getRoutineDayForDate = (date: Date) => {
+        if (!userRoutine?.routine || !Array.isArray(userRoutine.routine)) return null;
+        const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+        return userRoutine.routine.find((day: any) => day?.day === weekday) || null;
+    };
+
+    const isScheduledWorkoutDate = (date: Date) => {
+        const routineDay = getRoutineDayForDate(date);
+        if (!routineDay) return false;
+        const focus = String(routineDay.focus || "").trim().toLowerCase();
+        const exercises = Array.isArray(routineDay.workoutRoutine) ? routineDay.workoutRoutine : [];
+        return focus !== "rest" && exercises.length > 0;
+    };
+
+    const hasLoggedWorkoutForDate = (date: Date) => {
+        return loggedWorkouts.some((log: { date: string | number | Date }) => isSameDay(log.date, date));
+    };
+
+    const coveredDateKeys = Array.isArray(userGameData?.coveredDateKeysCurrentMonth)
+        ? userGameData.coveredDateKeysCurrentMonth
+        : [];
+
+    const isAlreadyCoveredDateKey = (date: Date) => {
+        return coveredDateKeys.includes(toDateKey(date));
+    };
+
+    const getMostRecentEligibleMissedDate = () => {
+        if (!userRoutine?.routine || !userData?._id) return null;
+        if (Number(userGameData?.floatiesRemaining ?? 0) <= 0) return null;
+
+        const today = normalizeStartOfDay(new Date());
+        const cursor = new Date(today);
+        cursor.setDate(cursor.getDate() - 1);
+
+        while (cursor.getMonth() === today.getMonth() && cursor.getFullYear() === today.getFullYear()) {
+            if (
+                isScheduledWorkoutDate(cursor) &&
+                !hasLoggedWorkoutForDate(cursor) &&
+                !isAlreadyCoveredDateKey(cursor)
+            ) {
+                return new Date(cursor);
+            }
+            cursor.setDate(cursor.getDate() - 1);
+        }
+        return null;
+    };
+
+    const formatCycleKey = (cycleKey: string | null | undefined) => {
+        if (!cycleKey || !/^\d{4}-\d{2}$/.test(cycleKey)) return "";
+        const [year, month] = cycleKey.split("-");
+        const parsed = new Date(Number(year), Number(month) - 1, 1);
+        return parsed.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    };
+
+    const getFloatieEligibility = (date: Date | null) => {
+        if (!date) return { canUse: false, reason: "Select a date to use a floatie." };
+
+        const selected = normalizeStartOfDay(new Date(date));
+        const today = normalizeStartOfDay(new Date());
+        const remaining = Number(userGameData?.floatiesRemaining ?? 0);
+
+        if (selected >= today) return { canUse: false, reason: "Floaties can only be used for past dates." };
+        if (!isInCurrentMonth(selected)) return { canUse: false, reason: "Floaties can only be used in the current month." };
+        if (!isScheduledWorkoutDate(selected)) return { canUse: false, reason: "This date is a rest day or unscheduled." };
+        if (hasLoggedWorkoutForDate(selected)) return { canUse: false, reason: "Workout already completed for this date." };
+        if (isAlreadyCoveredDateKey(selected)) return { canUse: false, reason: "This date is already covered." };
+        if (remaining <= 0) return { canUse: false, reason: "No floaties remaining this month." };
+
+        return { canUse: true, reason: "" };
     };
 
     const getStatusForDate = (date: Date) => {
@@ -150,25 +252,20 @@ const ChallengesPage: React.FC = () => {
         const today = new Date();
         const selectedDayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
 
-        // First check if there's a completed workout for this date
         const workoutForDay = loggedWorkouts.find((log: { date: string | number | Date; }) => isSameDay(log.date, selectedDate));
-        
+
         if (workoutForDay) {
-            // Show completed workout
             setSelectedWorkout(workoutForDay);
             setNextDayWorkout(null);
             setShowNextDayWorkout(false);
             setIsWorkoutAllowed(isSameDay(selectedDate, today));
         } else {
-            // No completed workout, check routine for scheduled workout
             setSelectedWorkout(null);
-            
+
             if (userRoutine?.routine) {
-                // Find workout for this day in the routine
                 const routineDay = userRoutine.routine.find((day: any) => day.day === selectedDayName);
-                
+
                 if (routineDay) {
-                    // Format the routine day to match NextDayWorkout component structure
                     const formattedWorkout = {
                         day: routineDay.day,
                         focus: routineDay.focus || userWorkoutData?.focus || '',
@@ -180,12 +277,10 @@ const ChallengesPage: React.FC = () => {
                     setNextDayWorkout(formattedWorkout);
                     setShowNextDayWorkout(true);
                 } else {
-                    // No workout scheduled for this day
                     setNextDayWorkout(null);
                     setShowNextDayWorkout(false);
                 }
             } else if (selectedDate > today) {
-                // Fallback: fetch workout data from API if routine not available
                 const token = await AsyncStorage.getItem("token");
                 const UserID = userData._id;
                 const date = selectedDate;
@@ -207,7 +302,7 @@ const ChallengesPage: React.FC = () => {
                 setShowNextDayWorkout(false);
                 setIsNotCompleted(true);
             }
-            
+
             setIsWorkoutAllowed(false);
         }
     };
@@ -220,8 +315,6 @@ const ChallengesPage: React.FC = () => {
             console.error("No authentication token found");
             return;
         }
-        // Refresh the workout data from the server (this will update userWorkoutData in GlobalProvider)
-        // fetchWorkout already sets userWorkoutData globally, so we don't need to set it here
         if (userData?._id) {
             await fetchWorkout(token, userData._id);
             console.log("Refreshed workout data from server");
@@ -245,11 +338,53 @@ const ChallengesPage: React.FC = () => {
         setLocallySelectedChallenges([]);
     };
 
-    const closeDateModal = () => {
-        setShowDateModal(false);
-            panY.setValue(0);
+    const handleUseFloatieForDate = async (date: Date | null, closePrompt = false) => {
+        if (!date || !userData?._id || isUsingFloatie) return;
+
+        const eligibility = getFloatieEligibility(date);
+        if (!eligibility.canUse) {
+            Alert.alert("Floatie unavailable", eligibility.reason);
+            return;
+        }
+
+        try {
+            setIsUsingFloatie(true);
+            const response = await useFloatie(
+                userData._id,
+                date.toISOString(),
+                Intl.DateTimeFormat().resolvedOptions().timeZone,
+                new Date().toISOString()
+            );
+
+            if (!response?.success) {
+                Alert.alert("Unable to use floatie", response?.message || "Please try again.");
+                return;
+            }
+
+            Alert.alert(
+                "Floatie used",
+                `Saved ${response.usedDateKey || toDateKey(date)}. ${response.floatiesRemaining} remaining this month.`
+            );
+
+            if (selectedDate && isSameDay(selectedDate, date)) {
+                await handleDateSelect(new Date(selectedDate));
+            }
+
+            if (closePrompt) {
+                setShowFloatiePrompt(false);
+                setFloatieTargetDate(null);
+            }
+        } catch (error) {
+            Alert.alert("Unable to use floatie", "Please try again.");
+        } finally {
+            setIsUsingFloatie(false);
+        }
     };
 
+    const closeDateModal = () => {
+        setShowDateModal(false);
+        panY.setValue(0);
+    };
 
     const panResponder = useRef(
         PanResponder.create({
@@ -289,161 +424,176 @@ const ChallengesPage: React.FC = () => {
         router.push('../(workout)/FullWeekView');
     };
 
-const badgeMap: Record<string, any> = {
-    OLYMPIAN: images.Olympian,
-    TITAN:    images.titan,
-    SKIPPER:  images.skipperBadge,
-    PILOT:    images.pilot,
-    PRIVATE:  images.Private,
-    NOVICE:   images.novice,
-};
+    const badgeMap: Record<string, any> = {
+        OLYMPIAN: images.Olympian,
+        TITAN: images.titan,
+        SKIPPER: images.skipperBadge,
+        PILOT: images.pilot,
+        PRIVATE: images.Private,
+        NOVICE: images.novice,
+    };
 
-const getLeagueImage = (league: string | undefined) => {
-    if (!league) return images.novice;
-    return badgeMap[league.toUpperCase()] ?? images.novice;
-};
+    const getLeagueImage = (league: string | undefined) => {
+        if (!league) return images.novice;
+        return badgeMap[league.toUpperCase()] ?? images.novice;
+    };
 
+    const selectedDateFloatieEligibility = getFloatieEligibility(selectedDate);
+    const floatieCycleLabel = formatCycleKey(userGameData?.floatiesCycleKey);
 
     return (
-
-        // <LinearGradient
-        //     colors={['#FF0509', '#271293']}
-        //     style={styles.mainContainer}
-        // >
-
-        <View style={{ backgroundColor: "#000000" }}>
-            {/** Stationary Gradient */}
-            <LinearGradient
-                colors={['#000000', '#000000', 'transparent']}
-                locations={[0, 0.43, 1]}
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 10 }}
-            />
-
-            {/** Stationary Header */}
-            <SafeAreaView style={[styles.header, { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20 }]}>
-    <TouchableOpacity
-        style={styles.dateButton}
-        onPress={() => {
-            setShowDateModal(true);
-            handleDateSelect(new Date());
-        }}
-        activeOpacity={0.7}
-    >
-        <Text style={styles.dateButtonText}>
-            {new Date().toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                weekday: 'short'
-            }).replace(',', ', ')}
-        </Text>
-        <Text style={styles.dateArrow}>▼</Text>
-    </TouchableOpacity>
-
-    {/* Stats Row */}
-    <View style={styles.headerStats}>
-        {/* Streak 
-        <View style={styles.headerStat}>
-            <Image source={icons.blueStreak} style={[styles.headerStatIcon, { tintColor: '#A855F7' }]} />
-            <Text style={styles.headerStatValue}>{userGameData?.streak ?? 0}</Text>
-        </View>
-
-        {/* Losses / Lives 
-        <View style={styles.headerStat}>
-            <Image source={icons.loss} style={[styles.headerStatIcon, { tintColor: '#FFFFFF', opacity: 0.8 }]} />
-            <Text style={styles.headerStatValue}>{userGameData?.losses ?? 0}</Text>
-        </View>
-
-        {/* XP *
-        <View style={styles.headerStat}>
-            <Text style={styles.headerXP}>
-                {(userGameData?.points ?? 0).toLocaleString()}
-                <Text style={styles.headerXPUnit}> XP</Text>
-            </Text>
-        </View>
-
-        {/* League Badge */}
-        <View style={styles.leagueBadgeWrapper}>
-            <Image
-                source={getLeagueImage(userGameData?.league)}
-                style={styles.leagueBadgeIcon}
-                resizeMode="contain"
-            />
-        </View>
-    </View>
-</SafeAreaView>
+        <View style={{ backgroundColor: "#000000", alignContent: 'space-between' }}>
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showFloatiePrompt}
+                onRequestClose={() => setShowFloatiePrompt(false)}
+            >
+                <View style={styles.floatiePromptOverlay}>
+                    <View style={styles.floatiePromptCard}>
+                        <Text style={styles.floatiePromptTitle}>Missed Workout Detected</Text>
+                        <Text style={styles.floatiePromptText}>
+                            {floatieTargetDate
+                                ? `You missed ${formatModalDate(floatieTargetDate)}. Use one floatie to cover this day and protect your streak.`
+                                : "You missed a scheduled workout. Use one floatie to protect your streak."}
+                        </Text>
+                        <Text style={styles.floatiePromptRemaining}>
+                            Floaties remaining: {userGameData?.floatiesRemaining ?? 0}
+                        </Text>
+                        <View style={styles.floatiePromptActions}>
+                            <TouchableOpacity
+                                style={styles.floatiePromptDismiss}
+                                onPress={() => setShowFloatiePrompt(false)}
+                            >
+                                <Text style={styles.floatiePromptDismissText}>Not now</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.floatiePromptUse, isUsingFloatie && styles.floatiePromptUseDisabled]}
+                                disabled={isUsingFloatie}
+                                onPress={() => handleUseFloatieForDate(floatieTargetDate, true)}
+                            >
+                                <Text style={styles.floatiePromptUseText}>
+                                    {isUsingFloatie ? "Using..." : "Use Floatie"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header Card */}
-                <LinearGradient
-                    style={styles.headerCard}
-                    colors={['#FF0509', '#271293']}
-                >
-                    <Text style={styles.dayLabel}>YOUR</Text>
-                    <Text style={styles.dayText}>{currentDay}</Text>
-                    <Text style={styles.workoutLabel}>WORKOUT</Text>
+                {/* Calendar and Header Card */}
+                <View style={{ marginTop: Platform.OS === 'ios' ? -10 : 10 }}>
+                    <CalendarSelector userRoutine={userRoutine} />
+                    <ImageBackground source={images.squareGradient} imageStyle={{ height: 224 }}>
+                        <View
+                            style={styles.headerCard}
+                        >
+                            <Text style={styles.dayLabel}>YOUR</Text>
+                            <Text style={styles.dayText}>{currentDay}</Text>
+                            <Text style={styles.workoutLabel}>WORKOUT</Text>
 
-                    {isWorkoutAllowed || selectedWorkout ? (
-                        <View style={styles.statusBadge}>
-                            <Text style={styles.statusText}>✓ COMPLETED</Text>
+                            {isWorkoutAllowed || selectedWorkout ? (
+                                <View style={styles.statusBadge}>
+                                    <Text style={styles.statusText}>✓ COMPLETED</Text>
+                                </View>
+                            ) : (
+                                <View style={styles.workoutInfoContainer}>
+                                    <Text style={styles.focusText}>{focus}</Text>
+                                    <View style={styles.timeRow}>
+                                        <Image source={icons.blueStreak} style={styles.timeIcon} />
+                                        <Text style={styles.timeText}>{timeEstimate} min</Text>
+                                    </View>
+                                </View>
+                            )}
                         </View>
-                    ) : (
-                        <View style={styles.workoutInfoContainer}>
-                            <Text style={styles.focusText}>{focus}</Text>
-                            <View style={styles.timeRow}>
-                                <Image source={icons.blueStreak} style={styles.timeIcon} />
-                                <Text style={styles.timeText}>{timeEstimate} min</Text>
-                            </View>
-                            <TouchableOpacity
-                                style={styles.iosButton}
-                                onPress={() => router.navigate("/(workout)/WorkoutOverview")}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.iosButtonText}>Start Workout</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                </LinearGradient>
-
-                {/* Calendar 
-                <View style={styles.calendarContainer}>
-                    <CalendarSelector onSelect={handleDateSelect} getStatusForDate={getStatusForDate} />
+                    </ImageBackground>
                 </View>
 
-                {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
-                {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
-                */}
-                {/* Stats Cards */}
+                {/* Overview and Quick Start Buttons */}
+                <View style={styles.workoutButtons}>
+                    <TouchableOpacity style={styles.actionCard} 
+                        activeOpacity={0.7} 
+                        onPress={() => router.navigate("/(workout)/WorkoutOverview")}
+                    >
+                        <View style={styles.actionIconContainer}>
+                            <AppIcon name="overviewBox" size={24} />
+                        </View>
+                        <Text style={styles.actionCardText}>overview</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionCard} 
+                        activeOpacity={0.7}
+                        onPress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
+                    >
+                        <View style={styles.actionIconContainer}>
+                            <AppIcon name="upArrow" size={24} />
+                        </View>
+                        <Text style={styles.quickStartText}>quick start</Text>
+                    </TouchableOpacity>
+                </View>
+
+                {/* My AI Overview */}
+                <TouchableOpacity style={{ marginTop: 3, backgroundColor: "red", borderRadius: 35 }} activeOpacity={0.7}>
+                    <LinearGradient
+                        colors={['#1B191E', '#1F254B', '#2A42B7', '#A491FF']}
+                        //locations={[0, 0.29, 0.52, 1]}
+                        start={{ x: 1, y: 1 }}
+                        end={{ x: 0, y: 0 }}
+                        style={{ borderRadius: 35 }}
+                    >
+                        <View style={styles.aiBoxContent}>
+                            <AppIcon name="checkMark" size={20} fill="no fill" />
+                            <Text style={styles.aiBoxText}>my Ai overview</Text>
+                        </View>
+                        {/** </ImageBackground>*/}
+                    </LinearGradient>
+                </TouchableOpacity>
+
+
                 <View style={styles.statsContainer}>
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Image source={icons.whiteZap} style={styles.statIcon} />
-                            <Text style={styles.statLabel}>Streak</Text>
+                    <TouchableOpacity style={styles.myPlanCard} onPress={() => router.navigate("/home")} activeOpacity={0.7}>
+                        <Text style={styles.myPlanTitle}>my plan</Text>
+                        <View style={styles.myPlanIconContainer}>
+                            <AppIcon name="doubleBox" size={24} fill="#FFF" />
                         </View>
-                        <Text style={styles.statValue}>{userGameData.streak}</Text>
-                        <Text style={styles.statUnit}>days</Text>
-                        <Text style={styles.statCaption}>Keep it going!</Text>
-                    </View>
-
-                    <View style={styles.statCard}>
-                        <View style={styles.statHeader}>
-                            <Text style={styles.statLabel}>XP</Text>
-                            <TouchableOpacity
-                                onPress={() => setShowInfoModal(true)}
-                                style={styles.infoButton}
-                            >
-                                <Image source={icons.infoIcon} style={styles.infoIcon} />
-                            </TouchableOpacity>
+                    </TouchableOpacity>
+                    <View style={styles.rightColumn}>
+                        <View style={styles.streakCard}>
+                            <Text style={styles.streakLabel}>streak</Text>
+                            <View style={styles.streakContentRow}>
+                                <View style={styles.streakIconWrapper}>
+                                    <Image source={icons.whiteZap} style={styles.streakIcon} />
+                                </View>
+                                <Text style={styles.streakValue}>{userGameData.streak}</Text>
+                            </View>
                         </View>
-                        <Text style={styles.statValue}>{userGameData.points}</Text>
-                        <Text style={styles.statUnit}>points</Text>
-                        <Text style={styles.statCaption}>Impressive progress</Text>
+                        <View style={styles.xpCard}>
+                            <Text style={styles.xpLabel}>XP</Text>
+                            <Text style={styles.xpValue}>{userGameData.points}</Text>
+                        </View>
                     </View>
                 </View>
 
-                {/* Challenges Button */}
+                {/* Weight Tracking and Weekly Challenges */}
+                <View style={styles.statsContainer}>
+                    <TouchableOpacity style={styles.myPlanCard} activeOpacity={0.7}>
+                        <Text style={styles.myPlanTitle}>weight tracking</Text>
+                        <View style={styles.myPlanIconContainer}>
+                            <AppIcon name="weight" size={24} fill="#FFF" />
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.myPlanCard} activeOpacity={0.7}>
+                        <Text style={styles.weeklyChallengesTitle}>weekly challenges</Text>
+                        <View style={styles.myPlanIconContainer}>
+                            <AppIcon name="targetIcon" size={24} />
+                        </View>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Challenges Button
                 <TouchableOpacity
                     style={styles.challengesButton}
                     onPress={() => setShowChallanges(true)}
@@ -458,23 +608,15 @@ const getLeagueImage = (league: string | undefined) => {
                         <Image source={icons.whiteZap} style={styles.challengesIcon} />
                     </LinearGradient>
                 </TouchableOpacity>
-
-                 League Section 
+                */}
+                {/* League Section */}
                 <View style={styles.leagueSection}>
-                    {/*
-                    <Text style={styles.leagueTitle}>MY LEAGUE</Text>
-                        <LeagueHeader league={userGameData.league} />
-                    */}
                     <LeagueMembers />
                 </View>
-            </ScrollView>
-
-
-
-
+            </ScrollView >
 
             {/* Date Selection Modal */}
-            <Modal
+            < Modal
                 animationType="slide"
                 transparent={true}
                 visible={showDateModal}
@@ -484,10 +626,9 @@ const getLeagueImage = (league: string | undefined) => {
                     <Animated.View
                         style={[
                             Mstyle.dateModalContainer,
-                            { transform: [{ translateY: panY }] } // Connects the swipe gesture
+                            { transform: [{ translateY: panY }] }
                         ]}
                     >
-                        {/* Attached panHandlers to the header area specifically */}
                         <View style={Mstyle.modalHeader} {...panResponder.panHandlers}>
                             <View style={Mstyle.modalHandle} />
                             <TouchableOpacity
@@ -499,45 +640,45 @@ const getLeagueImage = (league: string | undefined) => {
                         </View>
 
                         <ScrollView style={Mstyle.modalScroll} showsVerticalScrollIndicator={false}>
-                            <View style={styles.calendarContainer}>
-                                <CalendarSelector
-                                    onSelect={handleDateSelect}
-                                    getStatusForDate={getStatusForDate}
-                                    userRoutine={userRoutine}
-                                    userData={userData}
-                                    ngrokAPI={ngrokAPI}
-                                    onRoutineUpdated={handleRoutineUpdated}
-                                />
-                            </View>
+                            <View style={styles.calendarContainer}></View>
 
-                            {/* This Animated.View handles the smooth date switching */}
                             <Animated.View style={{ opacity: contentOpacity }}>
                                 {selectedWorkout && <WorkoutLogDetail workout={selectedWorkout} />}
                                 {showNextDayWorkout && <NextDayWorkout workout={nextDayWorkout} />}
                             </Animated.View>
 
-                            {/* <View style={Mstyle.legendSection}>
-                                <View style={Mstyle.legendItem}>
-                                    <View style={Mstyle.legendColor} />
-                                    <Text style={Mstyle.legendText}>Body Energy</Text>
+                            {selectedDate && (
+                                <View style={styles.floatieDateCard}>
+                                    <Text style={styles.floatieDateTitle}>Floatie</Text>
+                                    <Text style={styles.floatieDateSubtitle}>
+                                        {formatModalDate(selectedDate)}
+                                    </Text>
+                                    <Text style={styles.floatieDateReason}>
+                                        {selectedDateFloatieEligibility.canUse
+                                            ? "Use one floatie to cover this missed workout day."
+                                            : selectedDateFloatieEligibility.reason}
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.floatieDateButton,
+                                            (!selectedDateFloatieEligibility.canUse || isUsingFloatie) && styles.floatieDateButtonDisabled,
+                                        ]}
+                                        disabled={!selectedDateFloatieEligibility.canUse || isUsingFloatie}
+                                        onPress={() => handleUseFloatieForDate(selectedDate)}
+                                    >
+                                        <Text style={styles.floatieDateButtonText}>
+                                            {isUsingFloatie ? "Using..." : "Use Floatie"}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
-                            </View> 
-
-                            <TouchableOpacity
-                                style={Mstyle.fullWeekButton}
-                                onPress={handleViewFullWeek}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={Mstyle.fullWeekButtonText}>Today</Text>
-                            </TouchableOpacity>
-                            */}
+                            )}
                         </ScrollView>
                     </Animated.View>
                 </View>
-            </Modal>
+            </Modal >
 
             {/* Challenges Modal */}
-            <Modal
+            < Modal
                 animationType='slide'
                 transparent={true}
                 visible={showChallanges}
@@ -546,7 +687,6 @@ const getLeagueImage = (league: string | undefined) => {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
-                        {/* Modal Header */}
                         <View style={styles.modalHeader}>
                             <View style={styles.modalHandle} />
                             <View style={styles.modalTitleContainer}>
@@ -604,10 +744,10 @@ const getLeagueImage = (league: string | undefined) => {
                         </View>
                     </View>
                 </View>
-            </Modal>
+            </Modal >
 
             {/* Info Modal */}
-            <Modal
+            < Modal
                 animationType="fade"
                 transparent={true}
                 visible={showInfoModal}
@@ -630,38 +770,39 @@ const getLeagueImage = (league: string | undefined) => {
                         </TouchableOpacity>
                     </View>
                 </View>
-            </Modal>
-        </View>
+            </Modal >
+        </View >
     );
 };
 
 export default ChallengesPage;
 
 const styles = StyleSheet.create({
-    header: {
+    // AI Box
+    aiBoxContent: {
         flexDirection: 'row',
+        padding: 20,
+        //marginHorizontal: 10,
+        //marginTop: 10,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
     },
-    mainContainer: {
-        flex: 1,
+    aiBoxText: {
+        color: '#FFF',
+        fontFamily: 'Poppins-regular',
+        fontSize: 15,
+        marginLeft: 8,
     },
-    headerStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    paddingRight: 16,
-    paddingVertical: 8,
-}, 
+
+    // Scroll Content
     scrollContent: {
         paddingTop: Platform.OS === 'ios' ? 60 : 60,
         paddingBottom: 120,
     },
+
+    // Header Card
     headerCard: {
-        marginTop: Platform.OS === 'ios' ? 60 : 40,
-        marginHorizontal: 20,
         padding: 24,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: 24,
-        backdropFilter: 'blur(10px)',
     },
     dayLabel: {
         fontSize: 46,
@@ -694,9 +835,6 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginTop: 8,
     },
-    missedBadge: {
-        backgroundColor: 'rgba(255, 59, 48, 0.2)',
-    },
     statusText: {
         color: '#38FFF5',
         fontSize: 16,
@@ -707,8 +845,8 @@ const styles = StyleSheet.create({
         marginTop: -10,
     },
     focusText: {
-        fontSize: 32,
-        color: '#8B8BEA',
+        fontSize: 21,
+        color: '#FFFFFF',
         fontWeight: '600',
         fontFamily: 'raleway-light',
         fontStyle: 'italic',
@@ -729,81 +867,138 @@ const styles = StyleSheet.create({
         color: '#38FFF5',
         fontWeight: '600',
     },
-    iosButton: {
-        backgroundColor: '#38FFF5',
-        paddingVertical: 14,
-        borderRadius: 12,
-        alignItems: 'center',
-        shadowColor: '#38FFF5',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-    },
-    iosButtonText: {
-        color: '#000',
-        fontSize: 17,
-        fontWeight: '600',
-    },
-    calendarContainer: {
-        //marginTop: 20,
-        //marginHorizontal: 20,
-    },
-    statsContainer: {
+
+    // Action Cards (Overview and Quick Start)
+    workoutButtons: {
         flexDirection: 'row',
-        marginHorizontal: 20,
-        marginTop: 20,
-        gap: 12,
+        marginTop: -15,
+        gap: 5,
+        paddingHorizontal: 0,
     },
-    statCard: {
+    actionCard: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        borderRadius: 16,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    statHeader: {
+        backgroundColor: '#1B191E',
+        borderRadius: 35,
+        padding: 16,
+        height: 80,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 12,
+        justifyContent: 'center',
     },
-    statIcon: {
-        width: 20,
-        height: 20,
-        tintColor: '#78F5D8',
+    actionIconContainer: {
+        width: 24,
+        height: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
     },
-    statLabel: {
+    actionCardText: {
         fontSize: 15,
-        color: 'rgba(255, 255, 255, 0.7)',
-        fontWeight: '600',
-    },
-    statValue: {
-        fontSize: 36,
-        color: '#78F5D8',
-        fontWeight: '700',
+        color: '#FFFFFF',
+        fontWeight: '300',
         letterSpacing: -1,
     },
-    statUnit: {
+    quickStartText: {
         fontSize: 15,
-        color: '#78F5D8',
-        fontWeight: '500',
-        marginTop: 2,
+        color: '#FFFFFF',
+        fontWeight: '300',
+        letterSpacing: -1,
     },
-    statCaption: {
-        fontSize: 13,
-        color: 'rgba(255, 255, 255, 0.5)',
-        marginTop: 8,
-        fontStyle: 'italic',
+
+    // Calendar Container
+    calendarContainer: {},
+
+    // Stats Container
+    statsContainer: {
+        flexDirection: 'row',
+        marginTop: 4,
+        gap: 5,
     },
-    infoButton: {
-        padding: 4,
+    myPlanCard: {
+        flex: 1,
+        backgroundColor: '#1B191E',
+        borderRadius: 35,
+        padding: 15,
+        justifyContent: 'space-between',
+        minHeight: 140,
     },
-    infoIcon: {
+    myPlanTitle: {
+        fontSize: 15,
+        color: '#FFFFFF',
+        fontWeight: '300',
+        letterSpacing: -1,
+    },
+    weeklyChallengesTitle: {
+        fontSize: 15,
+        color: '#6477E7',
+        fontWeight: '300',
+        letterSpacing: -1,
+    },
+    myPlanIconContainer: {
+        marginTop: 'auto',
+        alignSelf: 'flex-end',
+    },
+
+    // Right column (Streak and XP)
+    rightColumn: {
+        flex: 1,
+        gap: 3,
+    },
+    streakCard: {
+        backgroundColor: '#1B191E',
+        borderRadius: 35,
+        padding: 15,
+        justifyContent: 'space-between',
+    },
+    streakLabel: {
+        fontSize: 15,
+        fontFamily: 'Poppins-regular',
+        color: '#FFFFFF',
+        letterSpacing: -1,
+    },
+    streakContentRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 8,
+    },
+    streakIconWrapper: {
         width: 20,
-        height: 20,
-        tintColor: 'rgba(255, 255, 255, 0.5)',
+        height: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
+    streakIcon: {
+        width: 20,
+        height: 25,
+        tintColor: '#FFFFFF',
+    },
+    streakValue: {
+        fontSize: 27,
+        color: '#FFFFFF',
+        fontWeight: '600',
+        letterSpacing: -1,
+    },
+    xpCard: {
+        flex: 1,
+        backgroundColor: '#1B191E',
+        borderRadius: 35,
+        padding: 15,
+        justifyContent: 'space-between',
+    },
+    xpLabel: {
+        fontSize: 15,
+        color: '#6477E7',
+        letterSpacing: -1,
+    },
+    xpValue: {
+        fontSize: 27,
+        color: '#6477E7',
+        letterSpacing: -1,
+        textAlign: 'right',
+    },
+
+    // Challenges Button
     challengesButton: {
         marginHorizontal: 20,
         marginTop: 20,
@@ -837,17 +1032,13 @@ const styles = StyleSheet.create({
         top: 24,
         right: 24,
     },
+
+    // League Section
     leagueSection: {
         marginTop: 20,
         paddingHorizontal: 20,
     },
-    leagueTitle: {
-        fontSize: 20,
-        color: '#FFFFFF',
-        fontWeight: '700',
-        marginBottom: 12,
-        letterSpacing: 1,
-    },
+
     // Modal Styles
     modalOverlay: {
         flex: 1,
@@ -856,7 +1047,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     modalContainer: {
-        //backgroundColor: '#1C1C1E',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         maxHeight: '90%',
@@ -959,11 +1149,6 @@ const styles = StyleSheet.create({
     challengeXp: {
         alignItems: 'flex-end',
     },
-    xpLabel: {
-        fontSize: 20,
-        color: '#38FFF5',
-        fontWeight: '700',
-    },
     xpUnit: {
         fontSize: 13,
         color: 'rgba(255, 255, 255, 0.6)',
@@ -984,6 +1169,7 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '700',
     },
+
     // Info Modal
     infoModalOverlay: {
         flex: 1,
@@ -1011,6 +1197,9 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         marginBottom: 12,
     },
+    infoButton: {
+        padding: 4,
+    },
     infoButtonText: {
         color: '#007AFF',
         fontSize: 17,
@@ -1019,74 +1208,109 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
 
-    /// Date Button Styles ///
-    dateButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        flexDirection: 'row',
+    // Floatie Prompt
+    floatiePromptOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        justifyContent: 'center',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        padding: 20,
     },
-    dateButtonText: {
+    floatiePromptCard: {
+        width: '100%',
+        maxWidth: 360,
+        borderRadius: 18,
+        backgroundColor: '#111111',
+        borderWidth: 1,
+        borderColor: 'rgba(56,255,245,0.4)',
+        padding: 18,
+    },
+    floatiePromptTitle: {
+        color: '#FFFFFF',
         fontSize: 20,
+        fontWeight: '700',
+        marginBottom: 10,
+    },
+    floatiePromptText: {
+        color: 'rgba(255,255,255,0.86)',
+        fontSize: 15,
+        lineHeight: 22,
+        marginBottom: 10,
+    },
+    floatiePromptRemaining: {
+        color: '#38FFF5',
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 16,
+    },
+    floatiePromptActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 10,
+    },
+    floatiePromptDismiss: {
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    floatiePromptDismissText: {
         color: '#FFFFFF',
         fontWeight: '600',
-        letterSpacing: 0.5,
     },
-    dateArrow: {
-        fontSize: 20,
-        color: '#FFFFFF',
-        fontWeight: '400',
-        marginLeft: 12,
+    floatiePromptUse: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 10,
+        backgroundColor: '#38FFF5',
     },
-    dateModalTitle: {
-        fontSize: 20,
-        color: '#FFFFFF',
+    floatiePromptUseDisabled: {
+        opacity: 0.7,
+    },
+    floatiePromptUseText: {
+        color: '#000000',
         fontWeight: '700',
-        textAlign: 'center',
     },
-    dateModalItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        //justifyContent: 'space-between',
-        //backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 12,
-        padding: 18,
+
+    // Floatie Date Card
+    floatieDateCard: {
+        marginTop: 16,
+        marginBottom: 18,
+        padding: 16,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(56, 255, 245, 0.35)',
+        backgroundColor: 'rgba(56, 255, 245, 0.08)',
+    },
+    floatieDateTitle: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    floatieDateSubtitle: {
+        color: 'rgba(255, 255, 255, 0.75)',
+        marginTop: 3,
+        marginBottom: 8,
+        fontSize: 13,
+    },
+    floatieDateReason: {
+        color: '#D4D4D4',
+        fontSize: 13,
+        lineHeight: 18,
         marginBottom: 12,
     },
-    dateModalItemText: {
-        fontSize: 17,
-        color: '#FFFFFF',
-        fontWeight: '500',
+    floatieDateButton: {
+        borderRadius: 10,
+        backgroundColor: '#38FFF5',
+        paddingVertical: 12,
+        alignItems: 'center',
     },
-    dateChevron: {
-        marginLeft: 10,
-        fontSize: 24,
-        color: 'rgba(255, 255, 255, 0.4)',
-        fontWeight: '300',
+    floatieDateButtonDisabled: {
+        backgroundColor: 'rgba(56,255,245,0.35)',
     },
-    dateChevronCyan: {
-        color: '#38FFF5',
+    floatieDateButtonText: {
+        color: '#000',
+        fontSize: 15,
+        fontWeight: '700',
     },
-    fullWeekItem: {
-        backgroundColor: 'rgba(56, 255, 245, 0.1)',
-        borderWidth: 1,
-        borderColor: '#38FFF5',
-        marginTop: 8,
-    },
-    fullWeekItemText: {
-        fontSize: 17,
-        color: '#38FFF5',
-        fontWeight: '600',
-    },
-    leagueBadgeWrapper: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    },
-    leagueBadgeIcon: {
-    width: 36,
-    height: 36,
-},
 });

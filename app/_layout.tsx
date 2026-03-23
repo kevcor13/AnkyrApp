@@ -1,12 +1,10 @@
-// app/_layout.tsx
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
 import GlobalProvider from '../context/GlobalProvider.js';
-import ScaleProvider  from "@/providers/ScaleProvider";
+import ScaleProvider from "@/providers/ScaleProvider";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import "../global.css";
-
-// Set the notification handler to show alerts even when the app is foregrounded
 
 const RootLayout = () => {
     const [fontsLoaded, error] = useFonts({
@@ -24,7 +22,6 @@ const RootLayout = () => {
         "Sintony-Bold": require('../assets/fonts/Sintony-Bold.ttf'),
         Saira: require('../assets/fonts/Saira_Extra_Condensed/SairaExtraCondensed-Regular.ttf'),
         "Saira-Bold": require('../assets/fonts/Saira_Extra_Condensed/SairaExtraCondensed-Bold.ttf'),
-
     });
 
     useEffect(() => {
@@ -34,19 +31,19 @@ const RootLayout = () => {
     }, [fontsLoaded, error]);
 
     if (!fontsLoaded && !error) {
-        console.log(error);
         return null;
     }
 
     return (
-        <GlobalProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(root)/sign-in" options={{gestureEnabled: false}}/>
-                <Stack.Screen name="(root)/sign-up" options={{gestureEnabled: false}}/>
-                
-                <Stack.Screen name="(workout)/ActiveWorkoutScreen" options={{gestureEnabled: false}}/>
-            </Stack>
-        </GlobalProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <GlobalProvider>
+                <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="(root)/sign-in" options={{ gestureEnabled: false }} />
+                    <Stack.Screen name="(root)/sign-up" options={{ gestureEnabled: false }} />
+                    <Stack.Screen name="(workout)/ActiveWorkoutScreen" options={{ gestureEnabled: false }} />
+                </Stack>
+            </GlobalProvider>
+        </GestureHandlerRootView>
     );
 };
 

@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react'
 import { router } from "expo-router";
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
+import AppIcon from '@/components/AppIcon';
 import { Icon } from '../../assets/icons/mealPageIcons';
-import { Tab } from '../../assets/icons/index';
 import { useGlobal } from '@/context/GlobalProvider';
 
 const Nutrition = () => {
@@ -93,7 +93,7 @@ const Nutrition = () => {
                         <Text className="text-zinc-500 font-poppins-medium text-xs uppercase tracking-[3px] mb-1">Your Kitchen</Text>
                         <Text className="font-poppins-bold text-white text-4xl tracking-tighter">Meal plans.</Text>
                     </View>
-                    <Tab name='meals' size={50} color="#FFFFFF" />
+                    <AppIcon name="nutrition" size={50} fill="#FFFFFF" />
                 </View>
             </SafeAreaView>
 
