@@ -12,19 +12,26 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import icons from "@/constants/icons";
-import { router } from "expo-router";
-import { styles as globalStyles } from "@/constants/styles";
 
 const screenWidth = Dimensions.get("window").width;
 
 type RestScreenProps = {
   duration: number;              // seconds
   onRestComplete: () => void;
+  onBackToList: () => void;
+  onEndWorkout: () => void;
   currentExerciseIndex: number;
   totalExercises: number;
 };
 
-const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, totalExercises, currentExerciseIndex,}) => {
+const RestScreen: React.FC<RestScreenProps> = ({
+  duration,
+  onRestComplete,
+  onBackToList,
+  onEndWorkout,
+  totalExercises,
+  currentExerciseIndex,
+}) => {
   const [secondsLeft, setSecondsLeft] = useState(Math.max(0, Math.ceil(duration)));
   const [isRestFinished, setIsRestFinished] = useState(duration <= 0);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -78,7 +85,7 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
         useNativeDriver: true,
       }).start();
     }
-  }, [isRestFinished]);
+  }, [isRestFinished, slideAnim]);
 
   const handleLeaveWorkout = () => {
     setShowLeaveModal(true);
@@ -90,7 +97,7 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
 
       <View style={styles.content}>
         <View style={{ flexDirection: "row", marginTop: 70, margin: 30, alignItems: "center" }}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.iconButton} onPress={onBackToList}>
             <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
           </TouchableOpacity>
           <View style={styles.progressBarContainer}>
@@ -128,7 +135,7 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
         {isRestFinished ? (
           <View>
             <TouchableOpacity style={styles.nextButton} onPress={onRestComplete}>
-              <Text style={styles.nextButtonText}>NEXT EXERCISE</Text>
+              <Text style={styles.nextButtonText}>NEXT SET</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -161,9 +168,12 @@ const RestScreen: React.FC<RestScreenProps> = ({ duration, onRestComplete, total
               Are you sure you want to leave the workout? Your progress will not be saved.
             </Text>
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={styles.leaveButton} 
-                onPress={() => router.back()}
+              <TouchableOpacity
+                style={styles.leaveButton}
+                onPress={() => {
+                  setShowLeaveModal(false);
+                  onEndWorkout();
+                }}
               >
                 <Text style={styles.leaveButtonText}>Yes, Leave</Text>
               </TouchableOpacity>

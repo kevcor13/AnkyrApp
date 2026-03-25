@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import AppIcon from "./AppIcon";
+import { router } from "expo-router";
 
 interface WeekDay {
   date: Date;
@@ -139,12 +140,18 @@ const CalendarSelector: React.FC<{
           </View>
         ))}
         <View style={{justifyContent:'space-between'}}>
-          <View style={{borderRadius:30, backgroundColor:'#1B191E', padding:14 }}>
+          <TouchableOpacity 
+            style={{borderRadius:30, backgroundColor:'#1B191E', padding:14 }}
+            onPress={() => router.navigate('/workout/WeeklyWorkoutView')}
+          >
             <AppIcon name="calendar" width={20} height={20} />
-          </View>
-          <View style={{borderRadius:30, backgroundColor:'#1B191E', padding:14, marginTop:5 }}>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{borderRadius:30, backgroundColor:'#1B191E', padding:14, marginTop:5 }}
+            onPress={() => router.navigate('/(workout)/WorkoutOverview')}  
+          >
             <AppIcon name="shieldOff" width={20} height={20} />
-          </View>
+          </TouchableOpacity>
         </View>
 
       </View>

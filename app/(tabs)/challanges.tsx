@@ -503,9 +503,9 @@ const ChallengesPage: React.FC = () => {
                             ) : (
                                 <View style={styles.workoutInfoContainer}>
                                     <Text style={styles.focusText}>{focus}</Text>
-                                    <View style={styles.timeRow}>
-                                        <Image source={icons.blueStreak} style={styles.timeIcon} />
-                                        <Text style={styles.timeText}>{timeEstimate} min</Text>
+                                    <View style={{flexDirection:'row'}}>
+                                        <Text style={styles.timeText}>{timeEstimate}</Text>
+                                        <Text style={styles.timeText2}>min</Text>
                                     </View>
                                 </View>
                             )}
@@ -515,8 +515,8 @@ const ChallengesPage: React.FC = () => {
 
                 {/* Overview and Quick Start Buttons */}
                 <View style={styles.workoutButtons}>
-                    <TouchableOpacity style={styles.actionCard} 
-                        activeOpacity={0.7} 
+                    <TouchableOpacity style={styles.actionCard}
+                        activeOpacity={0.7}
                         onPress={() => router.navigate("/(workout)/WorkoutOverview")}
                     >
                         <View style={styles.actionIconContainer}>
@@ -524,7 +524,7 @@ const ChallengesPage: React.FC = () => {
                         </View>
                         <Text style={styles.actionCardText}>overview</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionCard} 
+                    <TouchableOpacity style={styles.actionCard}
                         activeOpacity={0.7}
                         onPress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
                     >
@@ -554,7 +554,7 @@ const ChallengesPage: React.FC = () => {
 
 
                 <View style={styles.statsContainer}>
-                    <TouchableOpacity style={styles.myPlanCard} onPress={() => router.navigate("/home")} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.myPlanCard} onPress={() => router.navigate("/(components)/MyPlan")} activeOpacity={0.7}>
                         <Text style={styles.myPlanTitle}>my plan</Text>
                         <View style={styles.myPlanIconContainer}>
                             <AppIcon name="doubleBox" size={24} fill="#FFF" />
@@ -802,30 +802,31 @@ const styles = StyleSheet.create({
 
     // Header Card
     headerCard: {
-        padding: 24,
+        padding: 35,
     },
     dayLabel: {
-        fontSize: 46,
+        fontSize: 43,
         fontFamily: 'quicksand-bold',
         color: 'white',
         letterSpacing: -2,
         fontWeight: '700',
-        marginBottom: -20,
+        //marginBottom: -20,
     },
     dayText: {
-        fontSize: 46,
+        fontSize: 43,
         fontFamily: 'quicksand-bold',
         color: '#FFFFFF',
         textTransform: 'uppercase',
         fontWeight: '700',
-        marginBottom: -20,
+        marginTop: -22,
     },
     workoutLabel: {
-        fontSize: 46,
+        fontSize: 43,
         fontFamily: 'quicksand-bold',
         color: '#FFFFFF',
         fontWeight: '700',
         letterSpacing: -2,
+        marginTop: -22
     },
     statusBadge: {
         backgroundColor: 'rgba(56, 255, 245, 0.2)',
@@ -842,15 +843,16 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     workoutInfoContainer: {
-        marginTop: -10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: 7
     },
     focusText: {
         fontSize: 21,
         color: '#FFFFFF',
         fontWeight: '600',
-        fontFamily: 'raleway-light',
-        fontStyle: 'italic',
-        marginBottom: 12,
+        fontFamily: 'poppins',
+        marginBottom: 10,
     },
     timeRow: {
         flexDirection: 'row-reverse',
@@ -863,9 +865,15 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     timeText: {
-        fontSize: 17,
-        color: '#38FFF5',
+        fontSize: 23,
+        color: '#FFFFFF',
         fontWeight: '600',
+    },
+    timeText2: {
+        fontSize: 13,
+        color: '#FFFFFF',
+        fontWeight: '600',
+        marginTop: 10
     },
 
     // Action Cards (Overview and Quick Start)

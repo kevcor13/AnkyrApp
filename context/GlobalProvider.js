@@ -9,6 +9,7 @@ export const GlobalContext = createContext();
 export const useGlobal = () => useContext(GlobalContext);
 
 const GlobalProvider = ({ children }) => {
+    const currentCalendarYear = new Date().getFullYear();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [warmup, setWarmup] = useState([])
     const [workout, setworkout] = useState([])
@@ -21,7 +22,7 @@ const GlobalProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [questionStatus, setQuestionStatus] = useState(false);
     const [userGameData, setUserGameData] = useState('');
-    const [userFitnessData, setUserFitnessData] = useState('');
+    const [userFitnessData, setUserFitnessData] = useState(null);
     const [userWorkoutData, setUserWorkoutData] = useState([])
     const [TodayWorkout, setTodayWorkout] = useState('')
     const [weeklyData, setWeeklyData] = useState([]);
@@ -44,6 +45,27 @@ const GlobalProvider = ({ children }) => {
             floatiesRemaining: Number(rawGameData.floatiesBalance ?? 0),
             floatiesCycleKey: rawGameData.floatiesCycleKey ?? null,
             coveredDateKeysCurrentMonth,
+        };
+    };
+    const normalizeFitnessData = (rawFitnessData = {}) => {
+        const selectedWorkoutDays = Array.isArray(rawFitnessData.selectedWorkoutDays)
+            ? rawFitnessData.selectedWorkoutDays
+            : [];
+        const myPlanChangeYear = Number(rawFitnessData.myPlanChangeYear ?? currentCalendarYear);
+        const myPlanChangeCountYear = Number(rawFitnessData.myPlanChangeCountYear ?? 0);
+
+        return {
+            ...rawFitnessData,
+            gender: rawFitnessData.gender ?? '',
+            age: Number(rawFitnessData.age ?? 0),
+            weight: Number(rawFitnessData.weight ?? 0),
+            fitnessLevel: rawFitnessData.fitnessLevel ?? '',
+            workoutDays: Number(rawFitnessData.workoutDays ?? selectedWorkoutDays.length ?? 0),
+            fitnessGoal: rawFitnessData.fitnessGoal ?? '',
+            selectedWorkoutDays,
+            myPlanChangeCountYear: Number.isFinite(myPlanChangeCountYear) ? myPlanChangeCountYear : 0,
+            myPlanChangeYear: Number.isFinite(myPlanChangeYear) ? myPlanChangeYear : currentCalendarYear,
+            myPlanLastChangedAt: rawFitnessData.myPlanLastChangedAt ?? null,
         };
     };
     const resetClientSideState = () => {
@@ -197,6 +219,9 @@ const GlobalProvider = ({ children }) => {
             console.log("Fetched user data response:", response.data.status);
             if (response.data.status === "success") {
                 setUserData(response.data.data);
+                if (response.data.data?._id) {
+                    fetchFitnessData(response.data.data._id);
+                }
             } else {
                 console.error("Failed to fetch user data:", response.data.data);
             }
@@ -558,8 +583,9 @@ const GlobalProvider = ({ children }) => {
             const token = await AsyncStorage.getItem("token");
             const response = await axios.post(`${ngrokAPI}/api/user/getFitnessData`, { UserID, token});
             if (response.data.status === "success") {
-                setUserFitnessData(response.data.data);
-                return response.data.data
+                const normalizedData = normalizeFitnessData(response.data.data || {});
+                setUserFitnessData(normalizedData);
+                return normalizedData
             } else {
                 console.error("Failed to fetch fitness data:", response.data.message);
                 return [];
@@ -569,6 +595,62 @@ const GlobalProvider = ({ children }) => {
             return [];
         }
     }
+
+    const saveFitnessPreferences = async (payload) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            const mergedPayload = normalizeFitnessData({
+                ...(userFitnessData || {}),
+                ...payload,
+            });
+            const activeYear =
+                mergedPayload.myPlanChangeYear === currentCalendarYear
+                    ? mergedPayload.myPlanChangeCountYear
+                    : 0;
+
+            if (activeYear >= 3) {
+                return {
+                    success: false,
+                    message: `You have already used all 3 My Plan changes for ${currentCalendarYear}.`,
+                };
+            }
+
+            const response = await axios.post(`${ngrokAPI}/fitnessInfo`, {
+                ...mergedPayload,
+                token,
+                source: "my_plan",
+            });
+
+            if (response.data?.status !== "success") {
+                return {
+                    success: false,
+                    message: response.data?.message || "Failed to save fitness preferences.",
+                };
+            }
+
+            const responseData = response.data?.data;
+            const normalizedData = responseData
+                ? normalizeFitnessData(responseData)
+                : await fetchFitnessData(mergedPayload.UserID);
+
+            if (normalizedData && !Array.isArray(normalizedData)) {
+                setUserFitnessData(normalizedData);
+            }
+
+            return {
+                success: true,
+                data: normalizedData,
+                message: response.data?.message || "Fitness preferences updated.",
+            };
+        } catch (error) {
+            const message =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Failed to save fitness preferences.";
+            console.error("Error saving fitness preferences:", error);
+            return { success: false, message };
+        }
+    };
 
     const getChallenges = async (UserID, league) => {
         console.log("Getting challenges for user:", UserID, "with league:", league);
@@ -685,6 +767,7 @@ const GlobalProvider = ({ children }) => {
                 loading,
                 questionStatus,
                 userGameData,
+                userFitnessData,
                 ngrokAPI,
                 recipes,
                 focusWorkouts,
@@ -702,6 +785,7 @@ const GlobalProvider = ({ children }) => {
                 fetchGameData,
                 useFloatie,
                 fetchFitnessData,
+                saveFitnessPreferences,
                 fetchWorkout,
                 fetchFriends,
                 updateGameData,

@@ -1,43 +1,28 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Alert, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useGlobal } from "@/context/GlobalProvider";
 import WorkoutOverviewScreen from "@/app/(components)/workout/ExerciseOverview";
 import WorkoutExerciseScreen from "@/app/(components)/workout/ExerciseScreen";
 import RestScreen from "@/app/(components)/workout/RestScreen";
-import UpNextScreen from "@/app/(components)/workout/UpNextScreen";
+import WorkoutSessionList from "@/app/(components)/workout/WorkoutSessionList";
 import axios from "axios";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ChangeThemeScreen from "../(components)/workout/ChangeThemeScreen";
+import type { WorkoutSessionItem } from "@/app/(components)/workout/workoutSession";
 
-
-export interface PerformedSet {
-  reps: number;
-  weight: number;
-}
-
-export interface Exercise {
-  difficulty: string;
-  exerciseName: string;
-  reps: string;
-  sets: number;
-  videoUrl: string;
-  phase: "warmup" | "workout" | "challanges";
-  restBetweenSeconds: number;
-  recommendedWeight: number;
-  performedSets: PerformedSet[];
-  isTimeBased: boolean;
-  time?: number;
-}
-
-type FlowState =
-  | "OVERVIEW"
-  | "EXERCISE"
+type ScreenState =
+  | "LIST"
+  | "ITEM_OVERVIEW"
+  | "ITEM_EXERCISE"
   | "INTER_SET_REST"
-  | "POST_EXERCISE_REST"
-  | "UP_NEXT"
   | "CHANGE_THEME";
+
+const XP_PER_ITEM = 5;
+
+const buildSessionItemId = (phase: WorkoutSessionItem["phase"], index: number, value: any) =>
+  `${phase}-${index}-${value?._id ?? value?.exerciseName ?? value?.exercise ?? "item"}`;
 
 const ActiveWorkoutScreen = () => {
   const {
@@ -49,33 +34,33 @@ const ActiveWorkoutScreen = () => {
     fetchGameData,
   } = useGlobal();
 
-  const [liveWorkout, setLiveWorkout] = useState<Exercise[] | null>(null);
-  const [exerciseIndex, setExerciseIndex] = useState(0);
+  const [sessionItems, setSessionItems] = useState<WorkoutSessionItem[] | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
-  const [flowState, setFlowState] = useState<FlowState>("OVERVIEW");
+  const [screenState, setScreenState] = useState<ScreenState>("LIST");
   const [isFinishing, setIsFinishing] = useState(false);
-  const [xpFromLastExercise] = useState(5);
-  const [firstWorkoutIndex, setFirstWorkoutIndex] = useState<number | null>(null);
+  const [firstWorkoutItemId, setFirstWorkoutItemId] = useState<string | null>(null);
   const [hasShownThemePrompt, setHasShownThemePrompt] = useState(false);
-  ////video preloading state
-  const [videosPreloaded, setVideosPreloaded] = useState(false);
-  const [preloadProgress, setPreloadProgress] = useState(0);
-  
+
   const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (hasInitialized.current || !userWorkoutData) return;
+    const hasWorkoutData =
+      Array.isArray(userWorkoutData?.warmup) ||
+      Array.isArray(userWorkoutData?.workoutRoutine) ||
+      (Array.isArray(selectedChallenges) && selectedChallenges.length > 0);
+
+    if (hasInitialized.current || !hasWorkoutData) return;
 
     console.log("🏋️ Initializing workout...");
 
     // Process WARMUP exercises (time-based, no sets/reps/weight)
-    const taggedWarmup = (userWorkoutData.warmup || []).map((ex: any) => {
+    const taggedWarmup: WorkoutSessionItem[] = (userWorkoutData.warmup || []).map((ex: any, index: number) => {
       const timeValue = ex.time || 60;
-      
-      console.log(`Warmup: ${ex.exerciseName} - ${timeValue} seconds`);
-      
+
       return {
-        _id: ex._id,
+        id: buildSessionItemId("warmup", index, ex),
+        order: index,
         exerciseName: ex.exerciseName || "Unknown Warmup",
         difficulty: "easy",
         reps: `${timeValue} seconds`,
@@ -86,6 +71,7 @@ const ActiveWorkoutScreen = () => {
         restBetweenSeconds: 0,
         isTimeBased: true,
         time: timeValue,
+        status: "todo",
         performedSets: [{
           reps: timeValue,
           weight: 0
@@ -94,15 +80,14 @@ const ActiveWorkoutScreen = () => {
     });
 
     // Process WORKOUT exercises (set/rep-based with weight)
-    const taggedWorkout = (userWorkoutData.workoutRoutine || []).map((ex: any) => {
+    const taggedWorkout: WorkoutSessionItem[] = (userWorkoutData.workoutRoutine || []).map((ex: any, index: number) => {
       const sets = ex.sets || 3;
       const reps = ex.reps || 10;
       const recommendedWeight = ex.recommendedWeight || 0;
-      
-      console.log(`Workout: ${ex.exerciseName} - ${sets} sets × ${reps} reps @ ${recommendedWeight} lbs`);
-      
+
       return {
-        _id: ex._id,
+        id: buildSessionItemId("workout", index, ex),
+        order: taggedWarmup.length + index,
         exerciseName: ex.exerciseName || "Unknown Exercise",
         difficulty: ex.difficulty || "medium",
         reps: String(reps),
@@ -112,6 +97,7 @@ const ActiveWorkoutScreen = () => {
         recommendedWeight: recommendedWeight,
         restBetweenSeconds: ex.restBetweenSeconds || 60,
         isTimeBased: false,
+        status: "todo",
         performedSets: Array(sets).fill(null).map(() => ({
           reps: reps,
           weight: recommendedWeight
@@ -120,17 +106,16 @@ const ActiveWorkoutScreen = () => {
     });
     
     // Process CHALLENGES (could be either time or rep-based)
-    const taggedChallenges = (selectedChallenges || []).map((ex: any) => {
+    const taggedChallenges: WorkoutSessionItem[] = (selectedChallenges || []).map((ex: any, index: number) => {
       const hasTime = ex.time !== undefined && ex.time !== null;
       const timeValue = ex.time || 60;
       const reps = ex.reps || 10;
       const sets = ex.sets || 1;
       const recommendedWeight = ex.recommendedWeight || 0;
-      
-      console.log(`Challenge: ${ex.exercise || ex.exerciseName} - ${hasTime ? `${timeValue} seconds` : `${sets} sets × ${reps} reps`}`);
-      
+
       return {
-        _id: ex._id,
+        id: buildSessionItemId("challanges", index, ex),
+        order: taggedWarmup.length + taggedWorkout.length + index,
         exerciseName: ex.exercise || ex.exerciseName || ex.name || "Unknown Challenge",
         difficulty: ex.difficulty || "hard",
         reps: hasTime ? `${timeValue} seconds` : String(reps),
@@ -141,6 +126,7 @@ const ActiveWorkoutScreen = () => {
         restBetweenSeconds: ex.restBetweenSeconds || 60,
         isTimeBased: hasTime,
         time: hasTime ? timeValue : undefined,
+        status: "todo",
         performedSets: Array(sets).fill(null).map(() => ({
           reps: hasTime ? timeValue : reps,
           weight: hasTime ? 0 : recommendedWeight
@@ -154,69 +140,55 @@ const ActiveWorkoutScreen = () => {
       ...taggedChallenges,
     ];
 
-    console.log(`📋 Total exercises: ${combined.length} (${taggedWarmup.length} warmup, ${taggedWorkout.length} workout, ${taggedChallenges.length} challenges)`);
-
     if (!combined.length) {
       Alert.alert("Error", "No exercises found in your workout plan.");
       return;
     }
 
-    setLiveWorkout(combined);
-    setExerciseIndex(0);
+    setSessionItems(combined);
+    setSelectedItemId(null);
     setCurrentSetIndex(0);
-    setFlowState("OVERVIEW");
-    setFirstWorkoutIndex(taggedWorkout.length > 0 ? taggedWarmup.length : null);
+    setScreenState("LIST");
+    setFirstWorkoutItemId(taggedWorkout.length > 0 ? taggedWorkout[0].id : null);
     setHasShownThemePrompt(Boolean(userData?.askedThemeQuestion));
 
-
-    // preload videos
-    {/** 
-    const preloadAllVideos = async () => {
-      try {
-        await videoPreloader.initialize();
-        
-        const videoUrls = combined
-          .map(ex => ex.videoUrl)
-          .filter(url => url && url.length > 0);
-  
-        console.log(`🎬 Preloading ${videoUrls.length} videos...`);
-  
-        // Preload videos one by one to track progress
-        for (let i = 0; i < videoUrls.length; i++) {
-          await videoPreloader.preloadVideo(videoUrls[i]);
-          setPreloadProgress(((i + 1) / videoUrls.length) * 100);
-        }
-  
-        setVideosPreloaded(true);
-        console.log("✅ All videos preloaded!");
-  
-        // Update workout with cached URIs
-        const updatedCombined = combined.map(ex => ({
-          ...ex,
-          videoUrl: videoPreloader.getCachedUri(ex.videoUrl) || ex.videoUrl
-        }));
-        
-        setLiveWorkout(updatedCombined);
-      } catch (error) {
-        console.error("Failed to preload videos:", error);
-        setVideosPreloaded(true); // Continue anyway with original URLs
-      }
-    };
-
-    preloadAllVideos();
-    */} 
-    
-    
-    
     hasInitialized.current = true;
-    console.log("✅ Initialization complete");
   }, [userWorkoutData, selectedChallenges, userData]);
 
+  const selectedItemIndex = useMemo(() => {
+    if (!sessionItems || !selectedItemId) return -1;
+    return sessionItems.findIndex((item) => item.id === selectedItemId);
+  }, [sessionItems, selectedItemId]);
 
+  const selectedItem = selectedItemIndex >= 0 && sessionItems
+    ? sessionItems[selectedItemIndex]
+    : null;
 
+  const completedCount = sessionItems?.filter((item) => item.status === "done").length ?? 0;
+  const totalCount = sessionItems?.length ?? 0;
+  const canFinishWorkout = totalCount > 0 && completedCount === totalCount;
+
+  const handleSelectItem = (itemId: string) => {
+    setSelectedItemId(itemId);
+    setCurrentSetIndex(0);
+    setSessionItems((curr) => {
+      if (!curr) return null;
+      return curr.map((item) =>
+        item.id === itemId && item.status === "todo"
+          ? { ...item, status: "in_progress" }
+          : item
+      );
+    });
+    setScreenState("ITEM_OVERVIEW");
+  };
+
+  const handleBackToList = () => {
+    setCurrentSetIndex(0);
+    setScreenState("LIST");
+  };
 
   const handleSetUpdate = (exIndex: number, setIdx: number, weight: number) => {
-    setLiveWorkout((curr) => {
+    setSessionItems((curr) => {
       if (!curr) return null;
       const updated = [...curr];
       updated[exIndex] = {
@@ -230,62 +202,57 @@ const ActiveWorkoutScreen = () => {
   };
 
   const handleSetLogged = () => {
-    if (!liveWorkout) return;
-    
-    const currentExercise = liveWorkout[exerciseIndex];
-    const totalSets = currentExercise.sets;
+    if (!selectedItem || selectedItemIndex < 0) return;
 
-    if (currentSetIndex >= totalSets - 1) {
-      if (exerciseIndex >= liveWorkout.length - 1) {
-        handleFinishWorkout();
-      } else {
-        setFlowState("POST_EXERCISE_REST");
+    if (currentSetIndex >= selectedItem.sets - 1) {
+      setSessionItems((curr) => {
+        if (!curr) return null;
+        return curr.map((item) =>
+          item.id === selectedItem.id
+            ? {
+                ...item,
+                status: "done",
+                completedAt: new Date().toISOString(),
+              }
+            : item
+        );
+      });
+
+      const askedBefore = Boolean(userData?.askedThemeQuestion);
+      const shouldShowTheme =
+        selectedItem.phase === "workout" &&
+        selectedItem.id === firstWorkoutItemId &&
+        !askedBefore &&
+        !hasShownThemePrompt;
+
+      setCurrentSetIndex(0);
+
+      if (shouldShowTheme) {
+        setHasShownThemePrompt(true);
+        setScreenState("CHANGE_THEME");
+        return;
       }
+
+      handleBackToList();
     } else {
-      setFlowState("INTER_SET_REST");
+      setScreenState("INTER_SET_REST");
     }
   };
 
   const handleInterSetRestComplete = () => {
     setCurrentSetIndex((prev) => prev + 1);
-    setFlowState("EXERCISE");
-  };
-
-  const handlePostExerciseRestComplete = () => {
-    const prevIndex = exerciseIndex;
-    const nextIndex = prevIndex + 1;
-
-    setExerciseIndex(nextIndex);
-    setCurrentSetIndex(0);
-
-    const askedBefore = Boolean(userData?.askedThemeQuestion);
-    const shouldShowTheme =
-      firstWorkoutIndex !== null &&
-      prevIndex === firstWorkoutIndex &&
-      !askedBefore &&
-      !hasShownThemePrompt;
-
-    if (shouldShowTheme) {
-      setHasShownThemePrompt(true);
-      setFlowState("CHANGE_THEME");
-      return;
-    }
-
-    if (firstWorkoutIndex !== null && nextIndex <= firstWorkoutIndex) {
-      setFlowState("OVERVIEW");
-    } else {
-      setFlowState("UP_NEXT");
-    }
+    setScreenState("ITEM_EXERCISE");
   };
 
   const handleChangeTheme = () => {
-    setFlowState("UP_NEXT");
+    setSelectedItemId(null);
+    setScreenState("LIST");
   };
 
   const handleFinishWorkout = async () => {
-    if (!liveWorkout || isFinishing) return;
+    if (!sessionItems || isFinishing || !canFinishWorkout) return;
     setIsFinishing(true);
-    
+
     const UserID = userData?._id;
     if (!UserID) {
       Alert.alert("Error", "Could not identify user.");
@@ -294,7 +261,8 @@ const ActiveWorkoutScreen = () => {
     }
 
     try {
-      const exercises = liveWorkout
+      const exercises = sessionItems
+        .filter((item) => item.status === "done")
         .map((ex) => ({
           name: ex.exerciseName,
           sets: ex.performedSets
@@ -308,7 +276,7 @@ const ActiveWorkoutScreen = () => {
         workoutName: userWorkoutData?.focus || "Completed Workout",
         durationSeconds: 3600,
         exercises,
-        points: liveWorkout.length * 5,
+        points: sessionItems.filter((item) => item.status === "done").length * XP_PER_ITEM,
       };
 
       const completionResponse = await axios.post(`${ngrokAPI}/api/update/completeWorkout`, {
@@ -340,7 +308,7 @@ const ActiveWorkoutScreen = () => {
       const xpEarned =
         Number.isFinite(Number(completionData.xpEarned))
           ? Number(completionData.xpEarned)
-          : liveWorkout.length * 5;
+          : sessionItems.filter((item) => item.status === "done").length * XP_PER_ITEM;
       
       router.replace({
         pathname: "/(workout)/EndWorkoutScreen",
@@ -360,7 +328,7 @@ const ActiveWorkoutScreen = () => {
     }
   };
 
-  const handleStartExercise = () => setFlowState("EXERCISE");
+  const handleStartExercise = () => setScreenState("ITEM_EXERCISE");
 
   const handleEnd = () => {
     Alert.alert(
@@ -373,73 +341,69 @@ const ActiveWorkoutScreen = () => {
     );
   };
 
-  if (!liveWorkout) {
+  if (!sessionItems) {
     return (
       <LinearGradient colors={["#FF0509", "#271293"]} style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>
-        {videosPreloaded 
-          ? "Preparing your workout..." 
-          : `Loading videos... ${Math.round(preloadProgress)}%`
-        }
-      </Text>
+        <Text style={styles.loadingText}>Preparing your workout...</Text>
       </LinearGradient>
     );
   }
 
-  const currentExercise = liveWorkout[exerciseIndex];
-  if (!currentExercise) return null;
+  if (selectedItemId && !selectedItem) {
+    return null;
+  }
 
   const renderContent = () => {
-    switch (flowState) {
-      case "OVERVIEW":
+    switch (screenState) {
+      case "LIST":
         return (
-          <WorkoutOverviewScreen
-            exercise={currentExercise}
-            onStart={handleStartExercise}
-            onEnd={handleEnd}
-            currentExerciseIndex={exerciseIndex}
-            totalExercises={liveWorkout.length}
+          <WorkoutSessionList
+            focus={userWorkoutData?.focus || "Workout"}
+            items={sessionItems}
+            completedCount={completedCount}
+            totalCount={totalCount}
+            canFinish={canFinishWorkout}
+            isFinishing={isFinishing}
+            onSelectItem={handleSelectItem}
+            onFinishWorkout={handleFinishWorkout}
+            onEndWorkout={handleEnd}
           />
         );
-      case "UP_NEXT":
+      case "ITEM_OVERVIEW":
+        if (!selectedItem) return null;
         return (
-          <UpNextScreen
-            nextExercise={currentExercise}
+          <WorkoutOverviewScreen
+            exercise={selectedItem}
             onStart={handleStartExercise}
             onEnd={handleEnd}
-            xpEarned={xpFromLastExercise}
-            currentExerciseIndex={exerciseIndex}
-            totalExercises={liveWorkout.length}
+            onBackToList={handleBackToList}
+            currentExerciseIndex={selectedItemIndex}
+            totalExercises={sessionItems.length}
           />
         );
       case "CHANGE_THEME":
         return <ChangeThemeScreen onConfirm={handleChangeTheme} />;
-      case "EXERCISE":
+      case "ITEM_EXERCISE":
+        if (!selectedItem) return null;
         return (
           <WorkoutExerciseScreen
-            exercise={currentExercise}
-            exerciseIndex={exerciseIndex}
+            exercise={selectedItem}
+            exerciseIndex={selectedItemIndex}
             currentSetIndex={currentSetIndex}
             onSetUpdate={handleSetUpdate}
             onSetLogged={handleSetLogged}
           />
         );
       case "INTER_SET_REST":
+        if (!selectedItem) return null;
         return (
           <RestScreen
-            duration={currentExercise.restBetweenSeconds}
+            duration={selectedItem.restBetweenSeconds}
             onRestComplete={handleInterSetRestComplete}
-            currentExerciseIndex={exerciseIndex}
-            totalExercises={liveWorkout.length}
-          />
-        );
-      case "POST_EXERCISE_REST":
-        return (
-          <RestScreen
-            duration={currentExercise.restBetweenSeconds + 20}
-            onRestComplete={handlePostExerciseRestComplete}
-            currentExerciseIndex={exerciseIndex}
-            totalExercises={liveWorkout.length}
+            onBackToList={handleBackToList}
+            onEndWorkout={handleEnd}
+            currentExerciseIndex={selectedItemIndex}
+            totalExercises={sessionItems.length}
           />
         );
       default:

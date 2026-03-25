@@ -155,7 +155,16 @@ const Questionnaire = () => {
         return "Full Body";
       };
 
-      const fitnessData = { UserID: userData._id, gender, age, weight, fitnessLevel: fitness, workoutDays, fitnessGoal: goal };
+      const fitnessData = {
+        UserID: userData._id,
+        gender,
+        age,
+        weight,
+        fitnessLevel: fitness,
+        workoutDays,
+        fitnessGoal: goal,
+        selectedWorkoutDays: getSelectedDayNames(),
+      };
       const points = { UserID: userData._id, streak: 0, points: 10, league: "NOVICE" };
       const daysList = getSelectedDayNames().join(", ");
       const split = getSplitForDays(workoutDays);

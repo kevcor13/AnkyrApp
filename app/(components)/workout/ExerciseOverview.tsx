@@ -10,7 +10,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "@/constants/styles";
 import icons from "@/constants/icons";
-import { router } from "expo-router";
 import { useGlobal } from "@/context/GlobalProvider";
 import Animated, { SlideInLeft } from "react-native-reanimated";
 import { ResizeMode, Video } from "expo-av";
@@ -26,6 +25,7 @@ interface ExerciseOverviewProps {
   exercise: Exercise;
   onStart: () => void;
   onEnd: () => void;
+  onBackToList: () => void;
   currentExerciseIndex: number;
   totalExercises: number;
 }
@@ -34,6 +34,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
   exercise,
   onStart,
   onEnd,
+  onBackToList,
   currentExerciseIndex,
   totalExercises,
 }) => {
@@ -47,7 +48,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
   const progress =
     totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
 
-  const progressWidth = `${progress * 100}%`;
+  const progressWidth = `${progress * 100}%` as `${number}%`;
 
   const repsIsTimed = /\bseconds?\b/i.test(exercise.reps);
   const repsDisplay = repsIsTimed ? exercise.reps : `${exercise.reps} reps`;
@@ -78,7 +79,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
             height: 45,
             width: 45,
           }}
-          onPress={router.back}
+          onPress={onBackToList}
         >
           <Image source={icons.halfArrow} style={{ height: 24, width: 24 }} />
         </TouchableOpacity>

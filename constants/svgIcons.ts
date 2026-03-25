@@ -27,11 +27,13 @@ import calendar from "@/assets/icons/CalendarIcon.svg";
 import overviewBox from "@/assets/icons/OverviewButton.svg"
 import upArrow from "@/assets/icons/Arrow up-right.svg"
 import checkMark from "@/assets/icons/Check.svg"
+import gearIcon from "@/assets/icons/GearIcon.svg"
 
 type SvgIconComponent = ComponentType<SvgProps>;
 
 export const svgIcons = {
   ankyrWordmark: AnkyrWordmarkIcon,
+  gearIcon : gearIcon,
   checkMark: checkMark,
   upArrow: upArrow,
   overviewBox: overviewBox,

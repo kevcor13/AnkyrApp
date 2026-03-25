@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Exercise } from '@/app/(workout)/ActiveWorkoutScreen';
 import icons from '@/constants/icons';
 import { router } from 'expo-router';
 import { useGlobal } from '@/context/GlobalProvider';
+import type { WorkoutSessionItem } from '@/app/(components)/workout/workoutSession';
 
 /**
  * Props for the UpNextScreen component.
@@ -16,7 +16,7 @@ import { useGlobal } from '@/context/GlobalProvider';
  * @property {number} totalExercises - The total number of exercises in the workout.
  */
 interface UpNextScreenProps {
-  nextExercise: Exercise;
+  nextExercise: WorkoutSessionItem;
   onStart: () => void;
   onEnd: () => void;
   xpEarned: number;
@@ -39,7 +39,7 @@ const UpNextScreen: React.FC<UpNextScreenProps> = ({
   const progress = totalExercises > 0 ? (currentExerciseIndex + 1) / totalExercises : 0;
 
   // Interpolate the animated value to a percentage string
-  const progressWidth = `${progress * 100}%`;
+  const progressWidth = `${progress * 100}%` as `${number}%`;
 
   return (
     <LinearGradient colors={theme ? ['#FF0509', '#271293'] : ["#000000", "#272727"]} style={styles.container}>
