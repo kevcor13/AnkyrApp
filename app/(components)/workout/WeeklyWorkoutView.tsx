@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -281,6 +281,8 @@ const WeeklyWorkoutView: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [preListHeight, setPreListHeight] = useState(0);
+  const scrollRef = useRef<any>(null);
   // UI-thread shared values — drives all shift animations without touching React
   const activeIndexSV = useSharedValue<number>(-1);  // -1 = nothing being dragged
   const targetIndexSV = useSharedValue<number>(-1);
@@ -336,6 +338,19 @@ const WeeklyWorkoutView: React.FC = () => {
     };
     init();
   }, []);
+
+  // ── Auto-scroll to today on mount ─────────────────────────────────────────
+  useEffect(() => {
+    if (isLoading || preListHeight === 0) return;
+    const todayIndex = dateSlots.findIndex((s) => s.isToday);
+    if (todayIndex <= 0) return;
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: preListHeight + todayIndex * ITEM_HEIGHT,
+        animated: false,
+      });
+    }, 50);
+  }, [isLoading, preListHeight]);
 
   // ── Drag callbacks — only called ONCE each, never per-frame ──────────────
   const handleDragStart = useCallback((_index: number) => {
@@ -417,52 +432,54 @@ const WeeklyWorkoutView: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <View style={styles.screen}>
-      {/* Header */}
-      <SafeAreaView edges={["top"]} style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-
-      {/* Title */}
-      <View style={styles.titleBlock}>
-        <Text style={styles.titleMain}>Rearrange</Text>
-        <Text style={styles.titleMain}>your week</Text>
-        <Text style={styles.titleSub}>so that it works best for you.</Text>
-      </View>
-
-      {/* Hint */}
-      <View style={styles.hintRow}>
-        <Text style={styles.hintText}>Hold</Text>
-        <View style={styles.hintHandleLines}>
-          <View style={styles.hintHandleLine} />
-          <View style={styles.hintHandleLine} />
-          <View style={styles.hintHandleLine} />
-        </View>
-        <Text style={styles.hintText}>to drag a workout</Text>
-      </View>
-
-      {/* List — scroll disabled while dragging */}
       <Animated.ScrollView
-        contentContainerStyle={styles.listContent}
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         scrollEnabled={true}
       >
-        {rows.map((item, index) => (
-          <DraggableRow
-            key={item.key}
-            item={item}
-            index={index}
-            dateSlot={dateSlots[index]}
-            activeIndexSV={activeIndexSV}
-            targetIndexSV={targetIndexSV}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          />
-        ))}
+        {/* Scrollable header — measured so we know where the list starts */}
+        <View onLayout={(e) => setPreListHeight(e.nativeEvent.layout.height)}>
+          <SafeAreaView edges={["top"]} style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Text style={styles.backText}>← Back</Text>
+            </TouchableOpacity>
+          </SafeAreaView>
+
+          <View style={styles.titleBlock}>
+            <Text style={styles.titleMain}>Rearrange</Text>
+            <Text style={styles.titleMain}>your week</Text>
+            <Text style={styles.titleSub}>so that it works best for you.</Text>
+          </View>
+
+          <View style={styles.hintRow}>
+            <Text style={styles.hintText}>Hold</Text>
+            <View style={styles.hintHandleLines}>
+              <View style={styles.hintHandleLine} />
+              <View style={styles.hintHandleLine} />
+              <View style={styles.hintHandleLine} />
+            </View>
+            <Text style={styles.hintText}>to drag a workout</Text>
+          </View>
+        </View>
+
+        {/* List */}
+        <View style={styles.listContent}>
+          {rows.map((item, index) => (
+            <DraggableRow
+              key={item.key}
+              item={item}
+              index={index}
+              dateSlot={dateSlots[index]}
+              activeIndexSV={activeIndexSV}
+              targetIndexSV={targetIndexSV}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            />
+          ))}
+        </View>
       </Animated.ScrollView>
 
-      {/* Save Button */}
+      {/* Fixed save button */}
       <SafeAreaView edges={["bottom"]} style={styles.footer}>
         <TouchableOpacity
           style={[
@@ -512,7 +529,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   backText: {
-    color: "#38FFF5",
+    color: "#6477E7",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -526,18 +543,16 @@ const styles = StyleSheet.create({
   titleMain: {
     color: "#FFFFFF",
     fontSize: 36,
-    fontWeight: "800",
-    letterSpacing: -1,
-    lineHeight: 42,
+    letterSpacing: -2,
+    lineHeight: 38,
     textTransform: "lowercase",
-    fontFamily: "Raleway",
+    fontFamily: "Poppins-Light",
   },
   titleSub: {
     color: "rgba(255,255,255,0.45)",
     fontSize: 15,
-    fontWeight: "500",
     marginTop: 6,
-    fontFamily: "Raleway",
+    fontFamily: "Poppins-Regular",
   },
 
   // Hint
@@ -581,7 +596,7 @@ const styles = StyleSheet.create({
   // Only the card portion animates during drag
   cardAnimatedWrapper: {
     flex: 1,
-    shadowColor: "#38FFF5",
+    shadowColor: "#6477E7",
     shadowOffset: { width: 0, height: 8 },
     shadowRadius: 16,
     elevation: 8,
@@ -597,20 +612,21 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#38FFF5",
+    backgroundColor: "#6477E7",
     marginBottom: 4,
   },
   dateLabel: {
     color: "rgba(255,255,255,0.45)",
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily:'SpaceGrotesk-Regular',
+    fontWeight: "500",
     textAlign: "center",
     textTransform: "uppercase",
     lineHeight: 15,
     letterSpacing: 0.5,
   },
   dateLabelToday: {
-    color: "#38FFF5",
+    color: "#6477E7",
   },
 
   // Divider
@@ -643,7 +659,7 @@ const styles = StyleSheet.create({
     //borderColor: "#38FFF5",
   },
   workoutCardToday: {
-    borderColor: "rgba(56, 255, 245, 0.4)",
+    borderColor: "#6477E7",
   },
   cardInner: {
     flexDirection: "row",
@@ -658,7 +674,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "Raleway",
+    fontFamily: "Poppins-Light",
   },
   focusTextRest: {
     color: "rgba(255,255,255,0.35)",
@@ -666,9 +682,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   timeText: {
-    color: "rgba(56, 255, 245, 0.7)",
+    color: "#6477E7",
     fontSize: 12,
     fontWeight: "600",
+    fontFamily:"SpaceGrotesk-Regular",
     marginTop: 2,
   },
 
@@ -718,7 +735,7 @@ const styles = StyleSheet.create({
 
   // Badges
   todayBadge: {
-    color: "#38FFF5",
+    color: "#6477E7",
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.5,
@@ -743,17 +760,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#000000",
   },
   saveButton: {
-    backgroundColor: "#38FFF5",
+    backgroundColor: "#6478e7d5",
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
-    shadowColor: "#38FFF5",
+    //shadowColor: "#38FFF5",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
   },
   saveButtonDisabled: {
-    backgroundColor: "rgba(56,255,245,0.2)",
+    backgroundColor: "#6478e763",
     shadowOpacity: 0,
   },
   saveButtonText: {

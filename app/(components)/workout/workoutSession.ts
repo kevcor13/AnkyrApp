@@ -19,4 +19,5 @@ export interface WorkoutSessionItem {
   time?: number;
   status: "todo" | "in_progress" | "done";
   completedAt?: string;
+  exerciseType?: "benchmark" | "accessory";
 }

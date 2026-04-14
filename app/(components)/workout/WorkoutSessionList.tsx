@@ -23,6 +23,8 @@ type WorkoutSessionListProps = {
   onSelectItem: (itemId: string) => void;
   onFinishWorkout: () => void;
   onEndWorkout: () => void;
+  currentPhase?: string | null;
+  phaseTransition?: boolean;
 };
 
 const phaseOrder: WorkoutSessionItem["phase"][] = ["warmup", "workout", "challanges"];
@@ -31,6 +33,12 @@ const phaseLabels: Record<WorkoutSessionItem["phase"], string> = {
   warmup: "Warm-Up",
   workout: "Main Workout",
   challanges: "Challenges",
+};
+
+const PHASE_BADGE: Record<string, { label: string; bg: string; border: string; text: string }> = {
+  shadow:      { label: "Shadow Mode", bg: "rgba(100,149,237,0.2)",  border: "rgba(100,149,237,0.45)", text: "#A8C7FA" },
+  calibration: { label: "Calibration",  bg: "rgba(255,180,0,0.18)",  border: "rgba(255,180,0,0.45)",   text: "#FFD060" },
+  grind:       { label: "Grind",         bg: "rgba(50,205,50,0.18)",  border: "rgba(50,205,50,0.45)",   text: "#6EF08B" },
 };
 
 const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
@@ -43,6 +51,8 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
   onSelectItem,
   onFinishWorkout,
   onEndWorkout,
+  currentPhase,
+  phaseTransition,
 }) => {
   const { userData } = useGlobal();
   const theme = userData?.defaultTheme;
@@ -57,6 +67,7 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/** 
         <View style={styles.headerRow}>
           <TouchableOpacity
             style={styles.iconButton}
@@ -65,6 +76,7 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
           >
             <Image source={icons.halfArrow} style={styles.iconImage} />
           </TouchableOpacity>
+          
           <View style={styles.progressBarContainer}>
             <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
           </View>
@@ -76,6 +88,7 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
             <Image source={icons.stopButton} style={styles.iconImage} />
           </TouchableOpacity>
         </View>
+        */}
 
         <View style={styles.heroSection}>
           <Text style={styles.eyebrow}>ACTIVE SESSION</Text>
@@ -83,6 +96,18 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
           <Text style={styles.summary}>
             {completedCount} of {totalCount} complete
           </Text>
+          {currentPhase && PHASE_BADGE[currentPhase] ? (
+            <View style={[styles.phaseBadge, { backgroundColor: PHASE_BADGE[currentPhase].bg, borderColor: PHASE_BADGE[currentPhase].border }]}>
+              <Text style={[styles.phaseBadgeText, { color: PHASE_BADGE[currentPhase].text }]}>
+                {PHASE_BADGE[currentPhase].label}
+              </Text>
+            </View>
+          ) : null}
+          {phaseTransition ? (
+            <View style={styles.phaseTransitionBanner}>
+              <Text style={styles.phaseTransitionText}>Phase complete! Full results after your session.</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.statCard}>
@@ -188,7 +213,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   iconButton: {
-    backgroundColor: "rgba(217, 217, 217, 0.27)",
+    backgroundColor: "#1B191E",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 22.5,
@@ -202,7 +227,7 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     flex: 1,
     height: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    backgroundColor: "#1B191E",
     borderRadius: 5,
     marginHorizontal: 16,
     overflow: "hidden",
@@ -230,7 +255,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   summary: {
-    color: "#8AFFF9",
+    color: "#6477E7",
     fontFamily: "Poppins-Medium",
     fontSize: 16,
     marginTop: 6,
@@ -240,7 +265,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     padding: 20,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: "rgba(27, 25, 30, 1)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -252,7 +277,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   statValue: {
-    color: "#8AFFF9",
+    color: "#6477E7",
     fontFamily: "Poppins-SemiBold",
     fontSize: 30,
     marginTop: 6,
@@ -277,9 +302,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   itemCard: {
-    backgroundColor: "rgba(138, 255, 249, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(138, 255, 249, 0.18)",
+    backgroundColor: "rgba(43, 34, 72, 0.40)",
+    //borderWidth: 1,
+    //borderColor: "rgba(138, 255, 249, 0.18)",
     borderRadius: 18,
     paddingVertical: 18,
     paddingHorizontal: 18,
@@ -303,7 +328,7 @@ const styles = StyleSheet.create({
   },
   itemName: {
     color: "#FFFFFF",
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Poppins-Light",
     fontSize: 17,
     flex: 1,
   },
@@ -317,13 +342,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: "rgba(138, 255, 249, 0.18)",
+    backgroundColor: "rgba(87, 84, 92, 0.18)",
   },
   statusPillDone: {
     backgroundColor: "rgba(255, 255, 255, 0.18)",
   },
   statusText: {
-    color: "#8AFFF9",
+    color: "#6477E7",
     fontFamily: "Poppins-SemiBold",
     fontSize: 11,
     letterSpacing: 0.6,
@@ -349,12 +374,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   rewardValue: {
-    color: "#8AFFF9",
+    color: "#6477E7",
     fontFamily: "Raleway-Semibold",
     fontSize: 24,
   },
   rewardUnit: {
-    color: "#8AFFF9",
+    color: "#6477E7",
     fontFamily: "Raleway-Semibold",
     fontSize: 13,
     marginLeft: 3,
@@ -365,12 +390,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   finishButton: {
-    backgroundColor: "rgba(138, 255, 249, 0.2)",
+    backgroundColor: "rgba(43, 34, 72, 0.4)",
     borderRadius: 18,
     paddingVertical: 18,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(138, 255, 249, 0.3)",
+    //borderWidth: 1,
+    //borderColor: "rgba(138, 255, 249, 0.3)",
   },
   finishButtonDisabled: {
     opacity: 0.45,
@@ -381,12 +406,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   endButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: "#1B191e",
     borderRadius: 18,
     paddingVertical: 18,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
+    //borderWidth: 1,
+    //borderColor: "rgba(255, 255, 255, 0.14)",
   },
   endButtonText: {
     color: "#FFFFFF",
@@ -401,6 +426,33 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     opacity: 0.9,
+  },
+  phaseBadge: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  phaseBadgeText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 12,
+    letterSpacing: 0.5,
+  },
+  phaseTransitionBanner: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,180,0,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,180,0,0.4)",
+  },
+  phaseTransitionText: {
+    fontFamily: "Poppins-Medium",
+    fontSize: 13,
+    color: "#FFD060",
   },
 });
 

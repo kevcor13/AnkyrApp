@@ -32,11 +32,14 @@ const GlobalProvider = ({ children }) => {
     const [followingUsers, setFollowingUsers] = useState([]);
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
-    const ngrokAPI = 'https://c88a-173-8-115-9.ngrok-free.app'
+    const [aiMode, setAiMode] = useState(true);
+    const ngrokAPI = 'https://cc03-173-8-115-9.ngrok-free.app'
     const normalizeGameData = (rawGameData = {}) => {
         const coveredDateKeysCurrentMonth = Array.isArray(rawGameData.coveredDateKeysCurrentMonth)
             ? rawGameData.coveredDateKeysCurrentMonth
             : [];
+
+        const recoveryMode = rawGameData.recoveryMode ?? null;
 
         return {
             ...rawGameData,
@@ -45,6 +48,7 @@ const GlobalProvider = ({ children }) => {
             floatiesRemaining: Number(rawGameData.floatiesBalance ?? 0),
             floatiesCycleKey: rawGameData.floatiesCycleKey ?? null,
             coveredDateKeysCurrentMonth,
+            recoveryMode,
         };
     };
     const normalizeFitnessData = (rawFitnessData = {}) => {
@@ -70,29 +74,29 @@ const GlobalProvider = ({ children }) => {
     };
     const resetClientSideState = () => {
         delete axios.defaults.headers.common.Authorization;
-      
+
         // If you attached interceptors for auth, you can eject them here too
         // axios.interceptors.request.eject(reqId);
         // axios.interceptors.response.eject(resId);
-      
+
         // If you use React Query:r
         // queryClient.clear();
-      };
+    };
 
 
     // function to sign up the user
     const signUpUser = async (name, username, email, password, profile) => {
         console.log(profile);
-        try{
-            const response = await axios.post(`${ngrokAPI}/api/auth/register`, {name, username, email, password, profile});
+        try {
+            const response = await axios.post(`${ngrokAPI}/api/auth/register`, { name, username, email, password, profile });
             if (response.data.status === "success") {
                 await AsyncStorage.setItem("token", response.data.data); // Save the JWT token
                 await AsyncStorage.setItem("isLoggedIn", "true");
                 setIsLoggedIn(true);
                 fetchUserData(response.data.data);
-                return { status: "success"};
+                return { status: "success" };
             } else {
-                return {success: false, message: response.data.message};
+                return { success: false, message: response.data.message };
             }
         } catch (error) {
             console.error("Login Error:", error);
@@ -170,28 +174,28 @@ const GlobalProvider = ({ children }) => {
     // Function to log out the user
     const logoutUser = async () => {
         try {
-          // (Optional) tell your API to revoke refresh token/session
-          // const token = await AsyncStorage.getItem("token");
-          // await axios.post(`${ngrokAPI}/api/auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
-      
-          // Clear local auth markers first to prevent any racey requests
-          await AsyncStorage.multiRemove(["token", "isLoggedIn"]);
-      
-          // Reset in-memory state
-          setIsLoggedIn(false);
-      
-          // Nuke any client caches / headers
-          resetClientSideState();
-      
-          // Navigate to sign-in; add a query param to force remount of the route
-          router.replace({ pathname: "/sign-in", params: { ts: Date.now().toString() } });
-      
-          return { success: true, message: "Successfully logged out" };
+            // (Optional) tell your API to revoke refresh token/session
+            // const token = await AsyncStorage.getItem("token");
+            // await axios.post(`${ngrokAPI}/api/auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+
+            // Clear local auth markers first to prevent any racey requests
+            await AsyncStorage.multiRemove(["token", "isLoggedIn"]);
+
+            // Reset in-memory state
+            setIsLoggedIn(false);
+
+            // Nuke any client caches / headers
+            resetClientSideState();
+
+            // Navigate to sign-in; add a query param to force remount of the route
+            router.replace({ pathname: "/sign-in", params: { ts: Date.now().toString() } });
+
+            return { success: true, message: "Successfully logged out" };
         } catch (error) {
-          console.error("Logout Error:", error);
-          return { success: false, message: "Logout failed" };
+            console.error("Logout Error:", error);
+            return { success: false, message: "Logout failed" };
         }
-      };
+    };
 
     // Function to check the login state
     const checkLoginState = async () => {
@@ -233,7 +237,7 @@ const GlobalProvider = ({ children }) => {
     // get the game data
     const fetchGameData = async (token, UserID) => {
         try {
-            const response = await axios.post(`${ngrokAPI}/api/user/getGameData`, {token, UserID});
+            const response = await axios.post(`${ngrokAPI}/api/user/getGameData`, { token, UserID });
             if (response.data.status === "success") {
                 const gameData = normalizeGameData(response.data.data || {});
                 setUserGameData(gameData);
@@ -291,38 +295,74 @@ const GlobalProvider = ({ children }) => {
             return { success: false, message };
         }
     };
+    const activateRecoveryMode = async (userId, startDateKey, endDateKey) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const clientTimestamp = new Date().toISOString();
+            const response = await axios.post(`${ngrokAPI}/api/recovery/activate`, {
+                token, UserID: userId, startDateKey, endDateKey, clientTimezone, clientTimestamp,
+            });
+            if (response.data.status === "success") {
+                await fetchGameData(token, userId);
+            }
+            return response.data;
+        } catch (error) {
+            console.error("Error activating recovery mode:", error);
+            throw error;
+        }
+    };
+
+    const endRecoveryMode = async (userId) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            const clientTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const clientTimestamp = new Date().toISOString();
+            const response = await axios.post(`${ngrokAPI}/api/recovery/end`, {
+                token, UserID: userId, clientTimezone, clientTimestamp,
+            });
+            if (response.data.status === "success") {
+                await fetchGameData(token, userId);
+            }
+            return response.data;
+        } catch (error) {
+            console.error("Error ending recovery mode:", error);
+            throw error;
+        }
+    };
+
     //update Game Data
-    const updateGameData = async ( userId, points) => {
+    const updateGameData = async (userId, points) => {
         try {
             console.log("Updating game data for user:", userId, "with points:", points);
-          let league = "NOVICE";
-          if (points >= 30000)      league = "OLYMPIAN";
-          else if (points >= 20000) league = "TITAN";
-          else if (points >= 12000) league = "SKIPPER";
-          else if (points >= 5000)  league = "PILOT";
-          else if (points >= 1000)  league = "PRIVATE";
-      
-          const response = await axios.post(`${ngrokAPI}/api/update/updateBadge`, {
-            token,
-            UserID: userId,
-            league
-          });
-      
-          if (response.data.status === "success") {
-            console.log("Game data updated successfully:", response.data.data);
-          } else {
-            console.error("Failed to update data", response.data.data);
-          }
+            let league = "NOVICE";
+            if (points >= 30000) league = "OLYMPIAN";
+            else if (points >= 20000) league = "TITAN";
+            else if (points >= 12000) league = "SKIPPER";
+            else if (points >= 5000) league = "PILOT";
+            else if (points >= 1000) league = "PRIVATE";
+
+            const response = await axios.post(`${ngrokAPI}/api/update/updateBadge`, {
+                token,
+                UserID: userId,
+                league
+            });
+
+            if (response.data.status === "success") {
+                console.log("Game data updated successfully:", response.data.data);
+            } else {
+                console.error("Failed to update data", response.data.data);
+            }
         } catch (error) {
-          console.error("Error updating game data:", error);
+            console.error("Error updating game data:", error);
         }
-      };
-    
+    };
+
     //get the workout data
     const fetchWorkout = async (token, UserID) => {
-        try{
+        try {
             const date = new Date();
-            
+
             // First, check if there's a temporary routine
             try {
                 console.log("Checking for temporary routine...");
@@ -331,9 +371,9 @@ const GlobalProvider = ({ children }) => {
                     UserID,
                     date
                 });
-                
+
                 console.log("Temporary routine response:", tempResponse.data);
-                
+
                 // If there's a temporary routine, use it
                 if (tempResponse.data.status === "success" && tempResponse.data.data) {
                     console.log("Found temporary routine, using it:", tempResponse.data.data);
@@ -347,10 +387,10 @@ const GlobalProvider = ({ children }) => {
                 // If temporary routine check fails or returns no data, continue to normal fetch
                 console.log("Temporary routine check failed or no temporary routine exists, proceeding with normal fetch");
             }
-            
+
             // If no temporary routine, fetch normal workout data
-            const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, {token, date, UserID});
-            console.log("this is the response" , response.data);
+            const response = await axios.post(`${ngrokAPI}/api/user/getWorkoutData`, { token, date, UserID });
+            console.log("this is the response", response.data);
             if (response.data.status === "success") {
                 //console.log("Fetched workout data responsess:", response.data.data);
                 setUserWorkoutData(response.data.data)
@@ -398,45 +438,45 @@ const GlobalProvider = ({ children }) => {
         const routineArray = rawWorkoutData?.routine || [];
         const today = new Date().toLocaleString("en-US", { weekday: "long" });
         const workoutOfTheDay = routineArray.find((dayRoutine) => dayRoutine.day === today);
-        setTodayWorkout(workoutOfTheDay)      
+        setTodayWorkout(workoutOfTheDay)
         setWarmup(workoutOfTheDay.warmup)
         setworkout(workoutOfTheDay.workoutRoutine)
         setCoolDown(workoutOfTheDay.cooldown)
     }
     //fetch the user XP history 
-    const fetchXpHistory = async(UserID) => {
-        try{
-            const response = await axios.post(`${ngrokAPI}/fetchWeeklyPoints`, {UserID});
-            if(!response.data){
+    const fetchXpHistory = async (UserID) => {
+        try {
+            const response = await axios.post(`${ngrokAPI}/fetchWeeklyPoints`, { UserID });
+            if (!response.data) {
                 throw new Error(`Failed to fetch XP history: ${response.statusText}`);
             }
             const data = await response.data;
             setWeeklyData(data);
 
-        } catch (error){
+        } catch (error) {
             console.error("Error fetching XP history:", error);
         }
     }
     // fecth the challanges of the day. 
     const fetchChallenges = async (UserID) => {
         try {
-        const response = await axios.post(`${ngrokAPI}/randomChallenges`, {UserID});
-        if (!response.data){
-            throw new Error(`Failed to fetch challenges: ${response.status}`);
-        }
+            const response = await axios.post(`${ngrokAPI}/randomChallenges`, { UserID });
+            if (!response.data) {
+                throw new Error(`Failed to fetch challenges: ${response.status}`);
+            }
 
-        const data = response.data; // Use response.data directly
-        if (data && Array.isArray(data.challenges)) {
-            setChallenges(data.challenges);
-           
-        } else {
-            setChallenges([{name: "No challenges available"}]);
-        }
+            const data = response.data; // Use response.data directly
+            if (data && Array.isArray(data.challenges)) {
+                setChallenges(data.challenges);
 
-    } catch (error) {
-        console.error("Error fetching challenges:", error);
-        setChallenges([{name: "No challenges available"}]);
-    }
+            } else {
+                setChallenges([{ name: "No challenges available" }]);
+            }
+
+        } catch (error) {
+            console.error("Error fetching challenges:", error);
+            setChallenges([{ name: "No challenges available" }]);
+        }
     }
 
 
@@ -445,7 +485,7 @@ const GlobalProvider = ({ children }) => {
         // Guard clause to prevent API call if UserID is not available
         if (!UserID) {
             console.log("UserID is missing, cannot fetch workouts.");
-            return; 
+            return;
         }
 
         try {
@@ -453,8 +493,8 @@ const GlobalProvider = ({ children }) => {
             const response = await axios.post(`${ngrokAPI}/api/update/getLoggedWorkouts`, {
                 UserID // Note: Ensure the key matches your backend ('UserId')
             });
-                
-            if (!response.data){
+
+            if (!response.data) {
                 throw new Error(`Failed to fetch logged workouts: Status ${response.status}`);
             }
 
@@ -503,11 +543,11 @@ const GlobalProvider = ({ children }) => {
                 // response.data.data is now an array of:
                 // { userId, username, email, profileImage, requestStatus }
                 const formatted = response.data.data.map(u => ({
-                    id:            u.userId,
-                    username:      u.username,
-                    email:         u.email,
-                    avatar:        u.profileImage,
-                    requestStatus: u.requestStatus 
+                    id: u.userId,
+                    username: u.username,
+                    email: u.email,
+                    avatar: u.profileImage,
+                    requestStatus: u.requestStatus
                 }));
 
                 //setFollowersUsers(formatted);
@@ -524,9 +564,9 @@ const GlobalProvider = ({ children }) => {
             return [];
         }
     };
-   
-    const fetchQuestionnaireCompletion = async ()  => {
-        try{
+
+    const fetchQuestionnaireCompletion = async () => {
+        try {
             const response = userData.questionnaire;
             console.log("user completion", response);
             setCompletedQuestions(response);
@@ -539,10 +579,10 @@ const GlobalProvider = ({ children }) => {
         setSelectedChallenges(prevSelected => {
             // Create a Set of existing challenge names for efficient checking
             const existingChallengeNames = new Set(prevSelected.map(c => c.name));
-            
+
             // Filter the new challenges to only include ones not already in the list
             const uniqueNewChallenges = challengesToAdd.filter(c => !existingChallengeNames.has(c.name));
-            
+
             // Return the new combined array
             return [...prevSelected, ...uniqueNewChallenges];
         });
@@ -553,7 +593,7 @@ const GlobalProvider = ({ children }) => {
         try {
             const UserID = userData._id;
             console.log(UserID)
-            axios.post("http://localhost:5001/mark-questionnaire",  {UserID} );
+            axios.post("http://localhost:5001/mark-questionnaire", { UserID });
             setQuestionStatus(true);
             console.log(questionStatus);
         } catch (error) {
@@ -562,7 +602,7 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
-    const fetchWorkoutFocus = async (focus,userFitnessLevel ) => {
+    const fetchWorkoutFocus = async (focus, userFitnessLevel) => {
         try {
             const response = await axios.post(`${ngrokAPI}/api/workout/getFocusExercise`, { focus, userFitnessLevel });
             if (response.data.status === "success") {
@@ -577,11 +617,11 @@ const GlobalProvider = ({ children }) => {
             return [];
         }
     }
-    
+
     const fetchFitnessData = async (UserID) => {
         try {
             const token = await AsyncStorage.getItem("token");
-            const response = await axios.post(`${ngrokAPI}/api/user/getFitnessData`, { UserID, token});
+            const response = await axios.post(`${ngrokAPI}/api/user/getFitnessData`, { UserID, token });
             if (response.data.status === "success") {
                 const normalizedData = normalizeFitnessData(response.data.data || {});
                 setUserFitnessData(normalizedData);
@@ -596,7 +636,99 @@ const GlobalProvider = ({ children }) => {
         }
     }
 
-    const saveFitnessPreferences = async (payload) => {
+    // Serialize existing routine days into readable text for the AI prompt
+    const serializeRoutineForPrompt = (routine, keepDays) => {
+        if (!Array.isArray(routine)) return "";
+        return routine
+            .filter((d) => keepDays.includes(d.day) && d.focus && d.focus.toLowerCase() !== "rest")
+            .map((d) => {
+                const exercises = (d.workoutRoutine || []).map((e) => e.exerciseName).join(", ");
+                return `${d.day}: ${d.focus} — ${exercises || "no exercises"}`;
+            })
+            .join("\n");
+    };
+
+    const regenPartialRoutine = async (existingRoutine, previousDays, newDays, onStatusChange) => {
+        try {
+            const token = await AsyncStorage.getItem("token");
+            const UserID = userData?._id;
+            if (!UserID || !token) return { success: false, message: "Not authenticated." };
+
+            const fd = userFitnessData || {};
+
+            // Days being kept (were active before and still active)
+            const keptDays = previousDays.filter((d) => newDays.includes(d));
+            // Days being removed
+            const removedDays = previousDays.filter((d) => !newDays.includes(d));
+            // Days being added
+            const addedDays = newDays.filter((d) => !previousDays.includes(d));
+            // All rest days (neither kept nor added)
+            const allDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const allRestDays = allDays.filter((d) => !newDays.includes(d));
+
+            if (addedDays.length === 0) {
+                // Path A: only removals — zero out removed days directly
+                const updatedRoutine = existingRoutine.map((day) => {
+                    if (removedDays.includes(day.day)) {
+                        return { ...day, focus: "Rest", timeEstimate: 0, warmup: [], workoutRoutine: [] };
+                    }
+                    return day;
+                });
+                await axios.post(`${ngrokAPI}/api/workout/updateRoutinePermanently`, {
+                    token,
+                    UserID,
+                    modifiedUserRoutine: updatedRoutine,
+                });
+                return { success: true };
+            }
+
+            // Path B: days added — call AI with targeted prompt
+            if (onStatusChange) onStatusChange("regenerating");
+
+            const existingSummary = serializeRoutineForPrompt(existingRoutine, keptDays);
+
+            const getSplitForDays = (count) => {
+                if (count === 3) return "Push/Pull/Legs";
+                if (count === 4) return "Upper/Lower/Upper/Lower";
+                if (count === 5) return "Push/Pull/Legs/Upper/Full Body";
+                if (count >= 6) return "Push/Pull/Legs/Push/Pull/Legs";
+                return "Full Body";
+            };
+
+            const Gmessage = `
+User profile:
+- Sex at birth: ${fd.gender || "unspecified"}
+- Age: ${fd.age || "unknown"}
+- Weight_lbs: ${fd.weight || "unknown"}
+- Fitness level: ${fd.fitnessLevel || "Intermediate"}
+
+Goal: ${fd.fitnessGoal || "Build Muscle"}
+Equipment: ${fd.equipmentAvailable || "full gym"}
+
+PARTIAL SCHEDULE UPDATE — do NOT modify or replace existing days.
+
+Existing routine days (keep these exactly as-is, same exercises, same focus):
+${existingSummary}
+
+New days to generate exercises for: ${addedDays.join(", ")}
+For each new day, follow the same exercise style, difficulty level, and rep/set structure as the existing days.
+Assign a focus that fits the overall split pattern: ${getSplitForDays(newDays.length)}.
+Map the new days into the split so they complement the existing days logically.
+
+Rest days (set focus="Rest", empty warmup and workoutRoutine arrays): ${allRestDays.join(", ")}
+
+Return the complete 7-day routine array in the same JSON format. All 7 days must be present.
+`.trim();
+
+            await axios.post(`${ngrokAPI}/api/GenAI/ai`, { Gmessage, UserID });
+            return { success: true };
+        } catch (error) {
+            console.error("Error in regenPartialRoutine:", error);
+            return { success: false, message: error?.message || "Failed to regenerate routine." };
+        }
+    };
+
+    const saveFitnessPreferences = async (payload, previousDays, existingRoutine, onStatusChange) => {
         try {
             const token = await AsyncStorage.getItem("token");
             const mergedPayload = normalizeFitnessData({
@@ -637,6 +769,18 @@ const GlobalProvider = ({ children }) => {
                 setUserFitnessData(normalizedData);
             }
 
+            // Update the routine if day changes were made
+            const newDays = Array.isArray(payload.selectedWorkoutDays) ? payload.selectedWorkoutDays : [];
+            const prevDays = Array.isArray(previousDays) ? previousDays : [];
+            const daysChanged =
+                newDays.length !== prevDays.length ||
+                newDays.some((d) => !prevDays.includes(d)) ||
+                prevDays.some((d) => !newDays.includes(d));
+
+            if (daysChanged && existingRoutine && newDays.length > 0) {
+                await regenPartialRoutine(existingRoutine, prevDays, newDays, onStatusChange);
+            }
+
             return {
                 success: true,
                 data: normalizedData,
@@ -659,15 +803,15 @@ const GlobalProvider = ({ children }) => {
                 // Removed duplicate UserID declaration
                 const leaveLevel = league; // Use the parameter directly
                 console.log("UserID:", UserID, "Leave Level:", leaveLevel);
-                
-                const response = await axios.post(`${ngrokAPI}/api/user/getChallenges`, { 
-                    UserID, 
-                    leaveLevel 
+
+                const response = await axios.post(`${ngrokAPI}/api/user/getChallenges`, {
+                    UserID,
+                    leaveLevel
                 });
-                
+
                 console.log("Challenges: ", response.data.data);
-                return response.data.data; 
-                
+                return response.data.data;
+
             } catch (error) {
                 console.error("Error fetching AI challenges:", error);
                 return [];
@@ -687,7 +831,7 @@ const GlobalProvider = ({ children }) => {
 
             const endpoint = `${ngrokAPI}/api/workout/getUserRoutine`;
             console.log("Fetching user routine from:", endpoint);
-            
+
             const response = await axios.post(endpoint, {
                 token,
                 UserID
@@ -726,7 +870,7 @@ const GlobalProvider = ({ children }) => {
 
             const endpoint = `${ngrokAPI}/api/workout/getTemporaryUserRoutine`;
             console.log("Fetching user Temp routine from:", endpoint);
-            
+
             const response = await axios.post(endpoint, {
                 token,
                 UserID
@@ -741,6 +885,26 @@ const GlobalProvider = ({ children }) => {
             }
         } catch (error) {
             return null;
+        }
+    };
+
+    const toggleAiMode = () => setAiMode(prev => !prev);
+
+    const logWorkoutSet = async (userId, workoutLogId, exerciseName, setNumber, suggestedWeight, actualWeight, actualReps) => {
+        try {
+            const response = await axios.post(`${ngrokAPI}/api/workout/logSet`, {
+                userId,
+                workoutLogId: workoutLogId || undefined,
+                exerciseName,
+                setNumber,
+                suggestedWeight,
+                actualWeight,
+                actualReps,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error logging workout set:', error);
+            throw error;
         }
     };
 
@@ -792,7 +956,13 @@ const GlobalProvider = ({ children }) => {
                 fetchWorkoutFocus,
                 getChallenges,
                 fetchUserRoutine,
-                fetchLoggedWorkouts
+                fetchLoggedWorkouts,
+                aiMode,
+                toggleAiMode,
+                logWorkoutSet,
+                currentPhase: userFitnessData?.currentPhase ?? null,
+                activateRecoveryMode,
+                endRecoveryMode,
             }}
         >
             {!loading && children}

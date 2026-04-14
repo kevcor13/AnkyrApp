@@ -56,7 +56,7 @@ const WorkoutOverview = () => {
 
     return (
         <LinearGradient
-            colors={theme? ['#FF2225', '#2C1796', '#2C1796', '#9E0844'] : ["#000000", "#272727"]}
+            colors={theme ? ["#000000", "#272727"] : ["#000000", "#272727"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{ flex: 1 }}
@@ -129,13 +129,14 @@ const WorkoutOverview = () => {
                     {/* <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title='Cool Down'/> */}
                 </View>
 
-                {/* Bottom Decoration */}
+                {/* Bottom Decoration 
                 <View style={styles.bottomDecoration}>
                     <Image 
                         source={icons.blueStreak} 
                         style={{height: 60, width: 60, opacity: 0.8}}
                     />
                 </View>
+                */}
             </ScrollView>
         </LinearGradient>
     )
@@ -165,7 +166,6 @@ const styles = StyleSheet.create({
     },
     workoutTitle: {
         fontSize: 40,
-        fontWeight: '700',
         color: '#FFFFFF',
         fontFamily: 'raleway-light',
         textTransform: 'uppercase',
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     },
     statsCard: {
         marginHorizontal: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: '#1B191E',
         borderRadius: 20,
         padding: 24,
         flexDirection: 'row',
@@ -190,17 +190,15 @@ const styles = StyleSheet.create({
         alignItems: 'baseline',
     },
     timeNumber: {
-        fontFamily: 'poppins-semibold',
+        fontFamily: 'SpaceGrotesk-Bold',
         fontSize: 56,
-        fontWeight: '700',
-        color: '#8AFFF9',
+        color: '#6477E7',
         lineHeight: 64,
     },
     timeUnit: {
-        fontFamily: 'poppins-semibold',
+        fontFamily: 'SpaceGrotesk-Bold',
         fontSize: 20,
-        fontWeight: '600',
-        color: '#8AFFF9',
+        color: '#6477E7',
         marginLeft: 4,
         opacity: 0.8,
     },
@@ -217,7 +215,7 @@ const styles = StyleSheet.create({
         fontFamily: 'raleway-semibold',
         fontSize: 12,
         fontWeight: '600',
-        color: 'rgba(255, 255, 255, 0.7)',
+        color: 'white',
         letterSpacing: 1.2,
         marginBottom: 4,
     },
@@ -229,25 +227,25 @@ const styles = StyleSheet.create({
         fontFamily: 'raleway-semibold',
         fontSize: 32,
         fontWeight: '700',
-        color: '#8AFFF9',
+        color: '#6477E7',
     },
     xpUnit: {
         fontFamily: 'raleway-semibold',
         fontSize: 14,
         fontWeight: '600',
-        color: '#8AFFF9',
+        color: '#6477E7',
         marginLeft: 4,
         opacity: 0.8,
     },
     primaryButton: {
-        backgroundColor: 'rgba(138, 255, 249, 0.2)',
+        backgroundColor: '#1B191E',
         borderRadius: 16,
         paddingVertical: 18,
         marginHorizontal: 20,
         marginBottom: 40,
         borderWidth: 1,
-        borderColor: 'rgba(138, 255, 249, 0.3)',
-        shadowColor: '#8AFFF9',
+        borderColor: '#6477E7',
+        shadowColor: '#6477E7',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -255,8 +253,7 @@ const styles = StyleSheet.create({
     primaryButtonText: {
         color: '#FFFFFF',
         fontSize: 18,
-        fontWeight: '700',
-        fontFamily: 'poppins-semiBold',
+        fontFamily: 'poppins-regular',
         letterSpacing: 0.3,
     },
     overviewHeader: {
@@ -267,22 +264,21 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     overviewTitle: {
-        fontFamily: 'poppins-semibold',
+        fontFamily: 'poppins-regular',
         fontSize: 24,
-        fontWeight: '700',
         color: '#FFFFFF',
     },
     editButton: {
         paddingHorizontal: 20,
         paddingVertical: 8,
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        backgroundColor: '#1B191E',
         borderRadius: 12,
     },
     editButtonText: {
         fontFamily: 'poppins-semibold',
         fontSize: 14,
         fontWeight: '600',
-        color: '#8AFFF9',
+        color: '#6477E7',
         letterSpacing: 0.5,
     },
     workoutCardsContainer: {

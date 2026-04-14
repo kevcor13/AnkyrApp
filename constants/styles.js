@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
     loadingText: { color: 'white', fontSize: 22, fontFamily: 'poppins-semibold' },
     overviewContainer: { flex:1 },
     overviewTitle: { color: 'white', fontSize: 40, fontFamily: 'raleway-light', marginHorizontal: 20, alignContent:'center'},
-    repsText: { color: '#8AFFF9', fontSize: 40, fontFamily: 'poppins-semibold', marginHorizontal: 20, marginTop: 10, marginBottom: 20 },
+    repsText: { color: '#6477E7', fontSize: 40, fontFamily: 'poppins-semibold', marginHorizontal: 20, marginTop: 10, marginBottom: 20 },
     header: {
         width: '100%',
         height: 300,
@@ -19,14 +19,14 @@ export const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
     },
     workoutCard: { padding: 20 },
-    exerciseNameMain: { fontFamily: 'raleway-light', color: 'white', fontSize: 40 },
+    exerciseNameMain: { fontFamily: 'raleway-light', color: 'white', fontSize: 34 },
     repsContainer: { flexDirection: 'row', alignItems: 'baseline'},
-    repsSetsMain: { fontFamily: 'poppins-semibold', fontSize: 64, color: '#8AFFF9' },
+    repsSetsMain: { fontFamily: 'poppins-regular', fontSize: 18, color: '#6477E7' },
     repsLabel: { fontFamily: 'poppins-semibold', fontSize: 24, color: '#8AFFF9' },
     bodyweightText: { marginTop: 40, fontFamily: 'poppins-medium', color: 'white', fontSize: 24 },
     weightText: { fontFamily: 'poppins-light', color: 'white', fontSize: 19 },
     nextButtonOverview: {
-        backgroundColor: 'rgba(217,217,217,0.27)',
+        backgroundColor: '#1B191E',
         paddingVertical: 18,
         borderRadius: 30,
         alignItems: 'center',
@@ -34,7 +34,7 @@ export const styles = StyleSheet.create({
         marginTop: 20
     },
     nextButtonWorkout: {
-        backgroundColor: 'rgba(255, 255, 255, 0.27)',
+        backgroundColor: '#1B191E',
         paddingVertical: 18,
         borderRadius: 30,
         alignItems: 'center',
@@ -42,7 +42,7 @@ export const styles = StyleSheet.create({
     },
     nextButtonText: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
     nextButtonTextWorkout: { color: 'white', fontSize: 20, fontFamily: 'poppins-bold' },
-    streakContainer: { alignItems: 'center', marginTop: 80},
+    streakContainer: { alignItems: 'center',  flex: 1, justifyContent: 'flex-end' , marginBottom: 30},
     endButton: {
         backgroundColor: '#C0C0C0', // A neutral color to differentiate from 'Start'
         paddingHorizontal: 40,
@@ -67,7 +67,7 @@ export const styles = StyleSheet.create({
     progressBarContainer: {
         height: 10,
         width: '60%', // Make it slightly less than full width
-        backgroundColor: 'rgba(255, 255, 255, 0.3)', // A semi-transparent white
+        backgroundColor: '#1B191E', // A semi-transparent white
         borderRadius: 5,
         marginLeft: 20,
         marginRight: 20,

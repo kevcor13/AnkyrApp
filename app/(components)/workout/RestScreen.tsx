@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import icons from "@/constants/icons";
+import AppIcon from "@/components/AppIcon";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -92,7 +93,8 @@ const RestScreen: React.FC<RestScreenProps> = ({
   };
 
   return (
-    <LinearGradient colors={["#7BCFC7", "#271293"]} style={styles.container}>
+    <LinearGradient colors={["#000000", "#22406B"]} start={{ x: 0, y: 0.38 }}
+      end={{ x: 0, y: 1}} style={styles.container}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
 
       <View style={styles.content}>
@@ -109,10 +111,10 @@ const RestScreen: React.FC<RestScreenProps> = ({
           </TouchableOpacity>
         </View>
 
-        <View style={{ justifyContent: "center", margin: 30 }}>
+        <View style={{ justifyContent: "center", alignItems: "center", margin: 30 }}>
           <Text style={styles.title}>REST</Text>
           <View style={{ flexDirection: "row" }}>
-            <View className="flex-1">
+            <View className="align-items-center">
               <Text style={styles.timer}>
                 {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
               </Text>
@@ -141,18 +143,14 @@ const RestScreen: React.FC<RestScreenProps> = ({
         ) : (
           <View style={{ alignItems: "center", marginTop: 40 }}>
             <TouchableOpacity style={styles.skipButton} onPress={onRestComplete}>
-              <Image source={icons.skipButton} />
+              <AppIcon name="skipIcon" size={24} />
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       <View pointerEvents="none" style={styles.streakContainer}>
-        <Image
-          source={icons.blueStreak}
-          style={styles.streakImage}
-          resizeMode="contain"
-        />
+        <AppIcon name="ankyrWordmark" size={100} fill="no fill" />
       </View>
 
       <Modal
@@ -208,16 +206,15 @@ const styles = StyleSheet.create({
     borderRadius: 22.5,
   },
   title: {
-    fontFamily: "poppins-BoldItalic",
-    fontStyle: "italic",
+    fontFamily: "raleway-light",
     fontSize: 40,
     marginTop: 100,
     color: "white",
   },
   timer: {
-    fontFamily: "poppins-semibold",
-    fontSize: 100,
-    color: "#8AFFF9",
+    fontFamily: "SpaceGrotesk-Regular",
+    fontSize: 64,
+    color: "#6477E7",
   },
   nextButton: {
     backgroundColor: "white",
@@ -228,11 +225,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 40,
   },
-  nextButtonText: { color: "#2980B9", fontSize: 20, fontFamily: "poppins-bold" },
+  nextButtonText: { color: "#6477E7", fontSize: 20, fontFamily: "poppins-bold" },
   skipButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    width: 70,
-    height: 70,
+    backgroundColor: "rgba(24, 21, 30, 0.47)",
+    padding: 16,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",

@@ -28,11 +28,13 @@ import overviewBox from "@/assets/icons/OverviewButton.svg"
 import upArrow from "@/assets/icons/Arrow up-right.svg"
 import checkMark from "@/assets/icons/Check.svg"
 import gearIcon from "@/assets/icons/GearIcon.svg"
+import skipIcon from "@/assets/icons/Rewind.svg"
 
 type SvgIconComponent = ComponentType<SvgProps>;
 
 export const svgIcons = {
   ankyrWordmark: AnkyrWordmarkIcon,
+  skipIcon: skipIcon,
   gearIcon : gearIcon,
   checkMark: checkMark,
   upArrow: upArrow,

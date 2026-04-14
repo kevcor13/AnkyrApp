@@ -155,6 +155,8 @@ const Questionnaire = () => {
         return "Full Body";
       };
 
+      const bodyGoal = goal === 'lose weight' ? 'cut' : 'bulk';
+
       const fitnessData = {
         UserID: userData._id,
         gender,
@@ -163,6 +165,9 @@ const Questionnaire = () => {
         fitnessLevel: fitness,
         workoutDays,
         fitnessGoal: goal,
+        bodyGoal,
+        sleepQuality,
+        equipmentAvailable,
         selectedWorkoutDays: getSelectedDayNames(),
       };
       const points = { UserID: userData._id, streak: 0, points: 10, league: "NOVICE" };
@@ -189,6 +194,8 @@ User profile:
 - Fitness level: ${fitness}
 
 Goal: ${goal}
+Body goal: ${bodyGoal}
+Equipment: ${equipmentAvailable}
 
 Workout days: ${daysList} (total ${workoutDays})
 Health: ${medicalCondition ? `Condition: ${injuryType}` : 'None reported'}
@@ -198,7 +205,7 @@ ${splitRules}
 `.trim();
       const UserID = userData._id;
 
-      axios.post(`${ngrokAPI}/fitnessInfo`, fitnessData)
+      axios.post(`${ngrokAPI}/api/user/createFitness`, fitnessData)
         .then(() => {
           console.log("[handleSubmit] /fitnessInfo success");
           return axios.post(`${ngrokAPI}/userSettings`, { UserID });
@@ -703,7 +710,7 @@ ${splitRules}
               </TouchableOpacity>
             </StaggerItem>
             <StaggerItem index={2}>
-              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setGoal, 'no equipment')}>
+              <TouchableOpacity className="bg-[#DAEEED] p-4 rounded-2xl px-6 mt-7" onPress={() => handleSelection(setEquipmentAvailable, 'no equipment')}>
                 <Text className="text-center text-[16px] font-poppins-semibold text-black">I dont have access to equipment</Text>
               </TouchableOpacity>
             </StaggerItem>

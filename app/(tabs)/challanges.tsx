@@ -35,7 +35,7 @@ const floatiePromptShownByUser = new Set<string>();
 
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
-    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, fetchWorkout, fetchGameData, fetchUserRoutine, fetchTemporaryUserRoutine, useFloatie } = useGlobal();
+    const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, fetchWorkout, fetchGameData, fetchUserRoutine, fetchTemporaryUserRoutine, useFloatie, activateRecoveryMode, endRecoveryMode } = useGlobal();
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showChallanges, setShowChallanges] = useState(false)
     const [currentDay, setCurrentDay] = useState('');
@@ -55,6 +55,11 @@ const ChallengesPage: React.FC = () => {
     const [floatieTargetDate, setFloatieTargetDate] = useState<Date | null>(null);
     const [isUsingFloatie, setIsUsingFloatie] = useState(false);
     const [isRestDay, setIsRestDay] = useState(false);
+    const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+    const [recoveryDuration, setRecoveryDuration] = useState(7);
+    const [retroactiveDays, setRetroactiveDays] = useState(0);
+    const [isActivatingRecovery, setIsActivatingRecovery] = useState(false);
+    const [isEndingRecovery, setIsEndingRecovery] = useState(false);
 
     const panY = useRef(new Animated.Value(0)).current;
     const contentOpacity = useRef(new Animated.Value(1)).current;
@@ -191,6 +196,41 @@ const ChallengesPage: React.FC = () => {
         return coveredDateKeys.includes(toDateKey(date));
     };
 
+    const recoveryMode = userGameData?.recoveryMode ?? null;
+    const tokensRemaining = recoveryMode?.tokensRemaining ?? (3 - (userGameData?.recoveryTokensUsed ?? 0));
+
+    const handleActivateRecovery = async () => {
+        setIsActivatingRecovery(true);
+        try {
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - retroactiveDays);
+            const startDateKey = toDateKey(startDate);
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + recoveryDuration);
+            const endDateKey = toDateKey(endDate);
+            await activateRecoveryMode(userData._id, startDateKey, endDateKey);
+            setShowRecoveryModal(false);
+            setRetroactiveDays(0);
+            setRecoveryDuration(7);
+        } catch (e: any) {
+            Alert.alert("Error", e?.response?.data?.data || e?.message || "Could not activate Recovery Mode.");
+        } finally {
+            setIsActivatingRecovery(false);
+        }
+    };
+
+    const handleEndRecovery = async () => {
+        setIsEndingRecovery(true);
+        try {
+            await endRecoveryMode(userData._id);
+            setShowRecoveryModal(false);
+        } catch (e: any) {
+            Alert.alert("Error", e?.message || "Could not end Recovery Mode.");
+        } finally {
+            setIsEndingRecovery(false);
+        }
+    };
+
     const getMostRecentEligibleMissedDate = () => {
         if (!userRoutine?.routine || !userData?._id) return null;
         if (Number(userGameData?.floatiesRemaining ?? 0) <= 0) return null;
@@ -199,13 +239,14 @@ const ChallengesPage: React.FC = () => {
         const cursor = new Date(today);
         cursor.setDate(cursor.getDate() - 1);
 
+        // Walk back to find the single most recent scheduled workout day before today.
+        // If it was completed → no prompt. If it was missed → show prompt.
+        // We stop at the first scheduled day we find, so old missed days
+        // from earlier in the month never trigger the prompt.
         while (cursor.getMonth() === today.getMonth() && cursor.getFullYear() === today.getFullYear()) {
-            if (
-                isScheduledWorkoutDate(cursor) &&
-                !hasLoggedWorkoutForDate(cursor) &&
-                !isAlreadyCoveredDateKey(cursor)
-            ) {
-                return new Date(cursor);
+            if (isScheduledWorkoutDate(cursor)) {
+                const isCovered = hasLoggedWorkoutForDate(cursor) || isAlreadyCoveredDateKey(cursor);
+                return isCovered ? null : new Date(cursor);
             }
             cursor.setDate(cursor.getDate() - 1);
         }
@@ -481,13 +522,132 @@ const ChallengesPage: React.FC = () => {
                 </View>
             </Modal>
 
+            {/* Recovery Mode Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showRecoveryModal}
+                onRequestClose={() => setShowRecoveryModal(false)}
+            >
+                <View style={styles.floatiePromptOverlay}>
+                    <View style={styles.floatiePromptCard}>
+                        {recoveryMode?.active ? (
+                            // Active state: show info + end-early option
+                            <>
+                                <Text style={styles.floatiePromptTitle}>Recovery Mode Active</Text>
+                                <Text style={styles.floatiePromptText}>
+                                    Your streak is frozen at {recoveryMode.frozenStreak} days.{'\n'}
+                                    Recovery ends on {recoveryMode.endDateKey}.
+                                </Text>
+                                <Text style={styles.floatiePromptRemaining}>
+                                    Tokens remaining: {recoveryMode.tokensRemaining} / 3
+                                </Text>
+                                <View style={styles.floatiePromptActions}>
+                                    <TouchableOpacity
+                                        style={styles.floatiePromptDismiss}
+                                        onPress={() => setShowRecoveryModal(false)}
+                                    >
+                                        <Text style={styles.floatiePromptDismissText}>Close</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.floatiePromptUse, isEndingRecovery && styles.floatiePromptUseDisabled]}
+                                        disabled={isEndingRecovery}
+                                        onPress={handleEndRecovery}
+                                    >
+                                        <Text style={styles.floatiePromptUseText}>
+                                            {isEndingRecovery ? "Ending..." : "I'm feeling better"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        ) : (
+                            // Activation flow
+                            <>
+                                <Text style={styles.floatiePromptTitle}>Activate Recovery Mode</Text>
+                                <Text style={styles.floatiePromptRemaining}>
+                                    Tokens remaining: {tokensRemaining} / 3
+                                </Text>
+                                <Text style={[styles.floatiePromptText, { marginTop: 10 }]}>
+                                    When did you start feeling sick?
+                                </Text>
+                                <View style={styles.recoveryOptionRow}>
+                                    {[0, 1, 2].map((days) => (
+                                        <TouchableOpacity
+                                            key={days}
+                                            style={[
+                                                styles.recoveryOptionBtn,
+                                                retroactiveDays === days && styles.recoveryOptionBtnActive,
+                                            ]}
+                                            onPress={() => setRetroactiveDays(days)}
+                                        >
+                                            <Text style={[
+                                                styles.recoveryOptionText,
+                                                retroactiveDays === days && styles.recoveryOptionTextActive,
+                                            ]}>
+                                                {days === 0 ? 'Today' : days === 1 ? '1 day ago' : '2 days ago'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                                <Text style={[styles.floatiePromptText, { marginTop: 14 }]}>
+                                    How long do you need to recover?
+                                </Text>
+                                <View style={styles.recoveryDurationRow}>
+                                    {[3, 4, 5, 6, 7, 8, 9, 10].map((d) => (
+                                        <TouchableOpacity
+                                            key={d}
+                                            style={[
+                                                styles.recoveryDurationBtn,
+                                                recoveryDuration === d && styles.recoveryOptionBtnActive,
+                                            ]}
+                                            onPress={() => setRecoveryDuration(d)}
+                                        >
+                                            <Text style={[
+                                                styles.recoveryDurationText,
+                                                recoveryDuration === d && styles.recoveryOptionTextActive,
+                                            ]}>
+                                                {d}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                                <Text style={[styles.floatiePromptRemaining, { marginTop: 12 }]}>
+                                    Your streak ({userGameData?.streak ?? 0} days) will be frozen for {recoveryDuration} days.
+                                </Text>
+                                <View style={styles.floatiePromptActions}>
+                                    <TouchableOpacity
+                                        style={styles.floatiePromptDismiss}
+                                        onPress={() => setShowRecoveryModal(false)}
+                                    >
+                                        <Text style={styles.floatiePromptDismissText}>Cancel</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[styles.floatiePromptUse, (isActivatingRecovery || tokensRemaining <= 0) && styles.floatiePromptUseDisabled]}
+                                        disabled={isActivatingRecovery || tokensRemaining <= 0}
+                                        onPress={handleActivateRecovery}
+                                    >
+                                        <Text style={styles.floatiePromptUseText}>
+                                            {isActivatingRecovery ? "Activating..." : "Activate"}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+
             <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Calendar and Header Card */}
                 <View style={{ marginTop: Platform.OS === 'ios' ? -10 : 10 }}>
-                    <CalendarSelector userRoutine={userRoutine} />
+                    <CalendarSelector
+                        userRoutine={userRoutine}
+                        recoveryModeActive={!!recoveryMode?.active}
+                        onShieldPress={() => setShowRecoveryModal(true)}
+                    />
                     <ImageBackground source={images.squareGradient} imageStyle={{ height: 224 }}>
                         <View
                             style={styles.headerCard}
@@ -496,6 +656,14 @@ const ChallengesPage: React.FC = () => {
                             <Text style={styles.dayText}>{currentDay}</Text>
                             <Text style={styles.workoutLabel}>WORKOUT</Text>
 
+                            <View style={styles.workoutInfoContainer}>
+                                <Text style={styles.focusText}>{focus}</Text>
+                                <View style={{ flexDirection: 'row' }}>
+                                    <Text style={styles.timeText}>{timeEstimate}</Text>
+                                    <Text style={styles.timeText2}>min</Text>
+                                </View>
+                            </View>
+                            {/**    
                             {isWorkoutAllowed || selectedWorkout ? (
                                 <View style={styles.statusBadge}>
                                     <Text style={styles.statusText}>✓ COMPLETED</Text>
@@ -503,12 +671,13 @@ const ChallengesPage: React.FC = () => {
                             ) : (
                                 <View style={styles.workoutInfoContainer}>
                                     <Text style={styles.focusText}>{focus}</Text>
-                                    <View style={{flexDirection:'row'}}>
+                                    <View style={{ flexDirection: 'row' }}>
                                         <Text style={styles.timeText}>{timeEstimate}</Text>
                                         <Text style={styles.timeText2}>min</Text>
                                     </View>
                                 </View>
                             )}
+                                */}
                         </View>
                     </ImageBackground>
                 </View>
@@ -517,22 +686,44 @@ const ChallengesPage: React.FC = () => {
                 <View style={styles.workoutButtons}>
                     <TouchableOpacity style={styles.actionCard}
                         activeOpacity={0.7}
-                        onPress={() => router.navigate("/(workout)/WorkoutOverview")}
+                        onPress={() => {
+                            if (isWorkoutAllowed || selectedWorkout) {
+                                const xpEarned = selectedWorkout?.points ?? 0;
+                                const currentStreak = userGameData?.streak ?? 0;
+                                router.navigate({
+                                    pathname: "/(workout)/EndWorkoutScreen",
+                                    params: {
+                                        previousStreak: String(currentStreak),
+                                        currentStreak: String(currentStreak),
+                                        xpEarned: String(xpEarned),
+                                        floatiesRemaining: String(userGameData?.floatiesRemaining ?? 0),
+                                    },
+                                });
+                            } else {
+                                router.navigate("/(workout)/WorkoutOverview");
+                            }
+                        }}
                     >
                         <View style={styles.actionIconContainer}>
                             <AppIcon name="overviewBox" size={24} />
                         </View>
                         <Text style={styles.actionCardText}>overview</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionCard}
-                        activeOpacity={0.7}
-                        onPress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
-                    >
-                        <View style={styles.actionIconContainer}>
-                            <AppIcon name="upArrow" size={24} />
+                    {isWorkoutAllowed || selectedWorkout ? (
+                        <View style={styles.actionCard}>
+                            <Text style={styles.statusText}>✓ COMPLETED</Text>
                         </View>
-                        <Text style={styles.quickStartText}>quick start</Text>
-                    </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.actionCard}
+                            activeOpacity={0.7}
+                            onPress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
+                        >
+                            <View style={styles.actionIconContainer}>
+                                <AppIcon name="upArrow" size={24} />
+                            </View>
+                            <Text style={styles.quickStartText}>quick start</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* My AI Overview */}
@@ -553,6 +744,14 @@ const ChallengesPage: React.FC = () => {
                 </TouchableOpacity>
 
 
+                {/* Recovery Mode Active Banner */}
+                {recoveryMode?.active && (
+                    <View style={styles.recoveryBanner}>
+                        <Text style={styles.recoveryBannerText}>❄️ Recovery Mode — streak frozen at {recoveryMode.frozenStreak}</Text>
+                        <Text style={styles.recoveryBannerSubtext}>Ends {recoveryMode.endDateKey}</Text>
+                    </View>
+                )}
+
                 <View style={styles.statsContainer}>
                     <TouchableOpacity style={styles.myPlanCard} onPress={() => router.navigate("/(components)/MyPlan")} activeOpacity={0.7}>
                         <Text style={styles.myPlanTitle}>my plan</Text>
@@ -569,6 +768,9 @@ const ChallengesPage: React.FC = () => {
                                 </View>
                                 <Text style={styles.streakValue}>{userGameData.streak}</Text>
                             </View>
+                            {recoveryMode?.active && (
+                                <Text style={styles.frozenLabel}>❄️ frozen</Text>
+                            )}
                         </View>
                         <View style={styles.xpCard}>
                             <Text style={styles.xpLabel}>XP</Text>
@@ -837,7 +1039,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     statusText: {
-        color: '#38FFF5',
+        color: '#6477E7',
         fontSize: 16,
         fontWeight: '600',
         letterSpacing: 1,
@@ -1246,7 +1448,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     floatiePromptRemaining: {
-        color: '#38FFF5',
+        color: '#6477E7',
         fontSize: 14,
         fontWeight: '600',
         marginBottom: 16,
@@ -1270,7 +1472,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 10,
-        backgroundColor: '#38FFF5',
+        backgroundColor: '#6477E7',
     },
     floatiePromptUseDisabled: {
         opacity: 0.7,
@@ -1278,6 +1480,74 @@ const styles = StyleSheet.create({
     floatiePromptUseText: {
         color: '#000000',
         fontWeight: '700',
+    },
+
+    // Recovery Mode
+    recoveryBanner: {
+        marginTop: 8,
+        padding: 14,
+        borderRadius: 14,
+        backgroundColor: 'rgba(100, 180, 255, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(100, 180, 255, 0.35)',
+    },
+    recoveryBannerText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    recoveryBannerSubtext: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 12,
+        marginTop: 4,
+    },
+    frozenLabel: {
+        color: 'rgba(100, 180, 255, 0.9)',
+        fontSize: 11,
+        fontWeight: '600',
+        marginTop: 2,
+    },
+    recoveryOptionRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 8,
+    },
+    recoveryOptionBtn: {
+        flex: 1,
+        paddingVertical: 8,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.07)',
+        alignItems: 'center',
+    },
+    recoveryOptionBtnActive: {
+        backgroundColor: '#6477E7',
+    },
+    recoveryOptionText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    recoveryOptionTextActive: {
+        color: '#000000',
+    },
+    recoveryDurationRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+        marginTop: 8,
+    },
+    recoveryDurationBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255,255,255,0.07)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    recoveryDurationText: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 13,
+        fontWeight: '600',
     },
 
     // Floatie Date Card

@@ -93,17 +93,16 @@ const EndWorkoutScreen = () => {
     <View style={{ flex: 1, backgroundColor: "#0A0010" }}>
       {/* Full-screen gradient background */}
       <LinearGradient
-        colors={["#FF0509", "#8B0ACA", "#271293", "#0D0050"]}
-        locations={[0, 0.28, 0.58, 1]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
+        colors={["#000000", "#272727"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Ambient glow blobs */}
+      {/* Ambient glow blobs 
       <View style={styles.glowBlobTop} />
       <View style={styles.glowBlobBottom} />
-
+*/}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -167,7 +166,7 @@ const EndWorkoutScreen = () => {
           >
             <BlurView intensity={60} tint="light" style={styles.finishBlur}>
               <LinearGradient
-                colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0.06)"]}
+                colors={["rgba(255, 255, 255, 0.28)", "rgba(255,255,255,0.06)"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={styles.finishGradient}
@@ -271,14 +270,14 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   yourText: {
-    fontFamily: "quicksand-bold",
+    fontFamily: "poppins-light",
     fontSize: 52,
     color: "#FFFFFF",
     letterSpacing: -1,
     lineHeight: 56,
   },
   workoutText: {
-    fontFamily: "quicksand-bold",
+    fontFamily: "poppins-light",
     fontSize: 52,
     color: "#FFFFFF",
     letterSpacing: -2,
@@ -305,16 +304,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statNumber: {
-    fontFamily: "Poppins-Bold",
+    fontFamily: "SpaceGrotesk-Bold",
     fontSize: 48,
-    color: "#38FFF5",
+    color: "#6477E7",
     letterSpacing: -2,
     lineHeight: 60,
   },
   statUnit: {
     fontFamily: "Poppins-SemiBold",
     fontSize: 20,
-    color: "#38FFF5",
+    color: "#6477E7",
     opacity: 0.85,
     marginBottom: 4,
   },
@@ -331,8 +330,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 20,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#1B191E",
+    //borderWidth: 1,
+    //borderColor: "rgba(255,255,255,0.15)",
   },
   xpCard: {
     borderRadius: 20,
@@ -366,18 +366,18 @@ const styles = StyleSheet.create({
   xpPlus: {
     fontFamily: "Poppins-Bold",
     fontSize: 22,
-    color: "#38FFF5",
+    color: "#6477E7",
   },
   xpAmount: {
     fontFamily: "Poppins-Bold",
     fontSize: 36,
-    color: "#38FFF5",
+    color: "#6477E7",
     letterSpacing: -1,
   },
   xpUnit: {
     fontFamily: "Poppins-SemiBold",
     fontSize: 14,
-    color: "#38FFF5",
+    color: "#6477E7",
     opacity: 0.75,
     marginLeft: 4,
     marginBottom: 2,
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
+    backgroundColor: "#152163",
   },
   finishTouchable: {
     borderRadius: 18,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   finishText: {
-    fontFamily: "Poppins-SemiBold",
+    fontFamily: "Poppins-Light",
     fontSize: 18,
     color: "#FFFFFF",
     letterSpacing: 0.3,

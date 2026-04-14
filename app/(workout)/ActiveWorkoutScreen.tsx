@@ -32,6 +32,9 @@ const ActiveWorkoutScreen = () => {
     selectedChallenges,
     fetchLoggedWorkouts,
     fetchGameData,
+    aiMode,
+    logWorkoutSet,
+    currentPhase,
   } = useGlobal();
 
   const [sessionItems, setSessionItems] = useState<WorkoutSessionItem[] | null>(null);
@@ -41,6 +44,8 @@ const ActiveWorkoutScreen = () => {
   const [isFinishing, setIsFinishing] = useState(false);
   const [firstWorkoutItemId, setFirstWorkoutItemId] = useState<string | null>(null);
   const [hasShownThemePrompt, setHasShownThemePrompt] = useState(false);
+  const [workoutLogId, setWorkoutLogId] = useState<string | null>(null);
+  const [phaseTransitionFlag, setPhaseTransitionFlag] = useState(false);
 
   const hasInitialized = useRef(false);
 
@@ -267,7 +272,7 @@ const ActiveWorkoutScreen = () => {
           name: ex.exerciseName,
           sets: ex.performedSets
             .filter((set) => set.weight >= 0)
-            .map((s) => ({ reps: s.reps, weight: s.weight })),
+            .map((s, idx) => ({ setNumber: idx + 1, reps: s.reps, weight: s.weight })),
         }))
         .filter((ex) => ex.sets.length > 0);
 
@@ -367,6 +372,8 @@ const ActiveWorkoutScreen = () => {
             onSelectItem={handleSelectItem}
             onFinishWorkout={handleFinishWorkout}
             onEndWorkout={handleEnd}
+            currentPhase={currentPhase}
+            phaseTransition={phaseTransitionFlag}
           />
         );
       case "ITEM_OVERVIEW":
@@ -392,6 +399,12 @@ const ActiveWorkoutScreen = () => {
             currentSetIndex={currentSetIndex}
             onSetUpdate={handleSetUpdate}
             onSetLogged={handleSetLogged}
+            aiMode={aiMode}
+            currentPhase={currentPhase}
+            workoutLogId={workoutLogId}
+            onWorkoutLogIdUpdate={(id) => setWorkoutLogId(id)}
+            onPhaseTransition={() => setPhaseTransitionFlag(true)}
+            logWorkoutSet={logWorkoutSet}
           />
         );
       case "INTER_SET_REST":

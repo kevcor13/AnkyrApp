@@ -145,16 +145,19 @@ const MyPlan: React.FC = () => {
         userData,
         userFitnessData,
         fetchFitnessData,
+        fetchUserRoutine,
         saveFitnessPreferences,
     } = useGlobal() as {
         userData: { _id?: string } | null;
         userFitnessData: FitnessData | null;
         fetchFitnessData: (userId: string) => Promise<FitnessData | []>;
-        saveFitnessPreferences: (payload: FitnessData) => Promise<{
-            success: boolean;
-            data?: FitnessData | null;
-            message?: string;
-        }>;
+        fetchUserRoutine: (userId: string) => Promise<{ routine: any[] } | null>;
+        saveFitnessPreferences: (
+            payload: FitnessData,
+            previousDays: string[],
+            existingRoutine: any[] | null,
+            onStatusChange: (status: string) => void
+        ) => Promise<{ success: boolean; data?: FitnessData | null; message?: string }>;
     };
 
     const [selectedGoal, setSelectedGoal] = useState<Goal>('CUSTOM');
@@ -166,6 +169,7 @@ const MyPlan: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'regenerating'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
@@ -253,9 +257,14 @@ const MyPlan: React.FC = () => {
         }
 
         setIsSaving(true);
+        setSaveStatus('saving');
         setErrorMessage('');
 
         const selectedWorkoutDays = selectedDays.map((day) => SHORT_TO_FULL_DAY[day]);
+        const previousDays = Array.isArray(savedFitnessData.selectedWorkoutDays)
+            ? savedFitnessData.selectedWorkoutDays
+            : [];
+
         const nextGoal =
             selectedGoal === 'CUSTOM'
                 ? savedFitnessData.fitnessGoal || GOAL_TO_BACKEND.CUSTOM
@@ -268,8 +277,26 @@ const MyPlan: React.FC = () => {
             workoutDays: selectedWorkoutDays.length,
         };
 
-        const result = await saveFitnessPreferences(nextPayload);
+        // Fetch the current routine so we can pass it to the regen logic
+        let existingRoutine: any[] | null = null;
+        try {
+            const routineRes = await fetchUserRoutine(userData._id as string);
+            existingRoutine = routineRes?.routine ?? null;
+        } catch {
+            // non-fatal — regen will still work, just without existing context
+        }
+
+        const result = await saveFitnessPreferences(
+            nextPayload,
+            previousDays,
+            existingRoutine,
+            (status: string) => {
+                if (status === 'regenerating') setSaveStatus('regenerating');
+            }
+        );
+
         setIsSaving(false);
+        setSaveStatus('idle');
 
         if (!result.success) {
             const message = result.message || 'Unable to save your plan right now.';
@@ -423,7 +450,11 @@ const MyPlan: React.FC = () => {
                                 disabled={isSaving}
                             >
                                 <Text style={styles.saveButtonText}>
-                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                    {saveStatus === 'regenerating'
+                                        ? 'Regenerating your plan...'
+                                        : saveStatus === 'saving'
+                                        ? 'Saving...'
+                                        : 'Save Changes'}
                                 </Text>
                             </TouchableOpacity>
                         ) : null}

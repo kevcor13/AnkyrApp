@@ -13,6 +13,7 @@ import icons from "@/constants/icons";
 import { useGlobal } from "@/context/GlobalProvider";
 import Animated, { SlideInLeft } from "react-native-reanimated";
 import { ResizeMode, Video } from "expo-av";
+import AppIcon from "@/components/AppIcon";
 
 interface Exercise {
   exerciseName: string;
@@ -63,16 +64,18 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
         isWarmup
           ? ["#000000", "#6C4A23"]
           : theme
-          ? ["#FF0509", "#271293"]
-          : ["#000000", "#272727"]
+            ? ["#FF0509", "#271293"]
+            : ["#000000", "#272727"]
       }
+      start={{ x: 0, y: 0.5 }}
+      end={{ x: 0, y: 1}}
       style={styles.overviewContainer}
     >
       {/* Progress Bar */}
       <View style={{ flexDirection: "row", marginTop: 70, margin: 30 }}>
         <TouchableOpacity
           style={{
-            backgroundColor: "rgba(217,217, 217, 0.27)",
+            backgroundColor: "#1B191E",
             justifyContent: "center",
             alignItems: "center",
             borderRadius: 100,
@@ -88,7 +91,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
         </View>
         <TouchableOpacity
           style={{
-            backgroundColor: "rgba(217,217, 217, 0.27)",
+            backgroundColor: "#1B191E",
             justifyContent: "center",
             alignItems: "center",
             borderRadius: 100,
@@ -104,7 +107,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
       <View style={{ justifyContent: "center", marginTop: 100 }}>
         {/* Exercise name sliding in */}
         <Animated.Text
-          entering={SlideInLeft.duration(500)}
+          entering={SlideInLeft.duration(800)}
           style={styles.overviewTitle}
         >
           {exercise.exerciseName}
@@ -135,7 +138,8 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
       </View>
 
       <View style={styles.streakContainer}>
-        <Image style={{ height: 100, width: 100 }} source={icons.blueStreak} />
+        <AppIcon name="ankyrWordmark" size={100} fill="no fill" />
+        {/*<Image style={{ height: 100, width: 100 }} source={icons.blueStreak} />*/}
       </View>
 
       {/* Leave Workout Modal */}
@@ -152,8 +156,8 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
               Are you sure you want to leave the workout? Your progress will not be saved.
             </Text>
             <View style={localStyles.modalButtons}>
-              <TouchableOpacity 
-                style={localStyles.leaveButton} 
+              <TouchableOpacity
+                style={localStyles.leaveButton}
                 onPress={() => {
                   setShowLeaveModal(false);
                   onEnd();
@@ -161,8 +165,8 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
               >
                 <Text style={localStyles.leaveButtonText}>Yes, Leave</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={localStyles.cancelButton} 
+              <TouchableOpacity
+                style={localStyles.cancelButton}
                 onPress={() => setShowLeaveModal(false)}
               >
                 <Text style={localStyles.cancelButtonText}>Cancel</Text>
@@ -172,11 +176,11 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
         </View>
       </Modal>
       <Video
-        source={{ uri: exercise.videoUrl }} 
-        shouldPlay={false}   
-        isMuted={true}                     
+        source={{ uri: exercise.videoUrl }}
+        shouldPlay={false}
+        isMuted={true}
         resizeMode={ResizeMode.COVER}
-        style={{ width: 0, height: 0, opacity: 0 }} 
+        style={{ width: 0, height: 0, opacity: 0 }}
       />
     </LinearGradient>
   );

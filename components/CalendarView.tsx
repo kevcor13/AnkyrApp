@@ -24,7 +24,9 @@ interface RoutineDay {
 
 const CalendarSelector: React.FC<{
   userRoutine?: any;
-}> = ({ userRoutine }) => {
+  recoveryModeActive?: boolean;
+  onShieldPress?: () => void;
+}> = ({ userRoutine, recoveryModeActive, onShieldPress }) => {
   const [currentWeek, setCurrentWeek] = useState<WeekDay[]>([]);
 
   useEffect(() => {
@@ -146,11 +148,11 @@ const CalendarSelector: React.FC<{
           >
             <AppIcon name="calendar" width={20} height={20} />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={{borderRadius:30, backgroundColor:'#1B191E', padding:14, marginTop:5 }}
-            onPress={() => router.navigate('/(workout)/WorkoutOverview')}  
+            onPress={onShieldPress ?? (() => router.navigate('/(workout)/WorkoutOverview'))}
           >
-            <AppIcon name="shieldOff" width={20} height={20} />
+            <AppIcon name={recoveryModeActive ? "shieldOn" : "shieldOff"} width={20} height={20} />
           </TouchableOpacity>
         </View>
 

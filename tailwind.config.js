@@ -10,7 +10,11 @@ module.exports = {
         "poppins-semibold": ["Poppins-SemiBold", "sans-serif"],
         "poppins-medium" : ["Poppins-Medium", "sans-serif"],
         "poppins-BoldItalic": ["Poppins-BoldItalic", "sans-serif"],
-
+        "space-grotesk": ["SpaceGrotesk", "sans-serif"],
+        "space-grotesk-bold": ["SpaceGrotesk-Bold", "sans-serif"],
+        "space-grotesk-semibold": ["SpaceGrotesk-SemiBold", "sans-serif"],
+        "space-grotesk-medium": ["SpaceGrotesk-Medium", "sans-serif"],
+        "space-grotesk-light": ["SpaceGrotesk-Light", "sans-serif"],
         quicksand: ["Quicksand", "sans-serif"],
         "quicksand-bold": ["Quicksand-Bold", "sans-serif"],
         raleway: ['Raleway-Regular', 'sans-serif'],

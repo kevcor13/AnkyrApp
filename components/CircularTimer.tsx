@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 
 interface CircularTimerProps {
     secondsLeft: number;
@@ -9,168 +8,77 @@ interface CircularTimerProps {
     isWarmup?: boolean;
     isCooldown?: boolean;
     onStart: () => void;
+    onSkip?: () => void;
 }
 
 const CircularTimer: React.FC<CircularTimerProps> = ({
     secondsLeft,
-    totalSeconds,
     timerStarted,
-    isWarmup = true,
-    isCooldown = false,
     onStart,
+    onSkip,
 }) => {
-    const size = 240;
-    const strokeWidth = 14;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
-    const strokeDashoffset = circumference * (1 - progress);
-
-    // Color theming
-    const progressColor = isWarmup
-        ? "#E89750"
-        : isCooldown
-        ? "#C084FC"
-        : "#8AFFF9";
-
-    const glowColor = isWarmup
-        ? "#FF8C0040"
-        : isCooldown
-        ? "#A855F740"
-        : "#8AFFF920";
-
-    const startButtonColor = isWarmup
-        ? "#E89750"
-        : isCooldown
-        ? "#C084FC"
-        : "#8AFFF9";
-
-    const startButtonTextColor = isWarmup ? "#1A0800" : "#271293";
+    const minutes = Math.floor(secondsLeft / 60);
+    const seconds = secondsLeft % 60;
+    const timeString = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 
     return (
-        <View style={styles.timerCircleContainer}>
-            {/* Outer glow ring */}
-            <View
-                style={[
-                    styles.glowRing,
-                    {
-                        shadowColor: progressColor,
-                        borderColor: glowColor,
-                    },
-                ]}
-            />
+        <View style={styles.container}>
+            <Text style={styles.timeText}>{timeString}</Text>
 
-            <Svg width={size} height={size} style={styles.timerSvg}>
-                <Defs>
-                    <RadialGradient id="warmGlow" cx="50%" cy="50%" r="50%">
-                        <Stop offset="0%" stopColor={isWarmup ? "#FF9900" : isCooldown ? "#C084FC" : "#8AFFF9"} stopOpacity="0.15" />
-                        <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
-                    </RadialGradient>
-                </Defs>
+            {!timerStarted && (
+                <TouchableOpacity style={styles.startButton} onPress={onStart}>
+                    <Text style={styles.startButtonText}>Start</Text>
+                </TouchableOpacity>
+            )}
 
-                {/* Inner radial glow fill */}
-                <Circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius - strokeWidth / 2}
-                    fill="url(#warmGlow)"
-                />
-
-                {/* Background track */}
-                <Circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    stroke="rgba(255,255,255,0.08)"
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                />
-
-                {/* Dotted outer ring (like the screenshot) */}
-                <Circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius + strokeWidth}
-                    stroke={progressColor}
-                    strokeWidth={1.5}
-                    strokeOpacity={0.25}
-                    fill="none"
-                    strokeDasharray="2 6"
-                />
-
-                {/* Progress arc */}
-                <Circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    stroke={progressColor}
-                    strokeWidth={strokeWidth}
-                    fill="none"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                />
-            </Svg>
-
-            {/* Center content */}
-            <View style={styles.timerContent}>
-                <Text style={[styles.timerText, { color: isWarmup ? "#E8A855" : "white" }]}>
-                    {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
-                </Text>
-                {!timerStarted && (
-                    <TouchableOpacity
-                        style={[styles.startButton, { backgroundColor: startButtonColor }]}
-                        onPress={onStart}
-                    >
-                        <Text style={[styles.startButtonText, { color: startButtonTextColor }]}>
-                            Start
-                        </Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+            {timerStarted && secondsLeft > 0 && onSkip && (
+                <TouchableOpacity style={styles.skipButton} onPress={onSkip}>
+                    <Text style={styles.skipButtonText}>Skip</Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    timerCircleContainer: {
-        position: "relative",
+    container: {
         alignItems: "center",
         justifyContent: "center",
+        paddingVertical: 24,
     },
-    glowRing: {
-        position: "absolute",
-        width: 268,
-        height: 268,
-        borderRadius: 134,
-        borderWidth: 1,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 24,
-        elevation: 12,
-    },
-    timerSvg: {},
-    timerContent: {
-        position: "absolute",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    timerText: {
+    timeText: {
         fontFamily: "poppins-light",
-        fontSize: 52,
-        marginBottom: 8,
+        fontSize: 72,
+        color: "white",
+        letterSpacing: 2,
+        marginBottom: 24,
     },
     startButton: {
-        paddingVertical: 10,
-        paddingHorizontal: 32,
-        borderRadius: 20,
-        marginTop: 8,
+        backgroundColor: "rgba(43,34,72,0.40)",
+        paddingVertical: 14,
+        paddingHorizontal: 52,
+        borderRadius: 24,
+        borderColor: "rgba(255,255,255,0.2)",
+        borderWidth: 1,
     },
     startButtonText: {
         fontFamily: "poppins-semibold",
         fontSize: 16,
+        color: "white",
         letterSpacing: 0.5,
+    },
+    skipButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 36,
+        borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.1)",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.2)",
+    },
+    skipButtonText: {
+        fontFamily: "poppins-medium",
+        fontSize: 15,
+        color: "rgba(255,255,255,0.6)",
     },
 });
 
