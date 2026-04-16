@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -41,6 +42,12 @@ const PHASE_BADGE: Record<string, { label: string; bg: string; border: string; t
   grind:       { label: "Grind",         bg: "rgba(50,205,50,0.18)",  border: "rgba(50,205,50,0.45)",   text: "#6EF08B" },
 };
 
+const PHASE_INFO: Record<string, string> = {
+  shadow:      "You're in Shadow Mode. Focus on form over weight. Weights are set at 50% to build your movement foundation. No pressure — just move well.",
+  calibration: "You're in Calibration. The system is learning your strength levels on key lifts. Complete benchmark exercises to advance to Grind.",
+  grind:       "You're in Grind. Progressive overload is active on your main lifts. Push for personal records — weights go up when you exceed 12 reps.",
+};
+
 const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
   focus,
   items,
@@ -54,13 +61,14 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
   currentPhase,
   phaseTransition,
 }) => {
-  const { userData } = useGlobal();
+  const { userData, advancePhase } = useGlobal();
   const theme = userData?.defaultTheme;
   const progress = totalCount > 0 ? completedCount / totalCount : 0;
+  const [showPhaseModal, setShowPhaseModal] = useState(false);
 
   return (
     <LinearGradient
-      colors={theme ? ["#FF0509", "#271293"] : ["#000000", "#272727"]}
+      colors={["#000000", "#272727"]}
       style={styles.container}
     >
       <ScrollView
@@ -97,11 +105,15 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
             {completedCount} of {totalCount} complete
           </Text>
           {currentPhase && PHASE_BADGE[currentPhase] ? (
-            <View style={[styles.phaseBadge, { backgroundColor: PHASE_BADGE[currentPhase].bg, borderColor: PHASE_BADGE[currentPhase].border }]}>
+            <TouchableOpacity
+              onPress={() => setShowPhaseModal(true)}
+              style={[styles.phaseBadge, { backgroundColor: PHASE_BADGE[currentPhase].bg, borderColor: PHASE_BADGE[currentPhase].border }]}
+              activeOpacity={0.75}
+            >
               <Text style={[styles.phaseBadgeText, { color: PHASE_BADGE[currentPhase].text }]}>
-                {PHASE_BADGE[currentPhase].label}
+                {PHASE_BADGE[currentPhase].label}  ⓘ
               </Text>
-            </View>
+            </TouchableOpacity>
           ) : null}
           {phaseTransition ? (
             <View style={styles.phaseTransitionBanner}>
@@ -118,7 +130,7 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
           <View style={styles.statDivider} />
           <View>
             <Text style={styles.statLabel}>TOTAL XP</Text>
-            <Text style={styles.statValue}>+{totalCount * 5}</Text>
+            <Text style={styles.statValue}>+{items.reduce((sum, item) => sum + (item.xp ?? 5), 0)}</Text>
           </View>
         </View>
 
@@ -140,7 +152,8 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
                     <TouchableOpacity
                       key={item.id}
                       style={[styles.itemCard, isDone && styles.itemCardDone]}
-                      activeOpacity={0.82}
+                      activeOpacity={isDone ? 1 : 0.82}
+                      disabled={isDone}
                       onPress={() => onSelectItem(item.id)}
                     >
                       <View style={styles.itemMain}>
@@ -158,7 +171,7 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
                       <View style={styles.rewardBox}>
                         <Text style={styles.rewardLabel}>REWARD</Text>
                         <View style={styles.rewardValueRow}>
-                          <Text style={styles.rewardValue}>5</Text>
+                          <Text style={styles.rewardValue}>{item.xp ?? 5}</Text>
                           <Text style={styles.rewardUnit}>xp</Text>
                         </View>
                       </View>
@@ -195,6 +208,43 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
           <Image source={icons.blueStreak} style={styles.bottomDecorationImage} />
         </View>
       </ScrollView>
+
+      {/* Phase info modal */}
+      {currentPhase && PHASE_INFO[currentPhase] ? (
+        <Modal
+          visible={showPhaseModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowPhaseModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowPhaseModal(false)}
+          >
+            <View style={[styles.phaseModalCard, { borderColor: PHASE_BADGE[currentPhase]?.border ?? "rgba(255,255,255,0.2)" }]}>
+              <Text style={[styles.phaseModalTitle, { color: PHASE_BADGE[currentPhase]?.text ?? "#FFFFFF" }]}>
+                {PHASE_BADGE[currentPhase]?.label}
+              </Text>
+              <Text style={styles.phaseModalBody}>{PHASE_INFO[currentPhase]}</Text>
+              {currentPhase === "shadow" && (
+                <TouchableOpacity
+                  style={styles.phaseAdvanceBtn}
+                  onPress={async () => {
+                    if (userData?._id) await advancePhase(userData._id);
+                    setShowPhaseModal(false);
+                  }}
+                >
+                  <Text style={styles.phaseAdvanceBtnText}>I'm ready for Calibration →</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={() => setShowPhaseModal(false)} style={styles.phaseModalClose}>
+                <Text style={styles.phaseModalCloseText}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      ) : null}
     </LinearGradient>
   );
 };
@@ -453,6 +503,58 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins-Medium",
     fontSize: 13,
     color: "#FFD060",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 28,
+  },
+  phaseModalCard: {
+    backgroundColor: "#1B191E",
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    width: "100%",
+  },
+  phaseModalTitle: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 18,
+    marginBottom: 12,
+  },
+  phaseModalBody: {
+    fontFamily: "poppins-regular",
+    fontSize: 14,
+    color: "rgba(255,255,255,0.8)",
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  phaseAdvanceBtn: {
+    marginBottom: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#38FFF5",
+    alignItems: "center",
+    backgroundColor: "rgba(56,255,245,0.1)",
+  },
+  phaseAdvanceBtnText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 14,
+    color: "#38FFF5",
+  },
+  phaseModalClose: {
+    alignSelf: "flex-end",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+  },
+  phaseModalCloseText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 14,
+    color: "#FFFFFF",
   },
 });
 

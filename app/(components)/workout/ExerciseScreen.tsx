@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Modal,
   ActivityIndicator,
@@ -12,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Video, ResizeMode } from "expo-av";
 import { styles as globalStyles } from "@/constants/styles";
 import { useGlobal } from "@/context/GlobalProvider";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import CircularTimer from "@/components/CircularTimer";
 
 interface PerformedSet { reps: number; weight: number; }
@@ -78,6 +80,12 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
 }) => {
   const [hasAdjusted, setHasAdjusted] = useState(false);
   const [displayUnit, setDisplayUnit] = useState<"lbs" | "kg">("lbs");
+  const [isEditingWeight, setIsEditingWeight] = useState(false);
+  const [weightInputValue, setWeightInputValue] = useState("");
+
+  // First-time exercise guidance modal
+  const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
+  const [isFirstTime, setIsFirstTime] = useState(false);
 
   // AMRAP modal state
   const [showAmrapModal, setShowAmrapModal] = useState(false);
@@ -106,6 +114,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
       onSetUpdate(exerciseIndex, currentSetIndex, recommendedLbs);
     }
     setHasAdjusted(false);
+    setIsEditingWeight(false);
   }, [exercise.exerciseName, currentSetIndex, recommendedLbs]);
 
   // Reset feedback and suggested weights when exercise changes
@@ -113,6 +122,24 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
     setSetFeedback({});
     setAiSuggestedWeights({});
   }, [exercise.exerciseName]);
+
+  // Check if user has seen this exercise before; show guidance modal if not
+  useEffect(() => {
+    if (!userData?._id || isBodyweight || isTimed) return;
+    const checkSeen = async () => {
+      const key = `@seenExercises_${userData._id}`;
+      const stored = await AsyncStorage.getItem(key);
+      const seen: string[] = stored ? JSON.parse(stored) : [];
+      if (!seen.includes(exercise.exerciseName)) {
+        setIsFirstTime(true);
+        setShowFirstTimeModal(true);
+      } else {
+        setIsFirstTime(false);
+        setShowFirstTimeModal(false);
+      }
+    };
+    checkSeen();
+  }, [exercise.exerciseName, userData?._id]);
 
   // Preload AMRAP reps from exercise target when set changes
   useEffect(() => {
@@ -124,6 +151,7 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
   const isCooldown = exercise.phase === "cooldown";
   const isBodyweight = recommendedLbs === 0;
   const isTimed = /\bseconds?\b/i.test(exercise.reps);
+  const isDumbbell = /dumbbell/i.test(exercise.exerciseName);
 
   // Whether to show the AMRAP popup for this exercise/phase
   const shouldShowAmrap =
@@ -144,6 +172,23 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
     const newWeight = Math.max(0, baseWeight + amount);
     onSetUpdate(exerciseIndex, currentSetIndex, newWeight);
     setHasAdjusted(true);
+  };
+
+  const handleWeightDisplayPress = () => {
+    setWeightInputValue(String(displayWeight));
+    setIsEditingWeight(true);
+  };
+
+  const handleWeightInputSubmit = () => {
+    const parsed = parseFloat(weightInputValue);
+    if (!isNaN(parsed) && parsed > 0) {
+      const inLbs = displayUnit === "kg"
+        ? Math.round(parsed / LBS_TO_KG_CONVERSION)
+        : Math.round(parsed);
+      onSetUpdate(exerciseIndex, currentSetIndex, inLbs);
+      setHasAdjusted(true);
+    }
+    setIsEditingWeight(false);
   };
 
   const rawWeight = exercise.performedSets[currentSetIndex]?.weight;
@@ -283,6 +328,21 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
     onSetLogged();
   };
 
+  // --- Mark exercise as seen and close first-time modal ---
+  const handleDismissFirstTimeModal = async () => {
+    if (userData?._id) {
+      const key = `@seenExercises_${userData._id}`;
+      const stored = await AsyncStorage.getItem(key);
+      const seen: string[] = stored ? JSON.parse(stored) : [];
+      if (!seen.includes(exercise.exerciseName)) {
+        seen.push(exercise.exerciseName);
+        await AsyncStorage.setItem(key, JSON.stringify(seen));
+      }
+    }
+    setIsFirstTime(false);
+    setShowFirstTimeModal(false);
+  };
+
   const repsText = exercise.reps ?? "";
   const perMatch = repsText.match(/\bper\s+.+/i);
   const isPer = !!perMatch && !isTimed;
@@ -318,7 +378,18 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
         style={globalStyles.gradientContainer}
       >
         <ScrollView style={globalStyles.workoutCard}>
-          <Text style={globalStyles.exerciseNameMain}>{exercise.exerciseName}</Text>
+          <View style={localStyles.exerciseNameRow}>
+            <Text style={[globalStyles.exerciseNameMain, { flex: 1 }]}>{exercise.exerciseName}</Text>
+            {!isFirstTime && !isTimed && !isBodyweight && (
+              <TouchableOpacity
+                onPress={() => setShowFirstTimeModal(true)}
+                style={localStyles.infoButton}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={localStyles.infoButtonText}>ⓘ</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           <View style={globalStyles.repsContainer}>
             {isTimed ? (
@@ -384,31 +455,57 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
                     <TouchableOpacity onPress={() => adjustWeight(-5)} style={localStyles.adjusterButton}>
                       <Text style={localStyles.adjusterButtonText}>-</Text>
                     </TouchableOpacity>
-                    <View style={localStyles.weightDisplay}>
-                      <Text style={localStyles.weightDisplayText}>{displayWeight}</Text>
-                    </View>
+                    <TouchableOpacity
+                      style={localStyles.weightDisplay}
+                      onPress={handleWeightDisplayPress}
+                      activeOpacity={0.7}
+                    >
+                      {isEditingWeight ? (
+                        <TextInput
+                          style={localStyles.weightDisplayText}
+                          value={weightInputValue}
+                          onChangeText={setWeightInputValue}
+                          keyboardType="numeric"
+                          autoFocus
+                          selectTextOnFocus
+                          onBlur={handleWeightInputSubmit}
+                          onSubmitEditing={handleWeightInputSubmit}
+                          textAlign="center"
+                        />
+                      ) : (
+                        <Text style={localStyles.weightDisplayText}>{displayWeight}</Text>
+                      )}
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => adjustWeight(5)} style={localStyles.adjusterButton}>
                       <Text style={localStyles.adjusterButtonText}>+</Text>
                     </TouchableOpacity>
                   </View>
 
-                  <View style={localStyles.unitSelector}>
-                    <TouchableOpacity
-                      style={[localStyles.unitButton, displayUnit === "lbs" && localStyles.unitButtonActive]}
-                      onPress={() => setDisplayUnit("lbs")}
-                    >
-                      <Text style={[localStyles.unitButtonText, displayUnit === "lbs" && localStyles.unitButtonTextActive]}>
-                        lbs.
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[localStyles.unitButton, displayUnit === "kg" && localStyles.unitButtonActive]}
-                      onPress={() => setDisplayUnit("kg")}
-                    >
-                      <Text style={[localStyles.unitButtonText, displayUnit === "kg" && localStyles.unitButtonTextActive]}>
-                        kg.
-                      </Text>
-                    </TouchableOpacity>
+                  <View style={localStyles.unitSelectorRow}>
+                    {isDumbbell && (
+                      <Text style={localStyles.perSideLabel}>per</Text>
+                    )}
+                    <View style={localStyles.unitSelector}>
+                      <TouchableOpacity
+                        style={[localStyles.unitButton, displayUnit === "lbs" && localStyles.unitButtonActive]}
+                        onPress={() => setDisplayUnit("lbs")}
+                      >
+                        <Text style={[localStyles.unitButtonText, displayUnit === "lbs" && localStyles.unitButtonTextActive]}>
+                          lbs.
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[localStyles.unitButton, displayUnit === "kg" && localStyles.unitButtonActive]}
+                        onPress={() => setDisplayUnit("kg")}
+                      >
+                        <Text style={[localStyles.unitButtonText, displayUnit === "kg" && localStyles.unitButtonTextActive]}>
+                          kg.
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    {isDumbbell && (
+                      <Text style={localStyles.perSideLabel}>side</Text>
+                    )}
                   </View>
                 </View>
               </View>
@@ -445,6 +542,31 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
           )}
         </ScrollView>
       </LinearGradient>
+
+      {/* First-Time Exercise Guidance Modal */}
+      <Modal
+        visible={showFirstTimeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => isFirstTime ? handleDismissFirstTimeModal() : setShowFirstTimeModal(false)}
+      >
+        <View style={localStyles.modalOverlay}>
+          <View style={localStyles.modalCard}>
+            <Text style={localStyles.modalTitle}>First Time? Start Light</Text>
+            <Text style={[localStyles.modalSubtitle, { textAlign: "center", marginBottom: 24 }]}>
+              {`Pick a weight you can comfortably do 8 reps for ${exercise.sets} sets.\nThe app will adjust from there based on your performance.`}
+            </Text>
+            <TouchableOpacity
+              style={localStyles.confirmButton}
+              onPress={isFirstTime ? handleDismissFirstTimeModal : () => setShowFirstTimeModal(false)}
+            >
+              <Text style={localStyles.confirmButtonText}>
+                {isFirstTime ? "Got it" : "Close"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* AMRAP Modal */}
       <Modal
@@ -505,6 +627,9 @@ const ExerciseScreen: React.FC<ExerciseScreenProps> = ({
 };
 
 const localStyles = StyleSheet.create({
+  exerciseNameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  infoButton: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.3)", justifyContent: "center", alignItems: "center", marginTop: 4, marginRight: 4, flexShrink: 0 },
+  infoButtonText: { fontFamily: "Poppins-Medium", fontSize: 15, color: "rgba(255,255,255,0.5)" },
   weightAdjusterContainer: { alignItems: "center", marginTop: 30, marginBottom: 20, minHeight: 220, },
   suggestedText: { fontFamily: "poppins-medium", fontSize: 16, color: "rgba(255, 255, 255, 0.8)", marginBottom: 10, height: 30 },
   adjustmentIndicatorText: { fontFamily: "poppins-semibold", fontSize: 24, color: "#8AFFF9", marginBottom: 10, height: 30 },
@@ -513,7 +638,9 @@ const localStyles = StyleSheet.create({
   adjusterButtonText: { fontFamily: "poppins-light", fontSize: 40, color: "white" },
   weightDisplay: { width: 70, height: 70, borderRadius: 30, backgroundColor: "#18151E", justifyContent: "center", alignItems: "center", marginHorizontal: 15 },
   weightDisplayText: { fontFamily: "poppins-light", fontSize: 36, color: "white" },
-  unitSelector: { flexDirection: "row", backgroundColor: "rgba(0, 0, 0, 0.2)", borderRadius: 20, marginTop: 15, alignItems: "center", justifyContent: "center", alignSelf: "center" },
+  unitSelectorRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 15, gap: 8 },
+  perSideLabel: { fontFamily: "poppins-medium", fontSize: 13, color: "rgba(255,255,255,0.45)" },
+  unitSelector: { flexDirection: "row", backgroundColor: "rgba(0, 0, 0, 0.2)", borderRadius: 20, alignItems: "center", justifyContent: "center", alignSelf: "center" },
   unitButton: { paddingVertical: 8, paddingHorizontal: 25, borderRadius: 18 },
   unitButtonActive: { backgroundColor: "white" },
   unitButtonText: { fontFamily: "poppins-semibold", fontSize: 14, color: "white" },

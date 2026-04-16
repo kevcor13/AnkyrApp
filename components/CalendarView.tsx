@@ -26,7 +26,8 @@ const CalendarSelector: React.FC<{
   userRoutine?: any;
   recoveryModeActive?: boolean;
   onShieldPress?: () => void;
-}> = ({ userRoutine, recoveryModeActive, onShieldPress }) => {
+  completedToday?: boolean;
+}> = ({ userRoutine, recoveryModeActive, onShieldPress, completedToday = false }) => {
   const [currentWeek, setCurrentWeek] = useState<WeekDay[]>([]);
 
   useEffect(() => {
@@ -94,6 +95,7 @@ const CalendarSelector: React.FC<{
             style={[
               styles.dayCell,
               day.isRestDay && styles.dayCellRest,
+              day.isToday && completedToday && styles.dayCellCompleted,
             ]}
           >
             {/* Weekday abbreviation */}
@@ -101,6 +103,7 @@ const CalendarSelector: React.FC<{
               styles.weekdayText,
               day.isRestDay && { color: '#5843F6' },
               day.isToday && styles.todayText,
+              day.isToday && completedToday && styles.completedText,
             ]}>
               {day.shortWeekday}
             </Text>
@@ -110,31 +113,25 @@ const CalendarSelector: React.FC<{
               styles.dateNumber,
               day.isRestDay && { color: '#5843F6' },
               day.isToday && styles.todayText,
+              day.isToday && completedToday && styles.completedText,
             ]}>
               {day.dayOfMonth}
             </Text>
 
-            {/* Icon - Moon for rest, Activity/Heartbeat for workout */}
+            {/* Icon */}
             <View style={styles.iconContainer}>
-              {day.isRestDay ? (
-                // Moon icon placeholder - replace with your actual moon icon
-                <Text style={[
-                  styles.iconText,
-                  day.isToday && styles.todayText,
-                ]}>
+              {day.isToday && completedToday ? (
+                <Text style={styles.completedCheckmark}>✓</Text>
+              ) : day.isRestDay ? (
+                <Text style={[styles.iconText, day.isToday && styles.todayText]}>
                   <AppIcon name="moon" width={20} height={20} />
                 </Text>
               ) : day.isToday ? (
-                // Activity/Heartbeat icon placeholder - replace with your actual icon
-                <Text style={[
-                  styles.iconText,
-                ]}>
+                <Text style={styles.iconText}>
                   <AppIcon name="activity" width={20} height={20} />
                 </Text>
               ) : (
-                <Text style={[
-                  styles.todayText,
-                ]}>
+                <Text style={styles.todayText}>
                   <AppIcon name="activityG" width={20} height={20} />
                 </Text>
               )}
@@ -208,6 +205,18 @@ const styles = StyleSheet.create({
   },
   iconText: {
     fontSize: 20,
-    //color: 'rgba(255, 255, 255, 0.5)',
+  },
+  dayCellCompleted: {
+    backgroundColor: 'rgba(56, 255, 180, 0.1)',
+    borderRadius: 10,
+    opacity: 0.6,
+  },
+  completedText: {
+    color: '#38FFB4',
+  },
+  completedCheckmark: {
+    fontSize: 18,
+    color: '#38FFB4',
+    fontFamily: 'Poppins-SemiBold',
   },
 });

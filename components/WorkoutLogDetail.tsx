@@ -14,6 +14,7 @@ interface ISet {
 
 interface IExercise {
   name: string;
+  xp?: number;
   sets: ISet[];
   _id: string;
 }

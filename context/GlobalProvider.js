@@ -331,6 +331,29 @@ const GlobalProvider = ({ children }) => {
         }
     };
 
+    const advancePhase = async (userId) => {
+        try {
+            const response = await axios.post(`${ngrokAPI}/api/workout/advancePhase`, { userId });
+            if (response.data.status === "success") {
+                await fetchFitnessData(userId);
+            }
+            return response.data;
+        } catch (error) {
+            console.error("Error advancing phase:", error);
+            throw error;
+        }
+    };
+
+    const submitWorkoutFeedback = async (userId, feeling, workoutName) => {
+        try {
+            const response = await axios.post(`${ngrokAPI}/api/workout/submitFeedback`, { userId, feeling, workoutName });
+            console.log("Feedback response:", response.data);
+        } catch (error) {
+            console.error("Error submitting workout feedback:", error?.response?.data || error.message);
+            throw error;
+        }
+    };
+
     //update Game Data
     const updateGameData = async (userId, points) => {
         try {
@@ -963,6 +986,8 @@ Return the complete 7-day routine array in the same JSON format. All 7 days must
                 currentPhase: userFitnessData?.currentPhase ?? null,
                 activateRecoveryMode,
                 endRecoveryMode,
+                submitWorkoutFeedback,
+                advancePhase,
             }}
         >
             {!loading && children}

@@ -100,6 +100,7 @@ interface DraggableRowProps {
   item: WeekRow;
   index: number;
   dateSlot: DateSlot;
+  completedToday: boolean;
   // UI-thread shared values — no React state, no runOnJS during drag
   activeIndexSV: SharedValue<number>;
   targetIndexSV: SharedValue<number>;
@@ -112,6 +113,7 @@ const DraggableRow: React.FC<DraggableRowProps> = ({
   item,
   index,
   dateSlot,
+  completedToday,
   activeIndexSV,
   targetIndexSV,
   onDragStart,
@@ -123,7 +125,8 @@ const DraggableRow: React.FC<DraggableRowProps> = ({
 
   const isToday = dateSlot.isToday;
   const isPast = dateSlot.isPast;
-  const isLocked = isPast;
+  const isDoneToday = isToday && completedToday;
+  const isLocked = isPast || isDoneToday;
 
   // ── All shift logic runs entirely on the UI thread via useDerivedValue ──
   // No React state, no useEffect, no runOnJS — pure Reanimated
@@ -224,18 +227,21 @@ const DraggableRow: React.FC<DraggableRowProps> = ({
             styles.workoutCard,
             rest && styles.workoutCardRest,
             activeIndexSV.value === index && styles.workoutCardActive,
-            isToday && styles.workoutCardToday,
-            isLocked && !isToday && styles.workoutCardLocked,
+            isToday && !isDoneToday && styles.workoutCardToday,
+            isDoneToday && styles.workoutCardCompleted,
+            isPast && styles.workoutCardLocked,
           ]}
         >
           <View style={styles.cardInner}>
             <View style={styles.cardLeft}>
               {isPast && <Text style={styles.pastBadge}>PAST</Text>}
+              {isDoneToday && <Text style={styles.completedBadge}>DONE</Text>}
               <Text
                 style={[
                   styles.focusText,
                   rest && styles.focusTextRest,
-                  isLocked && !isToday && styles.focusTextLocked,
+                  isPast && styles.focusTextLocked,
+                  isDoneToday && styles.focusTextCompleted,
                 ]}
                 numberOfLines={1}
               >
@@ -244,7 +250,8 @@ const DraggableRow: React.FC<DraggableRowProps> = ({
               {!rest && item.routineDay.timeEstimate ? (
                 <Text style={[
                   styles.timeText,
-                  isLocked && !isToday && styles.timeTextLocked,
+                  isPast && styles.timeTextLocked,
+                  isDoneToday && styles.timeTextCompleted,
                 ]}>
                   {item.routineDay.timeEstimate} min
                 </Text>
@@ -261,6 +268,10 @@ const DraggableRow: React.FC<DraggableRowProps> = ({
                   </View>
                 </View>
               </GestureDetector>
+            ) : isDoneToday ? (
+              <View style={styles.lockIconWrapper}>
+                <Text style={styles.completedCheckmark}>✓</Text>
+              </View>
             ) : (
               <View style={styles.lockIconWrapper}>
                 <Text style={styles.lockIcon}>🔒</Text>
@@ -276,7 +287,20 @@ const DraggableRow: React.FC<DraggableRowProps> = ({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 const WeeklyWorkoutView: React.FC = () => {
-  const { userData, ngrokAPI, fetchWorkout, fetchUserRoutine } = useGlobal() as any;
+  const { userData, ngrokAPI, fetchWorkout, fetchUserRoutine, loggedWorkouts } = useGlobal() as any;
+
+  const completedToday = (() => {
+    if (!Array.isArray(loggedWorkouts)) return false;
+    const today = new Date();
+    return loggedWorkouts.some((log: any) => {
+      const d = new Date(log.date);
+      return (
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth() === today.getMonth() &&
+        d.getDate() === today.getDate()
+      );
+    });
+  })();
   const [rows, setRows] = useState<WeekRow[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
@@ -359,7 +383,8 @@ const WeeklyWorkoutView: React.FC = () => {
 
   const handleDragEnd = useCallback((fromIndex: number, toIndex: number) => {
     const todaySlotIndex = dateSlots.findIndex((s) => s.isToday);
-    const minDrop = todaySlotIndex === -1 ? 0 : todaySlotIndex;
+    // When today is completed it's locked, so min drop is today+1; otherwise today is draggable
+    const minDrop = todaySlotIndex === -1 ? 0 : completedToday ? todaySlotIndex + 1 : todaySlotIndex;
     const clampedTo = Math.min(Math.max(toIndex, minDrop), DAYS_OF_WEEK.length - 1);
 
     if (clampedTo !== fromIndex) {
@@ -385,7 +410,7 @@ const WeeklyWorkoutView: React.FC = () => {
       activeIndexSV.value = -1;
       targetIndexSV.value = -1;
     }
-  }, [dateSlots, activeIndexSV, targetIndexSV]);
+  }, [dateSlots, activeIndexSV, targetIndexSV, completedToday]);
 
   
   // ── Save (temporary only) ──────────────────────────────────────────────────
@@ -470,6 +495,7 @@ const WeeklyWorkoutView: React.FC = () => {
               item={item}
               index={index}
               dateSlot={dateSlots[index]}
+              completedToday={completedToday}
               activeIndexSV={activeIndexSV}
               targetIndexSV={targetIndexSV}
               onDragStart={handleDragStart}
@@ -731,6 +757,32 @@ const styles = StyleSheet.create({
   },
   timeTextLocked: {
     color: "rgba(255,255,255,0.25)",
+  },
+
+  // Completed today card — green tint
+  workoutCardCompleted: {
+    backgroundColor: "rgba(56, 255, 180, 0.08)",
+    borderColor: "rgba(56, 255, 180, 0.35)",
+    opacity: 0.75,
+  },
+  completedBadge: {
+    color: "#38FFB4",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  focusTextCompleted: {
+    color: "rgba(56, 255, 180, 0.9)",
+  },
+  timeTextCompleted: {
+    color: "rgba(56, 255, 180, 0.6)",
+  },
+  completedCheckmark: {
+    fontSize: 18,
+    color: "#38FFB4",
+    fontWeight: "700",
   },
 
   // Badges

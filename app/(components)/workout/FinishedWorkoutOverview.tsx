@@ -52,7 +52,7 @@ const EndWorkoutScreen = () => {
     phaseAdvanced?: string;
   }>();
 
-  const { userData, userGameData, loggedWorkouts, submitWorkoutFeedback, fetchLoggedWorkouts, fetchGameData, fetchUserData, fetchWorkout } = useGlobal() as any;
+  const { userData, userGameData, loggedWorkouts, submitWorkoutFeedback, fetchLoggedWorkouts, fetchGameData, fetchWorkout } = useGlobal() as any;
 
   const [completedWorkout, setCompletedWorkout] = useState<IWorkoutLog | null>(null);
   const [previousStreak, setPreviousStreak] = useState(0);
@@ -169,7 +169,7 @@ const EndWorkoutScreen = () => {
           </Animated.View>
         )}
 
-        {/* ── POST-WORKOUT SURVEY ── */}
+        {/* ── POST-WORKOUT SURVEY ── 
         <Animated.View entering={FadeInDown.delay(420).duration(500)} style={styles.surveyCard}>
           <Text style={styles.surveyLabel}>How did your workout feel?</Text>
           <View style={styles.surveyRow}>
@@ -192,7 +192,7 @@ const EndWorkoutScreen = () => {
           </View>
         </Animated.View>
 
-        {/* ── FINISH BUTTON (iOS 26 liquid glass) ── */}
+        {/* ── FINISH BUTTON (iOS 26 liquid glass) ──
         <Animated.View entering={FadeIn.delay(500).duration(400)} style={styles.finishWrapper}>
           <TouchableOpacity
             onPress={async () => {
@@ -211,7 +211,6 @@ const EndWorkoutScreen = () => {
                   fetchLoggedWorkouts(userData?._id),
                   fetchGameData(token, userData?._id),
                   fetchWorkout(token, userData?._id),
-                  fetchUserData(token),
                 ]);
               } catch (e) {
                 console.error("Failed to refresh app state:", e);
@@ -233,6 +232,7 @@ const EndWorkoutScreen = () => {
             </BlurView>
           </TouchableOpacity>
         </Animated.View>
+        */}
 
         {/* ── YOU DID ── */}
         {completedWorkout && (
@@ -260,7 +260,7 @@ const EndWorkoutScreen = () => {
                         <View style={styles.earnedBadge}>
                           <Text style={styles.earnedLabel}>EARNED</Text>
                           <View style={styles.earnedXpRow}>
-                            <Text style={styles.earnedXpValue}>{exercise.xp ?? 5}</Text>
+                            <Text style={styles.earnedXpValue}>5</Text>
                             <Text style={styles.earnedXpUnit}> XP</Text>
                           </View>
                         </View>

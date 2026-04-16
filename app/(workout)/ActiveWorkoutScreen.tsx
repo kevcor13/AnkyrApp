@@ -19,7 +19,7 @@ type ScreenState =
   | "INTER_SET_REST"
   | "CHANGE_THEME";
 
-const XP_PER_ITEM = 5;
+const XP_PER_ITEM = 5; // default for items without an assigned xp value
 
 const buildSessionItemId = (phase: WorkoutSessionItem["phase"], index: number, value: any) =>
   `${phase}-${index}-${value?._id ?? value?.exerciseName ?? value?.exercise ?? "item"}`;
@@ -100,8 +100,9 @@ const ActiveWorkoutScreen = () => {
         videoUrl: ex.videoUrl || "",
         phase: "workout" as const,
         recommendedWeight: recommendedWeight,
-        restBetweenSeconds: ex.restBetweenSeconds || 60,
+        restBetweenSeconds: ex.time || 180,
         isTimeBased: false,
+        xp: ex.xp ?? XP_PER_ITEM,
         status: "todo",
         performedSets: Array(sets).fill(null).map(() => ({
           reps: reps,
@@ -128,7 +129,7 @@ const ActiveWorkoutScreen = () => {
         videoUrl: ex.videoUrl || "",
         phase: "challanges" as const,
         recommendedWeight: recommendedWeight,
-        restBetweenSeconds: ex.restBetweenSeconds || 60,
+        restBetweenSeconds: ex.time || 180,
         isTimeBased: hasTime,
         time: hasTime ? timeValue : undefined,
         status: "todo",
@@ -270,18 +271,23 @@ const ActiveWorkoutScreen = () => {
         .filter((item) => item.status === "done")
         .map((ex) => ({
           name: ex.exerciseName,
+          xp: ex.xp ?? XP_PER_ITEM,
           sets: ex.performedSets
             .filter((set) => set.weight >= 0)
             .map((s, idx) => ({ setNumber: idx + 1, reps: s.reps, weight: s.weight })),
         }))
         .filter((ex) => ex.sets.length > 0);
 
+      const totalXP = sessionItems
+        .filter((item) => item.status === "done")
+        .reduce((sum, item) => sum + (item.xp ?? XP_PER_ITEM), 0);
+
       const workoutLogPayload = {
         userId: UserID,
         workoutName: userWorkoutData?.focus || "Completed Workout",
         durationSeconds: 3600,
         exercises,
-        points: sessionItems.filter((item) => item.status === "done").length * XP_PER_ITEM,
+        points: totalXP,
       };
 
       const completionResponse = await axios.post(`${ngrokAPI}/api/update/completeWorkout`, {
@@ -295,6 +301,7 @@ const ActiveWorkoutScreen = () => {
       const previousStreak = Number(completionData.previousStreak);
       const currentStreak = Number(completionData.currentStreak);
       const floatiesRemaining = Number(completionData.floatiesRemaining ?? 0);
+      const phaseAdvanced = Boolean(completionData.phaseAdvanced);
 
       if (
         !Number.isFinite(previousStreak) ||
@@ -313,7 +320,7 @@ const ActiveWorkoutScreen = () => {
       const xpEarned =
         Number.isFinite(Number(completionData.xpEarned))
           ? Number(completionData.xpEarned)
-          : sessionItems.filter((item) => item.status === "done").length * XP_PER_ITEM;
+          : totalXP;
       
       router.replace({
         pathname: "/(workout)/EndWorkoutScreen",
@@ -324,6 +331,8 @@ const ActiveWorkoutScreen = () => {
           floatiesRemaining: Number.isFinite(floatiesRemaining)
             ? floatiesRemaining.toString()
             : "0",
+          workoutName: userWorkoutData?.focus || "Completed Workout",
+          phaseAdvanced: phaseAdvanced ? "true" : "false",
         }
       });
     } catch {

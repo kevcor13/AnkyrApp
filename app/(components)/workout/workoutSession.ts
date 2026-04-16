@@ -20,4 +20,5 @@ export interface WorkoutSessionItem {
   status: "todo" | "in_progress" | "done";
   completedAt?: string;
   exerciseType?: "benchmark" | "accessory";
+  xp?: number;
 }

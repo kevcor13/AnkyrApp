@@ -31,8 +31,6 @@ interface IChallenge {
     [key: string]: any;
 }
 
-const floatiePromptShownByUser = new Set<string>();
-
 const ChallengesPage: React.FC = () => {
     const [leagueOpen, setLeagueOpen] = useState(false);
     const { userData, userGameData, ngrokAPI, userWorkoutData, challenges, loggedWorkouts, addChallengesToWorkout, fetchWorkout, fetchGameData, fetchUserRoutine, fetchTemporaryUserRoutine, useFloatie, activateRecoveryMode, endRecoveryMode } = useGlobal();
@@ -63,6 +61,7 @@ const ChallengesPage: React.FC = () => {
 
     const panY = useRef(new Animated.Value(0)).current;
     const contentOpacity = useRef(new Animated.Value(1)).current;
+    const floatieCheckDone = useRef(false);
     const SCREEN_HEIGHT = Dimensions.get('screen').height;
 
     useEffect(() => {
@@ -134,13 +133,21 @@ const ChallengesPage: React.FC = () => {
     }, [userRoutine, showDateModal]);
 
     useEffect(() => {
-        if (!userData?._id || floatiePromptShownByUser.has(userData._id)) return;
-        const targetDate = getMostRecentEligibleMissedDate();
-        if (targetDate) {
-            floatiePromptShownByUser.add(userData._id);
-            setFloatieTargetDate(targetDate);
-            setShowFloatiePrompt(true);
-        }
+        if (!userData?._id || !userRoutine || floatieCheckDone.current) return;
+
+        const checkFloatiePrompt = async () => {
+            const storageKey = `@floatie_dismissed_${userData._id}`;
+            const stored = await AsyncStorage.getItem(storageKey);
+            const dismissed = new Set<string>(stored ? JSON.parse(stored) : []);
+            const targetDate = getMostRecentEligibleMissedDate(dismissed);
+            if (targetDate) {
+                floatieCheckDone.current = true;
+                setFloatieTargetDate(targetDate);
+                setShowFloatiePrompt(true);
+            }
+        };
+
+        checkFloatiePrompt();
     }, [userRoutine, userData?._id, loggedWorkouts, userGameData?.floatiesRemaining, userGameData?.coveredDateKeysCurrentMonth]);
 
     const isSameDay = (date1: string | number | Date, date2: string | number | Date) => {
@@ -231,7 +238,7 @@ const ChallengesPage: React.FC = () => {
         }
     };
 
-    const getMostRecentEligibleMissedDate = () => {
+    const getMostRecentEligibleMissedDate = (dismissed: Set<string> = new Set()) => {
         if (!userRoutine?.routine || !userData?._id) return null;
         if (Number(userGameData?.floatiesRemaining ?? 0) <= 0) return null;
 
@@ -240,13 +247,15 @@ const ChallengesPage: React.FC = () => {
         cursor.setDate(cursor.getDate() - 1);
 
         // Walk back to find the single most recent scheduled workout day before today.
-        // If it was completed → no prompt. If it was missed → show prompt.
+        // If it was completed, covered, or already dismissed → no prompt.
         // We stop at the first scheduled day we find, so old missed days
         // from earlier in the month never trigger the prompt.
         while (cursor.getMonth() === today.getMonth() && cursor.getFullYear() === today.getFullYear()) {
             if (isScheduledWorkoutDate(cursor)) {
+                const dateKey = toDateKey(cursor);
                 const isCovered = hasLoggedWorkoutForDate(cursor) || isAlreadyCoveredDateKey(cursor);
-                return isCovered ? null : new Date(cursor);
+                if (isCovered || dismissed.has(dateKey)) return null;
+                return new Date(cursor);
             }
             cursor.setDate(cursor.getDate() - 1);
         }
@@ -379,6 +388,20 @@ const ChallengesPage: React.FC = () => {
         setLocallySelectedChallenges([]);
     };
 
+    const handleDismissFloatiePrompt = async () => {
+        if (floatieTargetDate && userData?._id) {
+            const dateKey = toDateKey(floatieTargetDate);
+            const storageKey = `@floatie_dismissed_${userData._id}`;
+            const stored = await AsyncStorage.getItem(storageKey);
+            const dismissed: string[] = stored ? JSON.parse(stored) : [];
+            if (!dismissed.includes(dateKey)) {
+                dismissed.push(dateKey);
+                await AsyncStorage.setItem(storageKey, JSON.stringify(dismissed));
+            }
+        }
+        setShowFloatiePrompt(false);
+    };
+
     const handleUseFloatieForDate = async (date: Date | null, closePrompt = false) => {
         if (!date || !userData?._id || isUsingFloatie) return;
 
@@ -504,7 +527,7 @@ const ChallengesPage: React.FC = () => {
                         <View style={styles.floatiePromptActions}>
                             <TouchableOpacity
                                 style={styles.floatiePromptDismiss}
-                                onPress={() => setShowFloatiePrompt(false)}
+                                onPress={handleDismissFloatiePrompt}
                             >
                                 <Text style={styles.floatiePromptDismissText}>Not now</Text>
                             </TouchableOpacity>
@@ -647,6 +670,7 @@ const ChallengesPage: React.FC = () => {
                         userRoutine={userRoutine}
                         recoveryModeActive={!!recoveryMode?.active}
                         onShieldPress={() => setShowRecoveryModal(true)}
+                        completedToday={isWorkoutAllowed}
                     />
                     <ImageBackground source={images.squareGradient} imageStyle={{ height: 224 }}>
                         <View
@@ -691,7 +715,7 @@ const ChallengesPage: React.FC = () => {
                                 const xpEarned = selectedWorkout?.points ?? 0;
                                 const currentStreak = userGameData?.streak ?? 0;
                                 router.navigate({
-                                    pathname: "/(workout)/EndWorkoutScreen",
+                                    pathname: "/(components)/workout/FinishedWorkoutOverview",
                                     params: {
                                         previousStreak: String(currentStreak),
                                         currentStreak: String(currentStreak),
@@ -1431,8 +1455,8 @@ const styles = StyleSheet.create({
         maxWidth: 360,
         borderRadius: 18,
         backgroundColor: '#111111',
-        borderWidth: 1,
-        borderColor: 'rgba(56,255,245,0.4)',
+        //borderWidth: 1,
+        //borderColor: 'rgba(56,255,245,0.4)',
         padding: 18,
     },
     floatiePromptTitle: {
