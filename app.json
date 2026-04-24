@@ -9,7 +9,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cord8570.Ankyr"
+      "bundleIdentifier": "com.cord8570.Ankyr",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Ankyr needs camera access to capture workout photos.",
+        "NSMicrophoneUsageDescription": "Ankyr needs microphone access for video recording."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,7 +35,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-widgets",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Ankyr needs camera access to capture workout photos.",
+          "microphonePermission": "Ankyr needs microphone access for video recording."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
