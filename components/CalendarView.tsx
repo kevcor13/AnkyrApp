@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import AppIcon from "./AppIcon";
 import { router } from "expo-router";
+import { Host, Button } from '@expo/ui/swift-ui';
+import { glassEffect, frame, padding, tint } from '@expo/ui/swift-ui/modifiers';
+ 
 
 interface WeekDay {
   date: Date;
@@ -138,15 +141,30 @@ const CalendarSelector: React.FC<{
             </View>
           </View>
         ))}
-        <View style={{justifyContent:'space-between'}}>
-          <TouchableOpacity 
-            style={{borderRadius:30, backgroundColor:'#1B191E', padding:14 }}
+        <View style={{ justifyContent: 'space-between' }}>
+          {/** 
+          <Host matchContents>
+            <Button
+              onPress={() => router.navigate('/workout/WeeklyWorkoutView')}
+              
+              modifiers={[
+                glassEffect(),
+                frame({ width: 40, height: 40 }),
+                tint('#FFFFFF'),
+              ]}
+            >
+              <Text>📅</Text>
+            </Button>
+          </Host>
+*/}
+          <TouchableOpacity
+            style={{ borderRadius: 30, backgroundColor: '#1B191E', padding: 14 }}
             onPress={() => router.navigate('/workout/WeeklyWorkoutView')}
           >
             <AppIcon name="calendar" width={20} height={20} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={{borderRadius:30, backgroundColor:'#1B191E', padding:14, marginTop:5 }}
+            style={{ borderRadius: 30, backgroundColor: '#1B191E', padding: 14, marginTop: 5 }}
             onPress={onShieldPress ?? (() => router.navigate('/(workout)/WorkoutOverview'))}
           >
             <AppIcon name={recoveryModeActive ? "shieldOn" : "shieldOff"} width={20} height={20} />

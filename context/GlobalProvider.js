@@ -659,18 +659,6 @@ const GlobalProvider = ({ children }) => {
         }
     }
 
-    // Serialize existing routine days into readable text for the AI prompt
-    const serializeRoutineForPrompt = (routine, keepDays) => {
-        if (!Array.isArray(routine)) return "";
-        return routine
-            .filter((d) => keepDays.includes(d.day) && d.focus && d.focus.toLowerCase() !== "rest")
-            .map((d) => {
-                const exercises = (d.workoutRoutine || []).map((e) => e.exerciseName).join(", ");
-                return `${d.day}: ${d.focus} — ${exercises || "no exercises"}`;
-            })
-            .join("\n");
-    };
-
     const regenPartialRoutine = async (existingRoutine, previousDays, newDays, onStatusChange) => {
         try {
             const token = await AsyncStorage.getItem("token");
@@ -705,45 +693,10 @@ const GlobalProvider = ({ children }) => {
                 return { success: true };
             }
 
-            // Path B: days added — call AI with targeted prompt
+            // Path B: days added — rebuild routine from scratch with updated days
             if (onStatusChange) onStatusChange("regenerating");
 
-            const existingSummary = serializeRoutineForPrompt(existingRoutine, keptDays);
-
-            const getSplitForDays = (count) => {
-                if (count === 3) return "Push/Pull/Legs";
-                if (count === 4) return "Upper/Lower/Upper/Lower";
-                if (count === 5) return "Push/Pull/Legs/Upper/Full Body";
-                if (count >= 6) return "Push/Pull/Legs/Push/Pull/Legs";
-                return "Full Body";
-            };
-
-            const Gmessage = `
-User profile:
-- Sex at birth: ${fd.gender || "unspecified"}
-- Age: ${fd.age || "unknown"}
-- Weight_lbs: ${fd.weight || "unknown"}
-- Fitness level: ${fd.fitnessLevel || "Intermediate"}
-
-Goal: ${fd.fitnessGoal || "Build Muscle"}
-Equipment: ${fd.equipmentAvailable || "full gym"}
-
-PARTIAL SCHEDULE UPDATE — do NOT modify or replace existing days.
-
-Existing routine days (keep these exactly as-is, same exercises, same focus):
-${existingSummary}
-
-New days to generate exercises for: ${addedDays.join(", ")}
-For each new day, follow the same exercise style, difficulty level, and rep/set structure as the existing days.
-Assign a focus that fits the overall split pattern: ${getSplitForDays(newDays.length)}.
-Map the new days into the split so they complement the existing days logically.
-
-Rest days (set focus="Rest", empty warmup and workoutRoutine arrays): ${allRestDays.join(", ")}
-
-Return the complete 7-day routine array in the same JSON format. All 7 days must be present.
-`.trim();
-
-            await axios.post(`${ngrokAPI}/api/GenAI/ai`, { Gmessage, UserID });
+            await axios.post(`${ngrokAPI}/api/GenAI/ai`, { UserID });
             return { success: true };
         } catch (error) {
             console.error("Error in regenPartialRoutine:", error);

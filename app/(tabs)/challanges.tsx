@@ -1,6 +1,7 @@
 import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CalendarSelector from "@/components/CalendarView";
+import { BlurView } from 'expo-blur'
 import CustomButton from "@/components/CustomButton";
 import axios from "axios";
 import LeagueHeader from "@/components/LeagueHeader";
@@ -22,6 +23,7 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import ThisWeekCard from "@/components/ThisWeekCard";
 import AppIcon from "@/components/AppIcon";
 import App from "./camera";
+
 
 
 interface IChallenge {
@@ -134,6 +136,7 @@ const ChallengesPage: React.FC = () => {
 
     useEffect(() => {
         if (!userData?._id || !userRoutine || floatieCheckDone.current) return;
+        if (loggedWorkouts.length === 0) return;
 
         const checkFloatiePrompt = async () => {
             const storageKey = `@floatie_dismissed_${userData._id}`;
@@ -672,38 +675,28 @@ const ChallengesPage: React.FC = () => {
                         onShieldPress={() => setShowRecoveryModal(true)}
                         completedToday={isWorkoutAllowed}
                     />
+                    {/** Header Card 
                     <ImageBackground source={images.squareGradient} imageStyle={{ height: 224 }}>
-                        <View
-                            style={styles.headerCard}
-                        >
-                            <Text style={styles.dayLabel}>YOUR</Text>
-                            <Text style={styles.dayText}>{currentDay}</Text>
-                            <Text style={styles.workoutLabel}>WORKOUT</Text>
-
+                    */}
+                    <View style={styles.rectangleParent}>
+                        <View style={styles.wrapper}>
+                            <BlurView style={styles.blurview} intensity={50}>
+                                <View style={styles.view} />
+                            </BlurView>
+                        </View>
+                            <View>
+                                <Text style={styles.dayLabel}>YOUR</Text>
+                                <Text style={styles.dayText}>{currentDay}</Text>
+                                <Text style={styles.workoutLabel}>WORKOUT</Text>
+                            </View>
                             <View style={styles.workoutInfoContainer}>
                                 <Text style={styles.focusText}>{focus}</Text>
-                                <View style={{ flexDirection: 'row' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                                     <Text style={styles.timeText}>{timeEstimate}</Text>
                                     <Text style={styles.timeText2}>min</Text>
                                 </View>
                             </View>
-                            {/**    
-                            {isWorkoutAllowed || selectedWorkout ? (
-                                <View style={styles.statusBadge}>
-                                    <Text style={styles.statusText}>✓ COMPLETED</Text>
-                                </View>
-                            ) : (
-                                <View style={styles.workoutInfoContainer}>
-                                    <Text style={styles.focusText}>{focus}</Text>
-                                    <View style={{ flexDirection: 'row' }}>
-                                        <Text style={styles.timeText}>{timeEstimate}</Text>
-                                        <Text style={styles.timeText2}>min</Text>
-                                    </View>
-                                </View>
-                            )}
-                                */}
-                        </View>
-                    </ImageBackground>
+                    </View>
                 </View>
 
                 {/* Overview and Quick Start Buttons */}
@@ -1022,13 +1015,53 @@ const styles = StyleSheet.create({
 
     // Scroll Content
     scrollContent: {
-        paddingTop: Platform.OS === 'ios' ? 60 : 60,
+        paddingTop: Platform.OS === 'ios' ? 50 : 40,
+        paddingHorizontal: 5,
         paddingBottom: 120,
     },
 
     // Header Card
+    rectangleParent: {
+        height: 188,
+        width: "100%",
+        padding: 20
+    },
+    wrapper: {
+        top: 0,
+        left: 0,
+        boxShadow: "inset 0px 0px 43px #156bfc",
+        elevation: 10,
+        borderRadius: 35,
+        backgroundColor: 'transparent',
+        width: 390,
+        overflow: "hidden",
+        position: "absolute",
+        height: 188
+    },
     headerCard: {
-        padding: 35,
+        height: 188,
+        padding: 3,
+        boxShadow: "inset 0px 0px 43px #156bfc",
+        elevation: 10,
+        borderRadius: 35,
+        backgroundColor: "transparent",
+        overflow: "hidden",
+        width: "100%"
+    },
+    blurview: {
+        opacity: 1,
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: -1
+    },
+    view: {
+        backgroundColor: "#292739",
+        padding: 20,
+        height: "100%",
+        width: "100%"
     },
     dayLabel: {
         fontSize: 43,
@@ -1105,7 +1138,7 @@ const styles = StyleSheet.create({
     // Action Cards (Overview and Quick Start)
     workoutButtons: {
         flexDirection: 'row',
-        marginTop: -15,
+        marginTop: 5,
         gap: 5,
         paddingHorizontal: 0,
     },

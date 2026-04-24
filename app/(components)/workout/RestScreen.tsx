@@ -93,6 +93,7 @@ const RestScreen: React.FC<RestScreenProps> = ({
   };
 
   return (
+    <View style={styles.rectangleView}>
     <LinearGradient colors={["#000000", "#22406B"]} start={{ x: 0, y: 0.38 }}
       end={{ x: 0, y: 1}} style={styles.container}>
       <StatusBar style="light" translucent backgroundColor="transparent" />
@@ -186,10 +187,21 @@ const RestScreen: React.FC<RestScreenProps> = ({
         </View>
       </Modal>
     </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  rectangleView: {
+    width: "100%",
+      height: 874,                                                                
+      backgroundColor: "#1B191E",                                                 
+      // boxShadow inset is web-only — closest native approximation:
+      shadowColor: "#F0F9FF",                 
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.6,                                                         
+      shadowRadius: 20,
+  },
   container: { flex: 1 },
 
   content: {

@@ -164,8 +164,8 @@ const EndWorkoutScreen = () => {
         {/* ── PHASE ADVANCEMENT BANNER ── */}
         {params.phaseAdvanced === "true" && (
           <Animated.View entering={ZoomIn.delay(400).duration(500)} style={styles.phaseAdvanceBanner}>
-            <Text style={styles.phaseAdvanceBannerTitle}>You've advanced to Calibration!</Text>
-            <Text style={styles.phaseAdvanceBannerSub}>The system will now learn your strength baseline on key lifts.</Text>
+            <Text style={styles.phaseAdvanceBannerTitle}>You've entered Grind mode!</Text>
+            <Text style={styles.phaseAdvanceBannerSub}>Progressive overload is now active. Weights will increase as you get stronger.</Text>
           </Animated.View>
         )}
 

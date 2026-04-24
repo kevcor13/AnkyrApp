@@ -37,15 +37,13 @@ const phaseLabels: Record<WorkoutSessionItem["phase"], string> = {
 };
 
 const PHASE_BADGE: Record<string, { label: string; bg: string; border: string; text: string }> = {
-  shadow:      { label: "Shadow Mode", bg: "rgba(100,149,237,0.2)",  border: "rgba(100,149,237,0.45)", text: "#A8C7FA" },
-  calibration: { label: "Calibration",  bg: "rgba(255,180,0,0.18)",  border: "rgba(255,180,0,0.45)",   text: "#FFD060" },
-  grind:       { label: "Grind",         bg: "rgba(50,205,50,0.18)",  border: "rgba(50,205,50,0.45)",   text: "#6EF08B" },
+  shadow: { label: "Shadow Mode", bg: "rgba(100,149,237,0.2)", border: "rgba(100,149,237,0.45)", text: "#A8C7FA" },
+  grind:  { label: "Grind",       bg: "rgba(50,205,50,0.18)",  border: "rgba(50,205,50,0.45)",   text: "#6EF08B" },
 };
 
 const PHASE_INFO: Record<string, string> = {
-  shadow:      "You're in Shadow Mode. Focus on form over weight. Weights are set at 50% to build your movement foundation. No pressure — just move well.",
-  calibration: "You're in Calibration. The system is learning your strength levels on key lifts. Complete benchmark exercises to advance to Grind.",
-  grind:       "You're in Grind. Progressive overload is active on your main lifts. Push for personal records — weights go up when you exceed 12 reps.",
+  shadow: "You're in Shadow Mode. Focus on form over weight. Weights are set at 50% to build your movement foundation. No pressure — just move well.",
+  grind:  "You're in Grind. Progressive overload is active on your main lifts. Push for personal records — weights go up when you exceed 12 reps.",
 };
 
 const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
@@ -235,7 +233,7 @@ const WorkoutSessionList: React.FC<WorkoutSessionListProps> = ({
                     setShowPhaseModal(false);
                   }}
                 >
-                  <Text style={styles.phaseAdvanceBtnText}>I'm ready for Calibration →</Text>
+                  <Text style={styles.phaseAdvanceBtnText}>I'm ready for Grind →</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={() => setShowPhaseModal(false)} style={styles.phaseModalClose}>
