@@ -1,3 +1,10 @@
 {
-  "urlRandomness": "ifXQTXk"
+  "urlRandomness": "ifXQTXk",
+  "devClient": true,
+  "dev": true,
+  "minify": false,
+  "https": false,
+  "scheme": "exp+ankyr",
+  "hostType": "lan",
+  "lanType": "ip"
 }
