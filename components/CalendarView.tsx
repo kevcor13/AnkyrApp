@@ -115,6 +115,7 @@ const CalendarSelector: React.FC<{
             <Text style={[
               styles.dateNumber,
               day.isRestDay && { color: '#5843F6' },
+              day.isToday && day.isRestDay && { color: '#5843F6' },
               day.isToday && styles.todayText,
               day.isToday && completedToday && styles.completedText,
             ]}>

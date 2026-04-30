@@ -4,7 +4,7 @@
   "dev": true,
   "minify": false,
   "https": false,
-  "scheme": "exp+ankyr",
   "hostType": "lan",
-  "lanType": "ip"
+  "lanType": "ip",
+  "scheme": "exp+ankyr"
 }

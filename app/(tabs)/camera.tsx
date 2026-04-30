@@ -5,9 +5,9 @@ import {
     Text,
     TouchableOpacity,
     View,
-    SafeAreaView,
     Image,
-    Alert
+    Alert,
+    Dimensions,
 } from 'react-native';
 import images from "@/constants/images";
 import icons from "@/constants/icons";
@@ -17,15 +17,20 @@ import { useGlobal } from "@/context/GlobalProvider";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
+const { width: SCREEN_W } = Dimensions.get('window');
+const sx = (x: number) => (x / 375) * SCREEN_W;
+const sy = (y: number) => (y / 812) * Dimensions.get('window').height;
+
 export default function App() {
     const [facing, setFacing] = useState<CameraType>('back');
     const [permission, requestPermission] = useCameraPermissions();
     const cameraRef = useRef<any>(null);
     const { userData, ngrokAPI } = useGlobal();
 
-    if (!permission) {
-        return <View />;
-    }
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    if (!permission) return <View />;
 
     if (!permission.granted) {
         return (
@@ -38,169 +43,127 @@ export default function App() {
         );
     }
 
-    function toggleCameraFacing() {
-        setFacing((current) => (current === 'back' ? 'front' : 'back'));
-    }
-
     const takePicture = async () => {
-        if (!userData?._id) {
-            console.error('No user ID available');
-            return;
-        }
+        if (!userData?._id || !cameraRef.current) return;
 
-        if (cameraRef.current) {
-            try {
-                const photo = await cameraRef.current.takePictureAsync({
-                    quality: 0.7,
-                    base64: true
-                });
+        try {
+            const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
 
-                console.log('Photo captured:', photo.uri);
-                const UserID = userData?._id;
+            const token = await AsyncStorage.getItem('token');
+            if (!token) {
+                Alert.alert('Error', 'No authentication token found');
+                return;
+            }
 
-                const token = await AsyncStorage.getItem("token");
-                if (!token) {
-                    console.error("No authentication token found");
-                    return;
-                }
+            const uploadResult = await uploadImage(photo.uri, userData._id);
+            if (!uploadResult.success) {
+                Alert.alert('Upload Failed', 'Could not upload image to storage');
+                return;
+            }
 
-                const uploadResult = await uploadImage(photo.uri, userData._id);
+            const response = await axios.post(`${ngrokAPI}/upload`, {
+                imageUrl: uploadResult.fileUrl,
+                UserID: userData._id,
+            });
 
-                if (!uploadResult.success) {
-                    Alert.alert('Upload Failed', 'Could not upload image to storage');
-                    return;
-                }
-                console.log('Image uploaded to storage:', uploadResult.fileUrl);
-                const imageUrl = uploadResult.fileUrl;
-                const response = await axios.post(`${ngrokAPI}/upload`, { imageUrl, UserID });
-
-                if (response.data.status === 'success') {
-                    console.log("Upload successful. Image URL:", response.data.data.url);
-                    router.push('/(components)/UserPost');
-                } else {
-                    console.error("Upload failed:", response.data);
-                }
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    console.error('Error uploading image:', error.response?.data || error.message);
-                } else {
-                    console.error('Error capturing photo:', error);
-                }
+            if (response.data.status === 'success') {
+                router.push('/(components)/UserPost');
+            } else {
+                Alert.alert('Upload Failed', JSON.stringify(response.data));
+            }
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                Alert.alert('Network Error', error.response?.data?.message ?? error.message);
+            } else {
+                Alert.alert('Error', String(error));
             }
         }
     };
 
     return (
         <View style={styles.container}>
-            <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-
-                {/* Top Bar */}
-                <SafeAreaView style={styles.topBar}>
-                    <Text style={styles.topTitle}>Capture.</Text>
-                    <TouchableOpacity style={styles.closeButton} onPress={() => router.push('/home')}>
-                        <Image source={icons.x} style={styles.closeIcon} />
-                    </TouchableOpacity>
-                </SafeAreaView>
-
-                {/* Bottom Bar */}
-                <View style={styles.bottomBar}>
-                    <TouchableOpacity style={styles.sideButton} onPress={toggleCameraFacing}>
-                        <Image source={images.flipCamera} style={styles.sideIcon} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.captureButton} onPress={takePicture} />
-
-                    <TouchableOpacity style={styles.sideButton} onPress={() => router.push('/(components)/UserPost')}>
-                        <Image source={images.pictureIcons} style={styles.sideIcon} />
-                    </TouchableOpacity>
+            <View style={styles.cameraWrapper}>
+                <CameraView style={StyleSheet.absoluteFill} facing={facing} ref={cameraRef} />
+                <View style={styles.watermark}>
+                    <Image source={images.ankyrIcon} style={styles.watermarkIcon} />
                 </View>
+            </View>
 
-            </CameraView>
+            <TouchableOpacity style={styles.closeButton} onPress={() => router.push('/home')}>
+                <Image source={icons.x} style={styles.closeIcon} />
+            </TouchableOpacity>
+
+            <Text style={styles.dateText}>{dateStr}</Text>
+
+            <TouchableOpacity style={styles.captureButton} onPress={takePicture} />
+
+            <TouchableOpacity style={styles.flipButton} onPress={() => setFacing(f => f === 'back' ? 'front' : 'back')}>
+                <Image source={images.flipCamera} style={styles.sideIcon} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.galleryButton} onPress={() => router.push('/(components)/UserPost')}>
+                <Image source={images.pictureIcons} style={styles.sideIcon} />
+            </TouchableOpacity>
+
+            <View style={styles.homeIndicatorBar}>
+                <View style={styles.homeIndicatorPill} />
+            </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'black',
-    },
-    message: {
-        textAlign: 'center',
-        color: 'white',
-        marginBottom: 20,
-    },
+    container: { flex: 1, backgroundColor: 'black' },
+    message: { textAlign: 'center', color: 'white', marginBottom: 20 },
     permissionButton: {
-        alignSelf: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: 'white',
-        borderRadius: 8,
+        alignSelf: 'center', paddingHorizontal: 20, paddingVertical: 10,
+        backgroundColor: 'white', borderRadius: 8,
     },
-    permissionButtonText: {
-        color: 'black',
-        fontWeight: '600',
-    },
-    camera: {
-        flex: 1,
-    },
-    topBar: {
+    permissionButtonText: { color: 'black', fontWeight: '600' },
+    cameraWrapper: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        backgroundColor: 'black',
+        top: sy(58), left: 0, right: 0,
+        height: sy(640), borderRadius: 35, overflow: 'hidden',
     },
-    topTitle: {
-        color: 'white',
-        fontSize: 20,
-        fontWeight: 'bold',
-        paddingLeft: 10,
+    watermark: {
+        position: 'absolute', bottom: 16, right: 16,
+        flexDirection: 'row', alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4,
     },
+    watermarkIcon: { width: 20, height: 20, tintColor: 'white' },
     closeButton: {
-        width: 35,
-        height: 35,
-        justifyContent: 'center',
-        alignItems: 'center',
+        position: 'absolute', top: sy(73), left: sx(12),
+        width: sx(33), height: sx(33),
+        justifyContent: 'center', alignItems: 'center',
     },
-    closeIcon: {
-        width: 18,
-        height: 18,
-        tintColor: 'white',
-    },
-    bottomBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 28,
-        paddingBottom: 48,
-        paddingTop: 20,
-        backgroundColor: 'black',
-    },
-    sideButton: {
-        width: 38,
-        height: 38,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    sideIcon: {
-        width: 38,
-        height: 38,
+    closeIcon: { width: '100%', height: '100%', tintColor: 'white' },
+    dateText: {
+        position: 'absolute', top: sy(736), left: sx(140),
+        fontSize: 13, letterSpacing: 0.2, lineHeight: 18,
+        color: '#696969', width: sx(99),
     },
     captureButton: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'white',
-        borderWidth: 3,
-        borderColor: 'rgba(255,255,255,0.5)',
+        position: 'absolute',
+        bottom: sy(130), left: (SCREEN_W - sx(81)) / 2,
+        width: sx(81), height: sx(81),
+        borderRadius: 100, backgroundColor: 'white',
     },
+    flipButton: {
+        position: 'absolute', bottom: sy(143), left: sx(26),
+        width: sx(27), height: sx(27),
+        justifyContent: 'center', alignItems: 'center',
+    },
+    galleryButton: {
+        position: 'absolute', bottom: sy(143), left: sx(320),
+        width: sx(27), height: sx(27),
+        justifyContent: 'center', alignItems: 'center',
+    },
+    sideIcon: { width: '100%', height: '100%' },
+    homeIndicatorBar: {
+        position: 'absolute', bottom: 15, left: 0, right: 0,
+        height: 100, backgroundColor: 'black',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    homeIndicatorPill: { width: 134, height: 5, borderRadius: 100, backgroundColor: 'white' },
 });
