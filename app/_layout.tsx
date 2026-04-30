@@ -46,6 +46,7 @@ const RootLayout = () => {
                     <Stack.Screen name="(root)/sign-in" options={{ gestureEnabled: false }} />
                     <Stack.Screen name="(root)/sign-up" options={{ gestureEnabled: false }} />
                     <Stack.Screen name="(workout)/ActiveWorkoutScreen" options={{ gestureEnabled: false }} />
+                    <Stack.Screen name="camera" options={{ headerShown: false }} />
                 </Stack>
             </GlobalProvider>
         </GestureHandlerRootView>
