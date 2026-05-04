@@ -1,5 +1,5 @@
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
     StyleSheet,
     Text,
@@ -8,6 +8,8 @@ import {
     Image,
     Alert,
     Dimensions,
+    Animated,
+    ActivityIndicator,
 } from 'react-native';
 import images from "@/constants/images";
 import icons from "@/constants/icons";
@@ -24,8 +26,19 @@ const sy = (y: number) => (y / 812) * Dimensions.get('window').height;
 export default function App() {
     const [facing, setFacing] = useState<CameraType>('back');
     const [permission, requestPermission] = useCameraPermissions();
+    const [isCapturing, setIsCapturing] = useState(false);
     const cameraRef = useRef<any>(null);
     const { userData, ngrokAPI } = useGlobal();
+    const shimmer = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmer, { toValue: 1, duration: 800, useNativeDriver: true }),
+                Animated.timing(shimmer, { toValue: 0, duration: 800, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
 
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -46,6 +59,7 @@ export default function App() {
     const takePicture = async () => {
         if (!userData?._id || !cameraRef.current) return;
 
+        setIsCapturing(true);
         try {
             const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
 
@@ -72,6 +86,7 @@ export default function App() {
                 Alert.alert('Upload Failed', JSON.stringify(response.data));
             }
         } catch (error) {
+            setIsCapturing(false);
             if (axios.isAxiosError(error)) {
                 Alert.alert('Network Error', error.response?.data?.message ?? error.message);
             } else {
@@ -108,6 +123,16 @@ export default function App() {
             <View style={styles.homeIndicatorBar}>
                 <View style={styles.homeIndicatorPill} />
             </View>
+
+            {isCapturing && (
+                <Animated.View style={[
+                    styles.loadingOverlay,
+                    { opacity: shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1] }) }
+                ]}>
+                    <ActivityIndicator size="large" color="white" />
+                    <Text style={styles.loadingText}>Processing...</Text>
+                </Animated.View>
+            )}
         </View>
     );
 }
@@ -166,4 +191,11 @@ const styles = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     homeIndicatorPill: { width: 134, height: 5, borderRadius: 100, backgroundColor: 'white' },
+    loadingOverlay: {
+        position: 'absolute', inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.75)',
+        justifyContent: 'center', alignItems: 'center',
+        gap: 12,
+    },
+    loadingText: { color: 'white', fontSize: 16, fontWeight: '600', letterSpacing: 0.3 },
 });
