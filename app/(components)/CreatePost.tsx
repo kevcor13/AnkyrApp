@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Image, TextInput, Alert, ScrollView, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGlobal } from "@/context/GlobalProvider";
 import { router, useLocalSearchParams } from "expo-router";
@@ -14,8 +14,19 @@ export default function CreatePost() {
     const { userData, ngrokAPI } = useGlobal();
     const [caption, setCaption] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [imageLoading, setImageLoading] = useState(true);
+    const shimmer = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
+                Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
     const params = useLocalSearchParams();
-    const imageUri = params.imageUrl;
+    const imageUri = Array.isArray(params.imageUrl) ? params.imageUrl[0] : params.imageUrl;
 
     const handleShare = async () => {
         if (!caption.trim()) {
@@ -92,13 +103,25 @@ export default function CreatePost() {
                         </View>
 
                         {/* Image preview */}
-                        <View className="px-10 mb-6 items-center">
+                        <View className="px-4 mb-6 items-center">
                             {imageUri ? (
-                                <Image
-                                    source={{ uri: imageUri }}
-                                    className="w-60 h-80 rounded-md"
-                                    resizeMode="cover"
-                                />
+                                <View style={{ width: '100%', aspectRatio: 3 / 4, borderRadius: 20, overflow: 'hidden' }}>
+                                    {imageLoading && (
+                                        <Animated.View
+                                            style={{
+                                                position: 'absolute', inset: 0, zIndex: 1,
+                                                backgroundColor: '#2A3235',
+                                                opacity: shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] }),
+                                            }}
+                                        />
+                                    )}
+                                    <Image
+                                        source={{ uri: imageUri as string }}
+                                        style={{ width: '100%', height: '100%' }}
+                                        resizeMode="contain"
+                                        onLoadEnd={() => setImageLoading(false)}
+                                    />
+                                </View>
                             ) : (
                                 <View className="w-60 h-80 rounded-md bg-gray-800 items-center justify-center">
                                     <Text className="text-white">No image available</Text>

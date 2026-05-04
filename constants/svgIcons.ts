@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import type { SvgProps } from "react-native-svg";
 
 import AnkyrWordmarkIcon from "@/assets/icons/icon.ankyrSVG.svg";
+import AnkyrIcon from "@/assets/icons/AnkyrLogo.svg"
 import CameraIcon from "@/assets/icons/CameraIcon.svg";
 import FemaleIcon from "@/assets/icons/Female-Icon.svg";
 import FloatieIcon from "@/assets/icons/flotieIcon.svg";
@@ -34,6 +35,7 @@ type SvgIconComponent = ComponentType<SvgProps>;
 
 export const svgIcons = {
   ankyrWordmark: AnkyrWordmarkIcon,
+  ankyrIcon: AnkyrIcon,
   skipIcon: skipIcon,
   gearIcon : gearIcon,
   checkMark: checkMark,

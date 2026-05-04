@@ -675,28 +675,46 @@ const ChallengesPage: React.FC = () => {
                         onShieldPress={() => setShowRecoveryModal(true)}
                         completedToday={isWorkoutAllowed}
                     />
-                    {/** Header Card 
-                    <ImageBackground source={images.squareGradient} imageStyle={{ height: 224 }}>
-                    */}
-                    <View style={styles.rectangleParent}>
-                        <View style={styles.wrapper}>
-                            <BlurView style={styles.blurview} intensity={50}>
-                                <View style={styles.view} />
-                            </BlurView>
-                        </View>
-                            <View>
-                                <Text style={styles.dayLabel}>YOUR</Text>
-                                <Text style={styles.dayText}>{currentDay}</Text>
-                                <Text style={styles.workoutLabel}>WORKOUT</Text>
+                    
+                    {focus == "Rest" ? (
+                        <ImageBackground source={images.restDaySquareGradient} imageStyle={{ height: 200 }}>
+                            <View style={styles.rectangleParent}>
+                                <View>
+                                    <Text style={styles.dayLabel}>YOUR</Text>
+                                    <Text style={styles.dayText}>{currentDay}</Text>
+                                    <Text style={styles.workoutLabel}>REST DAY</Text>
+                                </View>
+                                <TouchableOpacity style={styles.restDayCheckInButton} activeOpacity={0.8}>
+                                    <Text style={styles.restDayCheckInText}>rest day check in</Text>
+                                </TouchableOpacity>
                             </View>
-                            <View style={styles.workoutInfoContainer}>
-                                <Text style={styles.focusText}>{focus}</Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                                    <Text style={styles.timeText}>{timeEstimate}</Text>
-                                    <Text style={styles.timeText2}>min</Text>
+                        </ImageBackground>
+                    ) : (
+                        <ImageBackground source={images.squareGradient} imageStyle={{ height: 218 }}>
+                            <View style={styles.rectangleParent}>
+                                {/**
+                                <View style={styles.wrapper}>
+                                    <BlurView style={styles.blurview} intensity={50}>
+                                        <View style={styles.view} />
+                                    </BlurView>
+                                </View>
+                                 Header Card */}
+
+                                <View>
+                                    <Text style={styles.dayLabel}>YOUR</Text>
+                                    <Text style={styles.dayText}>{currentDay}</Text>
+                                    <Text style={styles.workoutLabel}>WORKOUT</Text>
+                                </View>
+                                <View style={styles.workoutInfoContainer}>
+                                    <Text style={styles.focusText}>{focus}</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                                        <Text style={styles.timeText}>{timeEstimate}</Text>
+                                        <Text style={styles.timeText2}>min</Text>
+                                    </View>
                                 </View>
                             </View>
-                    </View>
+                        </ImageBackground>
+                    )}
                 </View>
 
                 {/* Overview and Quick Start Buttons */}
@@ -1013,6 +1031,24 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
 
+    // Rest Day
+    restDayCheckInButton: {
+        alignSelf: 'flex-start',
+        marginTop: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 30,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+    },
+    restDayCheckInText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '600',
+        letterSpacing: -0.5,
+    },
+
     // Scroll Content
     scrollContent: {
         paddingTop: Platform.OS === 'ios' ? 50 : 40,
@@ -1022,9 +1058,8 @@ const styles = StyleSheet.create({
 
     // Header Card
     rectangleParent: {
-        height: 188,
-        width: "100%",
-        padding: 20
+        height: 205,
+        padding: 30
     },
     wrapper: {
         top: 0,

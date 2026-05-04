@@ -31,9 +31,11 @@ import appleMusic from "@/assets/images/AppleMusicLogo.png"
 import skipperBadge from "@/assets/Leagues/BadgesWeffect/SKIPPER WREATH.png"
 import squareGradient from "@/assets/images/gradientSquare.png"
 import AiBox from "@/assets/images/AiOverviewBox.png"
+import restDaySquareGradient from "@/assets/images/restDayImage.png"
 
 export default {
     skipperBadge,
+    restDaySquareGradient,
     AiBox,
     squareGradient,
     bronze,

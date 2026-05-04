@@ -5,7 +5,7 @@ import { Client, Storage, ID } from 'react-native-appwrite';
 const client = new Client();
 
 client
-  .setEndpoint('https://cloud.appwrite.io/v1') // Your Appwrite Endpoint
+  .setEndpoint('https://fra.cloud.appwrite.io/v1') // Your Appwrite Endpoint
   .setProject('670dcd780032e814bc9c') // Your project ID from Appwrite Console
 
 // Initialize Storage
