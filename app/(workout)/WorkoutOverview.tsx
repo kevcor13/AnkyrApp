@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image} from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ImageBackground } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { LinearGradient } from 'expo-linear-gradient'
 import icons from "@/constants/icons";
@@ -6,23 +6,31 @@ import { router } from 'expo-router';
 import CustomButton from '@/components/CustomButton';
 import { useGlobal } from '@/context/GlobalProvider';
 import WorkoutCard from '@/components/WorkoutCard';
+import RadialGradient from '@/components/RadialGradient';
 import axios from 'axios';
+import AppIcon from '@/components/AppIcon';
 
 
 const WorkoutOverview = () => {
 
-    const {userWorkoutData, userData, selectedChallenges,fetchFitnessData,fetchWorkoutFocus} = useGlobal();
+    const { userWorkoutData, userData, selectedChallenges, fetchFitnessData, fetchWorkoutFocus } = useGlobal();
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
     const [userFitnessData, setUserFitnessData] = useState('');
     const [userFitnessLevel, setUserFitnessLevel] = useState('');
     const [points, setPoints] = useState(Number);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     const theme = userData.defaultTheme;
 
     useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
         const fetchData = async () => {
-            
+
             try {
                 setPoints((userWorkoutData.warmup.length + userWorkoutData.workoutRoutine.length) * 5);
                 setTimeEstimate(userWorkoutData.timeEstimate);
@@ -40,43 +48,60 @@ const WorkoutOverview = () => {
         fetchData();
     }, [userData]);
 
-    
+
 
     async function handleEdit() {
-        
+
         console.log("Fetching workout focus for:", focus, "at level:", userFitnessLevel);
         const res = await fetchWorkoutFocus(focus, userFitnessLevel);
         if (res) {
             router.push('/(components)/workout/EditWorkout');
-        } else{
+        } else {
             console.log("Error fetching workout focus");
         }
-        
+
     }
 
     return (
-        <LinearGradient
-            colors={theme ? ["#000000", "#272727"] : ["#000000", "#272727"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
+        <ImageBackground
+            source={require('@/assets/images/OverviewBackground.png')}
             style={{ flex: 1 }}
         >
-            <ScrollView 
+            <ScrollView
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Close Button */}
                 <View style={styles.closeButtonContainer}>
-                    <TouchableOpacity 
-                        onPress={() => router.back()}
-                        style={styles.closeButton}
-                        activeOpacity={0.7}
+                    <ImageBackground
+                        source={require('@/assets/images/GradientButton.png')}
+                        style={{ width: 109, height: 50 }}
                     >
-                        <Image
-                            source={icons.x} 
-                            style={{width: 20, height: 20, tintColor: '#FFFFFF'}}
-                        />
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            style={styles.closeButton}
+                            activeOpacity={0.7}
+                        >
+                            <AppIcon name="lessThan" size={22} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    </ImageBackground>
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: '#FFFFFF', fontSize: 16, fontFamily: 'SpaceGrotesk-Bold' }}>
+                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                    </View>
+                    <ImageBackground
+                        source={require('@/assets/images/GradientButton.png')}
+                        style={{ width: 109, height: 50 }}
+                    >
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            style={styles.closeButton}
+                            activeOpacity={0.7}
+                        >
+                            <AppIcon name="pencilIcon" size={15} color="#FFFFFF" />
+                        </TouchableOpacity>
+                    </ImageBackground>
                 </View>
 
                 {/* Header */}
@@ -90,9 +115,9 @@ const WorkoutOverview = () => {
                         <Text style={styles.timeNumber}>{timeEstimate}</Text>
                         <Text style={styles.timeUnit}>mins</Text>
                     </View>
-                    
+
                     <View style={styles.divider} />
-                    
+
                     <View style={styles.xpContainer}>
                         <Text style={styles.xpLabel}>TOTAL XP</Text>
                         <View style={styles.xpValueContainer}>
@@ -113,7 +138,7 @@ const WorkoutOverview = () => {
                 {/* Overview Section */}
                 <View style={styles.overviewHeader}>
                     <Text style={styles.overviewTitle}>Workout Plan</Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={styles.editButton}
                         onPress={() => handleEdit()}
                         activeOpacity={0.7}
@@ -124,8 +149,8 @@ const WorkoutOverview = () => {
 
                 {/* Workout Cards */}
                 <View style={styles.workoutCardsContainer}>
-                    <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up'/>
-                    <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title='Main Workout'/>
+                    <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up' />
+                    <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title='Main Workout' />
                     {/* <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title='Cool Down'/> */}
                 </View>
 
@@ -138,7 +163,7 @@ const WorkoutOverview = () => {
                 </View>
                 */}
             </ScrollView>
-        </LinearGradient>
+        </ImageBackground>
     )
 };
 
@@ -147,14 +172,16 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     closeButtonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         marginTop: 60,
         marginHorizontal: 20,
     },
     closeButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        width: 109,
+        height: 50,
+        borderRadius: 90,
+        //backgroundColor: 'rgba(255, 255, 255, 0.15)',
         alignItems: 'center',
         justifyContent: 'center',
         alignSelf: 'flex-start',

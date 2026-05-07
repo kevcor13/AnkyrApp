@@ -30,11 +30,17 @@ import upArrow from "@/assets/icons/Arrow up-right.svg"
 import checkMark from "@/assets/icons/Check.svg"
 import gearIcon from "@/assets/icons/GearIcon.svg"
 import skipIcon from "@/assets/icons/Rewind.svg"
+import lessThan from "@/assets/icons/LessThan.svg"
+import pencilIcon from "@/assets/icons/PencilEdit.svg"
+
+
 
 type SvgIconComponent = ComponentType<SvgProps>;
 
 export const svgIcons = {
   ankyrWordmark: AnkyrWordmarkIcon,
+  lessThan: lessThan,
+  pencilIcon: pencilIcon,
   ankyrIcon: AnkyrIcon,
   skipIcon: skipIcon,
   gearIcon : gearIcon,

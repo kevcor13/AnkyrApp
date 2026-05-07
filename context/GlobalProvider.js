@@ -33,7 +33,7 @@ const GlobalProvider = ({ children }) => {
     const [focusWorkouts, setFocusWorkouts] = useState([])
     const [selectedChallenges, setSelectedChallenges] = useState([]);
     const [aiMode, setAiMode] = useState(true);
-    const ngrokAPI = 'https://cce3-2607-fb90-9903-1b92-4d3a-6a66-f0ed-e61b.ngrok-free.app'
+    const ngrokAPI = 'https://39b7-140-209-62-11.ngrok-free.app'
     const normalizeGameData = (rawGameData = {}) => {
         const coveredDateKeysCurrentMonth = Array.isArray(rawGameData.coveredDateKeysCurrentMonth)
             ? rawGameData.coveredDateKeysCurrentMonth
