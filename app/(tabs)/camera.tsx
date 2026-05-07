@@ -65,7 +65,7 @@ export default function App() {
 
             const token = await AsyncStorage.getItem('token');
             if (!token) {
-                Alert.alert('Error', 'No authentication token found');
+                Alert.alert('Error', 'No uthentication token found');
                 return;
             }
 
