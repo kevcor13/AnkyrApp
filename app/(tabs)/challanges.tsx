@@ -676,7 +676,7 @@ const ChallengesPage: React.FC = () => {
                         completedToday={isWorkoutAllowed}
                     />
                     
-                    {focus == "Rest" ? (
+                    {(isRestDay || (focus ?? '').toLowerCase() === "rest") ? (
                         <ImageBackground source={images.restDaySquareGradient} imageStyle={{ height: 200 }}>
                             <View style={styles.rectangleParent}>
                                 <View>

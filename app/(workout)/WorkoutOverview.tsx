@@ -7,19 +7,21 @@ import CustomButton from '@/components/CustomButton';
 import { useGlobal } from '@/context/GlobalProvider';
 import WorkoutCard from '@/components/WorkoutCard';
 import RadialGradient from '@/components/RadialGradient';
+import GlassBackground from '@/components/GlassBackground';
 import axios from 'axios';
 import AppIcon from '@/components/AppIcon';
 
 
 const WorkoutOverview = () => {
 
-    const { userWorkoutData, userData, selectedChallenges, fetchFitnessData, fetchWorkoutFocus } = useGlobal();
+    const { userWorkoutData, userData, selectedChallenges, fetchFitnessData, fetchWorkoutFocus, fetchUserRoutine } = useGlobal();
     const [focus, setFocus] = useState('');
     const [timeEstimate, setTimeEstimate] = useState('');
     const [userFitnessData, setUserFitnessData] = useState('');
     const [userFitnessLevel, setUserFitnessLevel] = useState('');
     const [points, setPoints] = useState(Number);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [workoutDayLabel, setWorkoutDayLabel] = useState('');
 
     const theme = userData.defaultTheme;
 
@@ -32,13 +34,24 @@ const WorkoutOverview = () => {
         const fetchData = async () => {
 
             try {
-                setPoints((userWorkoutData.warmup.length + userWorkoutData.workoutRoutine.length) * 5);
-                setTimeEstimate(userWorkoutData.timeEstimate);
-                setFocus(userWorkoutData.focus);
+                setPoints(((userWorkoutData?.warmup?.length ?? 0) + (userWorkoutData?.workoutRoutine?.length ?? 0)) * 5);
+                setTimeEstimate(userWorkoutData?.timeEstimate ?? '');
+                setFocus(userWorkoutData?.focus ?? '');
                 const response = await fetchFitnessData(userData._id);
                 setUserFitnessData(response);
                 setUserFitnessLevel(response.fitnessLevel);
                 console.log("Fetched fitness data:", response);
+
+                const routine = await fetchUserRoutine(userData._id);
+                const routineArray = routine?.routine || [];
+                if (routineArray.length) {
+                    const workoutDays = routineArray.filter((d: any) => d.focus !== 'Rest');
+                    const todayName = new Date().toLocaleString('en-US', { weekday: 'long' });
+                    const dayIndex = workoutDays.findIndex((d: any) => d.day === todayName);
+                    if (dayIndex !== -1) {
+                        setWorkoutDayLabel(`Day ${dayIndex + 1} of ${workoutDays.length}`);
+                    }
+                }
 
             } catch (error) {
                 console.error("Error fetching workout data:", error);
@@ -105,9 +118,12 @@ const WorkoutOverview = () => {
                 </View>
 
                 {/* Header */}
-                <View style={styles.headerContainer}>
-                    <Text style={styles.workoutTitle}>{focus}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 16 }}>
+                    <Text style={{ color: '#FFFFFF', fontSize: 16, fontFamily: 'Poppins-light' }}>{workoutDayLabel}</Text>
                 </View>
+                <GlassBackground style={styles.headerContainer}>
+                    <Text style={styles.workoutTitle}>{focus}</Text>
+                </GlassBackground>
 
                 {/* Stats Card */}
                 <View style={styles.statsCard}>
@@ -149,8 +165,8 @@ const WorkoutOverview = () => {
 
                 {/* Workout Cards */}
                 <View style={styles.workoutCardsContainer}>
-                    <WorkoutCard workoutRoutine={userWorkoutData.warmup} title='Warm-Up' />
-                    <WorkoutCard workoutRoutine={userWorkoutData.workoutRoutine} title='Main Workout' />
+                    <WorkoutCard workoutRoutine={userWorkoutData?.warmup ?? []} title='Warm-Up' />
+                    <WorkoutCard workoutRoutine={userWorkoutData?.workoutRoutine ?? []} title='Main Workout' />
                     {/* <WorkoutCard workoutRoutine={userWorkoutData.cooldown} title='Cool Down'/> */}
                 </View>
 
@@ -188,15 +204,20 @@ const styles = StyleSheet.create({
     },
     headerContainer: {
         marginHorizontal: 20,
+        width: '90%',
+        height: 57,
         marginTop: 32,
         marginBottom: 24,
+        padding: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     workoutTitle: {
-        fontSize: 40,
+        fontSize: 20,
         color: '#FFFFFF',
-        fontFamily: 'raleway-light',
+        fontFamily: 'Poppins-light',
         textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        letterSpacing: -1,
     },
     statsCard: {
         marginHorizontal: 20,
