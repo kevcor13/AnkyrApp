@@ -35,7 +35,10 @@ const ActiveWorkoutScreen = () => {
     aiMode,
     logWorkoutSet,
     currentPhase,
+    fetchUserRoutine,
   } = useGlobal();
+
+  const [workoutDayLabel, setWorkoutDayLabel] = useState('');
 
   const [sessionItems, setSessionItems] = useState<WorkoutSessionItem[] | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -48,6 +51,20 @@ const ActiveWorkoutScreen = () => {
   const [phaseTransitionFlag, setPhaseTransitionFlag] = useState(false);
 
   const hasInitialized = useRef(false);
+
+  useEffect(() => {
+    if (!userData?._id) return;
+    fetchUserRoutine(userData._id).then((routine: any) => {
+      const routineArray = routine?.routine || [];
+      if (!routineArray.length) return;
+      const workoutDays = routineArray.filter((d: any) => d.focus !== 'Rest');
+      const todayName = new Date().toLocaleString('en-US', { weekday: 'long' });
+      const dayIndex = workoutDays.findIndex((d: any) => d.day === todayName);
+      if (dayIndex !== -1) {
+        setWorkoutDayLabel(`day ${dayIndex + 1} of ${workoutDays.length}`);
+      }
+    }).catch(() => {});
+  }, [userData]);
 
   useEffect(() => {
     const hasWorkoutData =
@@ -383,6 +400,7 @@ const ActiveWorkoutScreen = () => {
             onEndWorkout={handleEnd}
             currentPhase={currentPhase}
             phaseTransition={phaseTransitionFlag}
+            workoutDayLabel={workoutDayLabel}
           />
         );
       case "ITEM_OVERVIEW":
