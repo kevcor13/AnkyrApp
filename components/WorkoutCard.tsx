@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import React from 'react';
+import GlassBackground from './GlassBackground';
 
 interface Exercise {
   exerciseName: string;
@@ -20,14 +21,13 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
     <View style={styles.container}>
       {/* Section Header */}
       <View style={styles.headerContainer}>
-        <View style={styles.headerAccent} />
         <Text style={styles.title}>{title}</Text>
       </View>
 
       {/* Exercise Cards */}
       <View style={styles.cardsContainer}>
         {workoutRoutine.map((exercise, index) => (
-          <View key={index} style={styles.card}>
+          <GlassBackground style={styles.card}>
             <View style={styles.exerciseContent}>
               <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
               <View style={styles.workoutInfo}>
@@ -49,14 +49,15 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
               </View>
             </View>
             
+            
             <View style={styles.rewardBox}>
-              <Text style={styles.rewardLabel}>REWARD</Text>
               <View style={styles.rewardValueContainer}>
+
                 <Text style={styles.rewardValue}>5</Text>
                 <Text style={styles.rewardUnit}>xp</Text>
               </View>
             </View>
-          </View>
+          </GlassBackground>
         ))}
       </View>
     </View>
@@ -65,11 +66,11 @@ const WorkoutCategoryCard: React.FC<WorkoutCategoryCardProps> = ({ workoutRoutin
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     marginTop: 24,
     paddingHorizontal: 20,
   },
   headerContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
   },
@@ -90,27 +91,22 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: '#1B191E',
     paddingVertical: 18,
     paddingHorizontal: 20,
     borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    //borderWidth: 1,
-    borderColor: '#6477E7',
-    borderWidth: 0.25,
   },
   exerciseContent: {
     flex: 1,
     marginRight: 16,
+    padding:4
   },
   exerciseName: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontFamily: 'poppins-regular',
-    marginBottom: 6,
-    lineHeight: 22,
+    fontSize: 15,
+    fontFamily: 'poppins-light',
   },
   workoutInfo: {
     flexDirection: 'row',
@@ -123,8 +119,7 @@ const styles = StyleSheet.create({
   exerciseDetails: {
     color: 'rgba(255, 255, 255, 0.7)',
     fontSize: 15,
-    fontWeight: '500',
-    fontFamily: 'poppins-regular',
+    fontFamily: 'poppins-light',
   },
   dotSeparator: {
     width: 3,
@@ -136,8 +131,6 @@ const styles = StyleSheet.create({
   rewardBox: {
     alignItems: 'flex-end',
     paddingLeft: 16,
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255, 255, 255, 0.15)',
   },
   rewardLabel: {
     fontSize: 11,
@@ -156,11 +149,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'raleway-semibold',
     color: '#6477E7',
-    lineHeight: 28,
   },
   rewardUnit: {
     fontSize: 14,
-    fontWeight: '600',
     fontFamily: 'raleway-semibold',
     color: '#6477E7',
     marginLeft: 3,

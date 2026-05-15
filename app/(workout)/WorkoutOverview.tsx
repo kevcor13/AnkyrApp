@@ -1,5 +1,7 @@
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ImageBackground } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, ImageBackground, Dimensions } from 'react-native'
 import React, { useEffect, useState } from 'react'
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring, interpolate, runOnJS } from 'react-native-reanimated'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { LinearGradient } from 'expo-linear-gradient'
 import icons from "@/constants/icons";
 import { router } from 'expo-router';
@@ -24,6 +26,39 @@ const WorkoutOverview = () => {
     const [workoutDayLabel, setWorkoutDayLabel] = useState('');
 
     const theme = userData.defaultTheme;
+
+    const TRACK_WIDTH = Dimensions.get('window').width - 40;
+    const THUMB_SIZE = 64;
+    const MAX_SLIDE = TRACK_WIDTH - THUMB_SIZE - 8;
+
+    const dragX = useSharedValue(0);
+
+    const thumbStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: Math.max(0, Math.min(dragX.value, MAX_SLIDE)) }],
+    }));
+
+    const chevronStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(dragX.value, [0, MAX_SLIDE * 0.5], [1, 0], 'clamp'),
+    }));
+
+    function navigateToWorkout() {
+        router.navigate('/(workout)/ActiveWorkoutScreen');
+    }
+
+    const panGesture = Gesture.Pan()
+        .onUpdate((e) => {
+            dragX.value = Math.max(0, Math.min(e.translationX, MAX_SLIDE));
+        })
+        .onEnd((e) => {
+            if (e.translationX >= MAX_SLIDE * 0.8) {
+                dragX.value = withSpring(MAX_SLIDE, {}, () => {
+                    dragX.value = 0;
+                    runOnJS(navigateToWorkout)();
+                });
+            } else {
+                dragX.value = withSpring(0);
+            }
+        });
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -126,9 +161,14 @@ const WorkoutOverview = () => {
                 </GlassBackground>
 
                 {/* Stats Card */}
+                <View style={{ flex: 1, marginBottom: 8, alignItems: 'center' }}>
+                    <Text style={{ color: '#FFFFFF', fontSize: 22, fontFamily: 'Poppins-light' }}>estimated</Text>
+                    <Text style={styles.timeNumber}>{timeEstimate}</Text>
+                    <Text style={styles.timeUnit}>mins</Text>
+                </View>
+                {/** 
                 <View style={styles.statsCard}>
                     <View style={styles.timeContainer}>
-                        <Text style={styles.timeNumber}>{timeEstimate}</Text>
                         <Text style={styles.timeUnit}>mins</Text>
                     </View>
 
@@ -142,8 +182,8 @@ const WorkoutOverview = () => {
                         </View>
                     </View>
                 </View>
-
-                {/* Primary CTA Button */}
+        
+                {/* Primary CTA Button 
                 <CustomButton
                     title="Let's Go!"
                     handlePress={() => router.navigate('/(workout)/ActiveWorkoutScreen')}
@@ -151,7 +191,7 @@ const WorkoutOverview = () => {
                     textStyle={styles.primaryButtonText}
                 />
 
-                {/* Overview Section */}
+                {/* Overview Section 
                 <View style={styles.overviewHeader}>
                     <Text style={styles.overviewTitle}>Workout Plan</Text>
                     <TouchableOpacity
@@ -179,6 +219,21 @@ const WorkoutOverview = () => {
                 </View>
                 */}
             </ScrollView>
+
+            {/* Slide to Start Button */}
+            <View style={styles.slideContainer}>
+                <View style={styles.slideTrack}>
+                    <Reanimated.Text style={[styles.slideChevrons, chevronStyle]}>
+                        {'›› ›'}
+                    </Reanimated.Text>
+                    <Text style={styles.slideLabel}>start workout</Text>
+                    <GestureDetector gesture={panGesture}>
+                        <Reanimated.View style={[styles.slideThumb, thumbStyle]}>
+                            <Text style={{ color: '#FFFFFF', fontSize: 22 }}>→</Text>
+                        </Reanimated.View>
+                    </GestureDetector>
+                </View>
+            </View>
         </ImageBackground>
     )
 };
@@ -238,17 +293,16 @@ const styles = StyleSheet.create({
         alignItems: 'baseline',
     },
     timeNumber: {
+        marginTop: -20,
         fontFamily: 'SpaceGrotesk-Bold',
-        fontSize: 56,
-        color: '#6477E7',
-        lineHeight: 64,
+        fontSize: 154,
+        color: '#FFFFFF',
     },
     timeUnit: {
+        marginTop: -30,
         fontFamily: 'SpaceGrotesk-Bold',
-        fontSize: 20,
-        color: '#6477E7',
-        marginLeft: 4,
-        opacity: 0.8,
+        fontSize: 26,
+        color: '#FFFFFF',
     },
     divider: {
         width: 1,
@@ -337,6 +391,52 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 40,
         opacity: 0.6,
+    },
+    slideContainer: {
+        position: 'absolute',
+        bottom: 40,
+        left: 20,
+        right: 20,
+    },
+    slideTrack: {
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+        overflow: 'hidden',
+    },
+    slideThumb: {
+        position: 'absolute',
+        left: 4,
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'rgba(40, 40, 45, 0.95)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+    },
+    slideLabel: {
+        flex: 1,
+        textAlign: 'center',
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontFamily: 'Poppins-light',
+        letterSpacing: 0.5,
+    },
+    slideChevrons: {
+        position: 'absolute',
+        right: 20,
+        color: 'rgba(255, 255, 255, 0.4)',
+        fontSize: 20,
+        letterSpacing: 2,
     },
 })
 
