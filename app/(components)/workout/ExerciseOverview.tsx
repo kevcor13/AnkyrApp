@@ -104,7 +104,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
         </TouchableOpacity>
       </View>
 
-      <View style={{ justifyContent: "center", marginTop: 100 }}>
+      <View style={{ justifyContent: "center", marginTop: 100, paddingBottom: 140 }}>
         {/* Exercise name sliding in */}
         <Animated.Text
           entering={SlideInLeft.duration(800)}
@@ -137,7 +137,7 @@ const ExerciseOverview: React.FC<ExerciseOverviewProps> = ({
         </TouchableOpacity>
       </View>
 
-      <View style={styles.streakContainer}>
+      <View style={[styles.streakContainer, { position: "absolute", bottom: 0, left: 0, right: 0 }]}>
         <AppIcon name="ankyrWordmark" size={100} fill="no fill" />
         {/*<Image style={{ height: 100, width: 100 }} source={icons.blueStreak} />*/}
       </View>

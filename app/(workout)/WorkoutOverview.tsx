@@ -32,7 +32,6 @@ const WorkoutOverview = () => {
     const MAX_SLIDE = TRACK_WIDTH - THUMB_SIZE - 8;
 
     const dragX = useSharedValue(0);
-
     const thumbStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: Math.max(0, Math.min(dragX.value, MAX_SLIDE)) }],
     }));
